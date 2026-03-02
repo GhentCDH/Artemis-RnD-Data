@@ -1,0 +1,22 @@
+{
+  "name": "artemis-rnd-data",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.3.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@allmaps/id": "^1.0.0-beta.37"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "crawl": "bun run src/pipeline.ts",
+    "crawl10": "LIMIT=10 bun run src/pipeline.ts",
+    "crawl1": "LIMIT=1 bun run src/pipeline.ts"
+  }
+}

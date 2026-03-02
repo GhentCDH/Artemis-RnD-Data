@@ -1,0 +1,51 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Eecloo:Oost-Eecloo",
+  "@type": "sc:Manifest",
+  "label": "Oost-Eecloo",
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/gereduceerd_kadaster:Eecloo:Oost-Eecloo:Oost-Eecloo_1853_/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/gereduceerd_kadaster:Eecloo:Oost-Eecloo:Oost-Eecloo_1853_",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Eecloo:Oost-Eecloo/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Eecloo:Oost-Eecloo/canvas/Oost-Eecloo_1853_",
+          "@type": "sc:Canvas",
+          "height": 7539,
+          "width": 11200,
+          "label": "Oost-Eecloo_1853_",
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Eecloo:Oost-Eecloo/annotation/Oost-Eecloo_1853_",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Eecloo:Oost-Eecloo/canvas/Oost-Eecloo_1853_",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/gereduceerd_kadaster:Eecloo:Oost-Eecloo:Oost-Eecloo_1853_/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7539,
+                "width": 11200,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/gereduceerd_kadaster:Eecloo:Oost-Eecloo:Oost-Eecloo_1853_",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-03-05T09:30:04.136Z",
-  "totalManifests": 575,
-  "georefManifests": 215,
-  "mirroredOk": 215,
-  "compiledOk": 215,
+  "generatedAt": "2026-03-05T14:27:01.271Z",
+  "totalManifests": 571,
+  "georefManifests": 211,
+  "mirroredOk": 211,
+  "compiledOk": 211,
   "layers": [
     {
       "sourceCollectionUrl": "https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json",
@@ -16,8 +16,34 @@
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
       "sourceCollectionLabel": "Artemis - Primitief Kadaster",
       "compiledCollectionPath": "collections/87eb94ed85ae9008.json",
-      "manifestCount": 327,
-      "georefCount": 112
+      "manifestCount": 323,
+      "georefCount": 108
+    }
+  ],
+  "problematicManifests": [
+    {
+      "manifestAllmapsId": "04930d7222f43159",
+      "label": "ANTWERPEN - Verzamelplan",
+      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000",
+      "reason": "self-intersecting resource mask"
+    },
+    {
+      "manifestAllmapsId": "787106327b287f41",
+      "label": "ANTWERPEN - Sectie B",
+      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000",
+      "reason": "self-intersecting resource mask"
+    },
+    {
+      "manifestAllmapsId": "949c44555577f899",
+      "label": "ANTWERPEN - Sectie C",
+      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000",
+      "reason": "self-intersecting resource mask"
+    },
+    {
+      "manifestAllmapsId": "e621fad69cecfcb5",
+      "label": "Kalken - Sectie B",
+      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06383_000",
+      "reason": "self-intersecting resource mask"
     }
   ],
   "index": [
@@ -3523,23 +3549,6 @@
       ]
     },
     {
-      "label": "ANTWERPEN - Verzamelplan",
-      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000",
-      "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "compiledManifestPath": "manifests/04930d7222f43159.json",
-      "mirroredAllmapsAnnotationPath": "allmaps/manifests/04930d7222f43159.json",
-      "canvasCount": 4,
-      "manifestAllmapsId": "04930d7222f43159",
-      "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/04930d7222f43159",
-      "manifestAllmapsStatus": 200,
-      "canvasIds": [
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0001",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0002",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0003",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0004"
-      ]
-    },
-    {
       "label": "ANTWERPEN - Sectie A",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
@@ -3558,55 +3567,6 @@
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000/canvas/550_0001_000_02554_000_0_0006",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000/canvas/550_0001_000_02554_000_0_0007",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000/canvas/550_0001_000_02554_000_0_0008"
-      ]
-    },
-    {
-      "label": "ANTWERPEN - Sectie B",
-      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000",
-      "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "compiledManifestPath": "manifests/787106327b287f41.json",
-      "mirroredAllmapsAnnotationPath": "allmaps/manifests/787106327b287f41.json",
-      "canvasCount": 13,
-      "manifestAllmapsId": "787106327b287f41",
-      "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/787106327b287f41",
-      "manifestAllmapsStatus": 200,
-      "canvasIds": [
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0001",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0002",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0003",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0004",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0005",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0006",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0007",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0008",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0009",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0010",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0011",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0012",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000/canvas/550_0001_000_02555_000_0_0013"
-      ]
-    },
-    {
-      "label": "ANTWERPEN - Sectie C",
-      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000",
-      "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "compiledManifestPath": "manifests/949c44555577f899.json",
-      "mirroredAllmapsAnnotationPath": "allmaps/manifests/949c44555577f899.json",
-      "canvasCount": 10,
-      "manifestAllmapsId": "949c44555577f899",
-      "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/949c44555577f899",
-      "manifestAllmapsStatus": 200,
-      "canvasIds": [
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0001",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0002",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0003",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0004",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0005",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0006",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0007",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0008",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0009",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000/canvas/550_0001_000_02556_000_0_0010"
       ]
     },
     {
@@ -7629,22 +7589,6 @@
       "manifestAllmapsStatus": 200,
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06382_000/canvas/550_0001_000_06382_000_0_0001"
-      ]
-    },
-    {
-      "label": "Kalken - Sectie B",
-      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06383_000",
-      "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "compiledManifestPath": "manifests/e621fad69cecfcb5.json",
-      "mirroredAllmapsAnnotationPath": "allmaps/manifests/e621fad69cecfcb5.json",
-      "canvasCount": 3,
-      "manifestAllmapsId": "e621fad69cecfcb5",
-      "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/e621fad69cecfcb5",
-      "manifestAllmapsStatus": 200,
-      "canvasIds": [
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06383_000/canvas/550_0001_000_06383_000_0_0001",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06383_000/canvas/550_0001_000_06383_000_0_0002",
-        "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06383_000/canvas/550_0001_000_06383_000_0_0003"
       ]
     },
     {

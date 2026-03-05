@@ -36,6 +36,15 @@ type IndexEntry = {
   canvasIds: string[];
 };
 
+// Manifests with self-intersecting resource masks — excluded from build.
+// These cause CDT triangulation failures in Allmaps (Edge intersects already constrained edge).
+const PROBLEMATIC_MANIFEST_IDS = new Set([
+  "04930d7222f43159", // ANTWERPEN - Verzamelplan
+  "787106327b287f41", // ANTWERPEN - Sectie B
+  "949c44555577f899", // ANTWERPEN - Sectie C
+  "e621fad69cecfcb5", // Kalken - Sectie B
+]);
+
 function parseLines(txt: string): string[] {
   return txt
     .split(/\r?\n/g)
@@ -283,6 +292,12 @@ async function main() {
 
   console.log(`[3/5] Processing manifests per source...`);
   const index: IndexEntry[] = [];
+  const problematicManifests: Array<{
+    manifestAllmapsId: string;
+    label: string;
+    sourceManifestUrl: string;
+    reason: string;
+  }> = [];
   let georefManifests = 0;
   let mirroredOk = 0;
   let compiledOk = 0;
@@ -294,8 +309,21 @@ async function main() {
       : group.refs;
 
     for (let i = 0; i < slice.length; i++) {
+      const ref = slice[i];
+      const checkId = await generateId(ref.url);
+      if (PROBLEMATIC_MANIFEST_IDS.has(checkId)) {
+        console.warn(`[SKIP] Problematic manifest excluded: ${ref.url} (${checkId})`);
+        problematicManifests.push({
+          manifestAllmapsId: checkId,
+          label: ref.label,
+          sourceManifestUrl: ref.url,
+          reason: "self-intersecting resource mask"
+        });
+        continue;
+      }
+
       const result = await processManifestRef(
-        slice[i],
+        ref,
         group.sourceCollectionUrl,
         buildBaseUrl,
         i,
@@ -356,9 +384,21 @@ async function main() {
     mirroredOk,
     compiledOk,
     layers: layerMeta,
+    problematicManifests,
     index
   };
   await writeFile("build/index.json", JSON.stringify(indexOut, null, 2), "utf-8");
+
+  const problematicLog = problematicManifests.map((m) =>
+    `[SKIP] ${m.manifestAllmapsId}  ${m.label}\n       ${m.sourceManifestUrl}\n       reason: ${m.reason}`
+  ).join("\n");
+  await writeFile(
+    "build/problematic-manifests.log",
+    problematicManifests.length > 0
+      ? `Excluded manifests (${problematicManifests.length}) — generated ${new Date().toISOString()}\n\n${problematicLog}\n`
+      : `No excluded manifests — generated ${new Date().toISOString()}\n`,
+    "utf-8"
+  );
 
   console.log(`[5/5] Writing build/collection.json (top-level IIIF collection of sub-collections)`);
   // Top-level IIIF v2 collection referencing per-source sub-collections

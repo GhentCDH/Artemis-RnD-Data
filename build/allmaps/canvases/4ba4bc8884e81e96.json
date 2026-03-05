@@ -1,0 +1,176 @@
+{
+  "id": "https://annotations.allmaps.org/canvases/4ba4bc8884e81e96",
+  "type": "AnnotationPage",
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "items": [
+    {
+      "id": "https://annotations.allmaps.org/maps/94a0c5c87c12225d",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2025-05-22T11:35:54.481Z",
+      "modified": "2025-05-22T11:35:54.481Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/gereduceerd_kadaster:Anvers:Esschen:Esschen_2_2__1852",
+          "type": "ImageService2",
+          "height": 7512,
+          "width": 11200,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Esschen/canvas/Esschen_2_2__1852",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Esschen_2_2__1852"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Esschen",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Esschen"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"11200\" height=\"7512\"><polygon points=\"4878,5948 5682,5670 5858,5631 5883,5619 6490,5670 7585,3478 6897,2448 3973,2835 4182,3336 4248,3553 4257,3614 4348,4005 4469,4233 4682,4869 4711,5039 4699,5331 4738,5428 4774,5538 4859,5931\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "thinPlateSpline"
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6479,
+                5665
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.5330733,
+                51.4535751
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6889,
+                2460
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.538194,
+                51.4823874
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                7570,
+                3473
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.5481326,
+                51.473317
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4888,
+                5937
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.5101588,
+                51.4508981
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3995,
+                2847
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4964961,
+                51.4783424
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/94a0c5c87c12225d",
+          "version": "https://annotations.allmaps.org/maps/94a0c5c87c12225d@7b3aaf8004cb2bc4",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/009f21bdddc7e440",
+            "version": "https://annotations.allmaps.org/images/009f21bdddc7e440@918d1d5fad600040",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/4ba4bc8884e81e96",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/13fed8ad1eaf4b22"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 1.000741,
+          "area": 8273531.8
+        }
+      }
+    }
+  ]
+}

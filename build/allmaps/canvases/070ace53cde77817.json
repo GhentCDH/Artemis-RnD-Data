@@ -1,0 +1,464 @@
+{
+  "id": "https://annotations.allmaps.org/canvases/070ace53cde77817",
+  "type": "AnnotationPage",
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "items": [
+    {
+      "id": "https://annotations.allmaps.org/maps/bd86a4b937ef738d",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2025-06-24T18:50:17.696Z",
+      "modified": "2025-06-24T18:50:17.696Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/gereduceerd_kadaster:Anvers:Eekeren:Eekeren_2_2__1851",
+          "type": "ImageService2",
+          "height": 7241,
+          "width": 11200,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Eekeren/canvas/Eekeren_2_2__1851",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Eekeren_2_2__1851"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Eekeren",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Eekeren"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"11200\" height=\"7241\"><polygon points=\"3031,2639 3318,2697 3370,2717 3457,2702 3507,2740 3629,2701 3684,2670 3780,2657 3896,2631 4239,2533 4629,2409 4587,2350 4659,2279 4733,2228 4907,2068 4936,2049 5142,1976 5307,1939 5485,2003 5682,1993 5763,1954 5854,1866 5931,1835 6156,1773 6298,1718 6481,1660 6531,1639 6571,1650 6678,1623 7009,2356 7212,2810 7234,2856 7264,2880 7276,2912 7283,2984 7354,3144 7509,3501 7628,3769 7763,4067 7801,4162 7772,4177 7756,4151 7739,4143 7723,4156 7715,4168 7697,4175 7685,4172 7686,4156 7668,4156 7670,4169 7653,4163 7641,4166 7629,4173 7607,4165 7589,4176 7568,4180 7554,4182 7540,4166 7513,4162 7500,4132 7488,4123 7469,4127 7436,4135 7438,4118 7415,4116 7402,4118 7402,4136 7386,4134 7376,4121 7361,4129 7344,4125 7351,4112 7330,4114 7317,4110 7308,4120 7277,4122 7259,4148 7243,4151 7222,4139 7211,4130 7193,4143 7171,4148 7164,4170 7146,4154 7139,4133 7096,4122 7051,4092 7032,4085 7008,4090 6984,4082 6926,4105 6923,4119 6893,4124 6853,4196 6832,4219 6837,4251 6835,4276 6842,4305 6847,4321 6832,4322 6822,4331 6827,4356 6818,4368 6800,4357 6795,4403 6783,4407 6776,4424 6753,4421 6735,4436 6725,4455 6712,4470 6710,4497 6686,4511 6671,4494 6656,4479 6641,4473 6628,4463 6628,4495 6633,4519 6620,4527 6604,4511 6591,4511 6596,4531 6617,4555 6614,4571 6592,4572 6576,4554 6565,4543 6553,4538 6542,4552 6514,4551 6496,4543 6477,4536 6464,4536 6430,4532 6418,4550 6398,4561 6391,4592 6375,4595 6352,4592 6331,4609 6294,4604 6268,4612 6273,4636 6247,4645 6219,4649 6205,4665 6175,4667 6164,4673 6181,4683 6167,4709 6162,4725 6134,4714 6102,4731 6053,4734 6025,4730 6009,4745 6005,4771 6021,4779 6036,4789 6024,4799 5986,4797 5985,4821 5986,4840 5960,4842 5936,4836 5916,4878 5883,4900 5851,4923 5817,4955 5803,4971 5773,4975 5746,4959 5728,4941 5711,4933 5693,4918 5672,4929 5647,4945 5615,4950 5595,4942 5573,4951 5563,4984 5530,5013 5517,5090 5473,5126 5424,5147 5398,5150 5353,5177 5326,5215 5299,5237 5281,5270 5254,5357 5210,5409 5169,5452 5141,5479 5111,5534 5074,5575 5019,5610 4942,5651 4897,5665 4852,5693 4801,5742 4782,5756 4806,5706 4815,5654 4799,5612 4761,5565 4717,5534 4657,5482 4634,5433 4636,5394 4681,5363 4715,5341 4727,5285 4688,5172 4690,5126 4702,5060 4722,5003 4751,4964 4766,4892 4764,4840 4735,4810 4701,4785 4630,4769 4579,4751 4561,4742 4519,4762 4464,4743 4414,4719 4388,4697 4377,4661 4384,4614 4404,4568 4410,4547 4399,4533 4406,4497 4422,4445 4372,4428 4323,4408 4277,4389 4218,4383 4175,4380 4153,4352 4098,4330 4063,4314 4025,4277 3986,4248 3935,4290 3874,4247 3753,4129 3644,3956 3571,3866 3465,3706 3460,3665 3416,3605 3363,3515 3327,3443 3272,3368 3180,3251 3139,3196 3142,3171 3147,3131 3144,3105 3161,3088 3170,3060 3182,3050 3202,3067 3225,3071 3239,3068 3210,3037 3190,3016 3172,3008 3122,2986 3094,2955 3081,2929 3064,2894 3039,2890 3025,2879 3050,2862 3043,2830 3014,2819 3004,2768 3002,2695\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "thinPlateSpline"
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6675,
+                1622
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4444762,
+                51.2917018
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5483,
+                2029
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4275263,
+                51.288134
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6919,
+                4115
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4487058,
+                51.2695794
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4584,
+                2344
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4150789,
+                51.2854968
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4389,
+                4424
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4115997,
+                51.2665825
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5447,
+                5142
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.428193,
+                51.2607531
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4895,
+                2986
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4190832,
+                51.2796216
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5302,
+                3299
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4248315,
+                51.2767448
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                7269,
+                2904
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4527408,
+                51.2804156
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4383,
+                4677
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4115366,
+                51.2643873
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                7797,
+                4161
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4607998,
+                51.2685868
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3988,
+                4247
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4059083,
+                51.2679402
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5968,
+                2799
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4343085,
+                51.2810568
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4781,
+                5755
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4172966,
+                51.254697
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3005,
+                2691
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.3917174,
+                51.2829228
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4930,
+                2058
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4195275,
+                51.2880133
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4839,
+                3254
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4185665,
+                51.2772132
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5167,
+                2413
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4227226,
+                51.2846172
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3230,
+                3066
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.3952116,
+                51.2790412
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6142,
+                3511
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4369435,
+                51.2748497
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6611,
+                4571
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4446786,
+                51.2652958
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6008,
+                4740
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4353547,
+                51.2638048
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5782,
+                4974
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.4322844,
+                51.2615934
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/bd86a4b937ef738d",
+          "version": "https://annotations.allmaps.org/maps/bd86a4b937ef738d@2c12653af7c387e2",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/f89f30cde320e898",
+            "version": "https://annotations.allmaps.org/images/f89f30cde320e898@687e9409773c7982",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/070ace53cde77817",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/804bcf95935c5993"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 0.995893,
+          "area": 10186654.4
+        }
+      }
+    }
+  ]
+}

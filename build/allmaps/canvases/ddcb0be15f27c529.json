@@ -1,0 +1,224 @@
+{
+  "id": "https://annotations.allmaps.org/canvases/ddcb0be15f27c529",
+  "type": "AnnotationPage",
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "items": [
+    {
+      "id": "https://annotations.allmaps.org/maps/6e26f4c660d3488a",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2026-02-23T10:43:01.015Z",
+      "modified": "2026-02-23T10:43:01.015Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06296_000:550_0001_000_06296_000_0_0002",
+          "type": "ImageService2",
+          "height": 7708,
+          "width": 11556,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06296_000/canvas/550_0001_000_06296_000_0_0002",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Moerzeke - Sectie B, Percelen van 563 tot 1321, 'Dorp'"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06296_000",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Moerzeke - Sectie B"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"11556\" height=\"7708\"><polygon points=\"7240,7297 6695,7295 6696,7048 6673,6817 6599,6518 6545,6376 6457,6158 6408,6089 6358,6054 6303,6037 5688,5895 5043,5732 4583,5646 4230,5577 4048,5515 3942,5474 3833,5395 3685,5257 3496,5022 3303,4777 3078,4538 2943,4405 2684,4151 2402,3835 2079,3471 1884,3166 1734,2942 1574,2716 1454,2597 1305,2556 1205,2558 1150,2586 1075,2644 961,2763 813,2223 888,2177 1045,2114 1066,2103 1070,2080 1051,2027 968,1891 841,1716 830,1701 796,1697 772,1640 867,1590 1004,1538 1242,1476 1422,1414 1763,1395 2122,1374 2393,1155 2518,1057 2580,1017 2892,874 2980,825 3088,825 3140,845 3304,962 3552,1131 3758,1274 4133,1530 4313,1632 4463,1483 4601,1362 4792,1201 4849,1147 5062,924 5140,846 5220,676 5236,640 5291,691 5493,891 5698,1096 5861,1222 5948,1301 6224,1290 6306,1289 6385,1251 6446,1234 6488,1227 6525,1236 6594,1193 6818,1058 7017,955 7142,890 7242,820 7331,744 7453,589 7556,457 7661,275 7709,276 7912,500 8129,739 8445,430 8569,632 8797,530 8978,438 9086,347 9134,382 9132,600 9648,629 9619,1450 10145,1590 10287,1629 10404,1635 10488,1617 10770,1554 10872,2148 10972,2800 10660,3013 10587,3089 10434,3084 10391,3120 10329,3135 10329,3226 10331,3322 10348,3426 10360,3531 10391,3687 10422,3904 10443,4060 10461,4282 10486,4493 10453,4668 10387,5001 10345,5299 10324,5341 10292,5374 10229,5404 10160,5417 10087,5430 10093,5515 10069,5611 9998,5904 10073,6024 10075,6104 10114,6111 10154,6136 10164,6160 10168,6196 10165,6222 10149,6257 10191,6350 10191,6381 10178,6417 10152,6458 10063,6587 10006,6673 9952,6731 9931,6744 9915,6840 9927,6908 9938,6970 9956,6994 10117,7076 10109,7106 10072,7136 10049,7171 9993,7168 9957,7136 9935,7118 9895,7148 9847,7205 9794,7234 9722,7261 9683,7300 9651,7313 9557,7309 9544,7278 9519,7171 9031,7163 8413,7152 7806,7130 7774,7150 7721,7159 7619,7160 7587,7181 7550,7194 7395,7198 7304,7200 7271,7211 7239,7234 7236,7249\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "thinPlateSpline"
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3293,
+                1685
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.138594,
+                51.0614586
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3581,
+                3253
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1417224,
+                51.0592053
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                9355,
+                2713
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.155731,
+                51.0658018
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6634,
+                5024
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.152400973812291,
+                51.059315677106554
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6390,
+                4095
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.150318154636722,
+                51.06060608782391
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                7887,
+                3707
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.153561679997267,
+                51.062734604032414
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                8166,
+                5419
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1569952,
+                51.0601894
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                9875,
+                3236
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.157907700596013,
+                51.06546787946874
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/6e26f4c660d3488a",
+          "version": "https://annotations.allmaps.org/maps/6e26f4c660d3488a@7ea5569d9e373cc3",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/7f7c838cbba41842",
+            "version": "https://annotations.allmaps.org/images/7f7c838cbba41842@fb4990477c423f9f",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/ddcb0be15f27c529",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/a7e9237ceaf8e635"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 4.717761,
+          "area": 1997347.94
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,304 @@
+{
+  "id": "https://annotations.allmaps.org/canvases/38a3d0f232e053b2",
+  "type": "AnnotationPage",
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "items": [
+    {
+      "id": "https://annotations.allmaps.org/maps/7b664b54e8cf925b",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2025-11-17T15:03:00.661Z",
+      "modified": "2025-11-17T15:03:00.661Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06207_000:550_0001_000_06207_000_0_0001",
+          "type": "ImageService2",
+          "height": 7576,
+          "width": 11541,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06207_000/canvas/550_0001_000_06207_000_0_0001",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Gentbrugge - Sectie A, Percelen van 1 tot 441, 'de Kerk'"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06207_000",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Gentbrugge - Sectie A"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"11541\" height=\"7576\"><polygon points=\"387,1632 481,1948 510,2134 496,2328 433,2610 399,2637 434,2780 447,2942 431,2983 449,3178 494,3387 590,3664 628,3808 736,4321 903,4567 1090,4851 1291,5179 1372,5216 1455,5264 1555,5565 1559,5649 1555,5718 1631,5959 1652,6159 1632,6172 1637,6555 1635,6751 1682,6758 1729,6775 1796,6796 2022,6998 2537,7261 2801,7387 2972,7410 3575,7409 3609,7447 3774,7499 3909,7497 4163,7484 4287,7435 4384,7314 4422,7313 4645,7356 4932,7307 5100,7328 5196,7340 5348,7277 5439,7180 5503,7061 5632,6982 6234,6687 6465,6907 6514,6845 6730,7028 6885,6828 6988,6856 7269,6609 7315,6699 7840,6547 7910,6556 7897,6379 7706,6364 7284,6173 7112,6028 6802,5498 6706,5243 6574,4902 6536,4675 6424,4329 6418,4164 6596,3965 6710,3943 6901,3965 7128,4094 7270,4257 7394,4425 7492,4520 7686,4701 7818,4777 8008,4843 8143,4834 8370,4809 8572,4766 8746,4696 8885,4591 8963,4471 9010,4317 9022,4223 8993,4019 8836,3778 8769,3583 8780,3435 8854,3262 8988,3155 9075,3102 9254,3119 9663,3059 10028,3021 10204,3046 10680,3096 11063,3085 11188,1561 11109,1581 10573,2114 10133,2108 9819,1987 9070,1652 8591,1409 8058,1198 7674,1057 7334,899 7059,810 6560,684 6006,580 5648,497 5434,466 5059,409 4886,461 4737,482 4538,466 4374,415 3824,428 3506,494 3025,614 2586,753 2180,903 1526,1167 894,1425\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "thinPlateSpline"
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4641,
+                4975
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.771720242765184,
+                51.04163382412722
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5574,
+                3881
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.774202997704748,
+                51.043865875166375
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                1710,
+                2522
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.76215320770288,
+                51.045833268112716
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                7397,
+                2730
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.77946460792316,
+                51.04633422095412
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5325,
+                1238
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.7728699,
+                51.0488992
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6468,
+                6872
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.7775385948054065,
+                51.03829397343361
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                8231,
+                2075
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.7817786,
+                51.0477525
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4081,
+                7016
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.7703910184265514,
+                51.037683655852845
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                9317,
+                2492
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.785119498835314,
+                51.04709772542637
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6281,
+                2084
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.7758730546872807,
+                51.047420384755895
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5513,
+                5218
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.77415703230622,
+                51.04135836285647
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                11194,
+                1571
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.790581478881251,
+                51.04909730507279
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6613,
+                3465
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                3.7772688,
+                51.0448271
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/7b664b54e8cf925b",
+          "version": "https://annotations.allmaps.org/maps/7b664b54e8cf925b@e2898286a641114f",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/64a4a11a651550fc",
+            "version": "https://annotations.allmaps.org/images/64a4a11a651550fc@b698f580f97fd46d",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/38a3d0f232e053b2",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/a68deae41a7b2044"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 4.697505,
+          "area": 2177157.33
+        }
+      }
+    }
+  ]
+}

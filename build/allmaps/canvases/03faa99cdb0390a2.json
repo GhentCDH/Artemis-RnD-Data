@@ -1,0 +1,224 @@
+{
+  "id": "https://annotations.allmaps.org/canvases/03faa99cdb0390a2",
+  "type": "AnnotationPage",
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "items": [
+    {
+      "id": "https://annotations.allmaps.org/maps/6555dd4b62b30087",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2026-02-23T10:08:55.611Z",
+      "modified": "2026-02-23T10:08:55.611Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06074_000:550_0001_000_06074_000_0_0002",
+          "type": "ImageService2",
+          "height": 11548,
+          "width": 8748,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06074_000/canvas/550_0001_000_06074_000_0_0002",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Baasrode - Sectie A, Percelen van 499 tot 1177, 'Vlassenbroek'"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06074_000",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Baasrode - Sectie A"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"8748\" height=\"11548\"><polygon points=\"1739,155 1935,241 2064,331 2190,386 2295,462 2334,506 2477,579 2569,642 2671,720 2779,818 2841,858 2944,916 3200,1047 3340,1123 3408,1150 3477,1188 3553,1226 3709,1276 3882,1327 4049,1361 4094,1368 4169,1356 4245,1350 4339,1352 4437,1333 4585,1288 4701,1261 4899,1247 5010,1240 5134,1211 5245,1205 5352,1209 5507,1192 5659,1164 5764,1164 5965,1173 6187,1200 6302,1220 6394,1259 6447,1276 6688,1328 6753,1353 6871,1449 6937,1519 7019,1581 7135,1700 7218,1793 7380,1993 7429,2062 7517,2228 7634,2502 7659,2573 7713,2743 7749,2883 7796,3066 7805,3161 7801,3212 7790,3256 7783,3313 7785,3397 7780,3488 7766,3561 7741,3655 7696,3766 7633,3865 7553,3983 7508,4045 7480,4083 7399,4155 7316,4256 7262,4309 7229,4332 7167,4396 7084,4448 6987,4474 6821,4501 6622,4523 6449,4534 6173,4549 6068,4560 5883,4549 5707,4520 5623,4512 5406,4526 5152,4593 5013,4651 4957,4696 4926,4734 4899,4797 4890,4864 4890,4904 4931,4976 5004,5049 5123,5113 5287,5175 5513,5236 5793,5243 5994,5240 6230,5240 6391,5257 6530,5307 6718,5391 6886,5487 6979,5574 7060,5674 7139,5787 7251,5981 7332,6119 7402,6294 7432,6397 7439,6478 7437,6585 7442,6825 7452,7011 7456,7310 7449,7574 7455,7653 7473,7767 7531,7886 7610,8074 7646,8169 7667,8245 7711,8337 7759,8512 7786,8681 7813,8828 7852,8954 7883,9089 7900,9244 7934,9464 7963,9646 7987,9870 8023,10115 8053,10341 8088,10587 7414,10601 7366,10307 7302,10301 7296,10281 7040,10321 6918,10350 6799,10396 6630,10449 6567,10477 6511,10478 6237,10378 5971,10260 5591,10090 5379,9995 5154,9900 5042,9862 4851,9828 4633,9815 4440,9818 4185,9775 4080,9739 4028,9701 3949,9665 3881,9639 3775,9608 3628,9536 3504,9457 3448,9429 3384,9415 3304,9429 3196,9455 3116,9491 3090,9519 3036,9565 2929,9580 2789,9602 2691,9604 2334,9620 2028,9629 1884,9618 1625,9606 1412,9593 1410,9068 1415,8402 1412,8280 1516,8207 1466,7862 1407,7472 1360,7152 1303,6739 1263,6464 1242,6235 1237,6087 1221,5821 1193,5460 1175,5154 1121,4208 1100,3707 1068,3127 1030,2447 984,1727 932,886 937,808 978,790 1040,742 1113,732 1177,753 1207,776\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "thinPlateSpline"
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                2020,
+                8394
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1449389,
+                51.0431493
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6261,
+                1978
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1531315,
+                51.0570487
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5502,
+                6617
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1540425,
+                51.0481722
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4518,
+                3627
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1490353,
+                51.0531456
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5910,
+                9376
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1572694,
+                51.0431313
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3979,
+                5537
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1487819,
+                51.0493349
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3754,
+                8288
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1500863,
+                51.044122
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6121,
+                7832
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.1568006,
+                51.0461242
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/6555dd4b62b30087",
+          "version": "https://annotations.allmaps.org/maps/6555dd4b62b30087@6d1b7bdd6c5b4cb6",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/157f55239572e51c",
+            "version": "https://annotations.allmaps.org/images/157f55239572e51c@e6a0cbedd006c57e",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/03faa99cdb0390a2",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/e4891a61d9171900"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 4.671766,
+          "area": 2491996.11
+        }
+      }
+    }
+  ]
+}

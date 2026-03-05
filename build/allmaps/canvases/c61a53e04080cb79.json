@@ -1,0 +1,176 @@
+{
+  "id": "https://annotations.allmaps.org/canvases/c61a53e04080cb79",
+  "type": "AnnotationPage",
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "items": [
+    {
+      "id": "https://annotations.allmaps.org/maps/617ed6965f89aba0",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2025-12-04T14:58:09.318Z",
+      "modified": "2025-12-04T14:58:09.318Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06061_000:550_0001_000_06061_000_0_0001",
+          "type": "ImageService2",
+          "height": 7364,
+          "width": 11471,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06061_000/canvas/550_0001_000_06061_000_0_0001",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Dendermonde - Sectie E, Percelen van 1 tot 218, 'l'Embouchure'"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06061_000",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Dendermonde - Sectie E"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"11471\" height=\"7364\"><polygon points=\"4291,1505 4291,1797 4381,1841 4414,1884 4361,2160 4191,2286 4281,2446 4331,2416 4467,2652 4587,2925 4417,2921 4417,2988 4617,3004 4550,3164 4564,3334 4494,3437 4457,3540 4487,3669 4487,3730 4427,3763 4377,3763 4124,3906 4124,4049 4264,3972 4354,3923 4417,3919 4330,4275 4311,4455 4294,4598 4287,4654 4154,4780 4181,4814 4334,4777 4540,4857 4623,4814 5328,4681 5345,4727 5385,4721 5385,4671 6006,4681 6252,4764 6302,4770 6316,4594 6445,4598 6824,4641 7164,4704 7317,4707 7373,4664 7586,4611 7772,4608 8051,4634 8025,4960 8371,5017 8528,5040 8728,4827 8957,4521 9097,4321 9416,4444 9672,4564 9729,4574 9788,4418 9985,3866 10184,4075 10247,3996 10284,3799 10337,3450 10633,3613 10753,3354 10862,3054 10922,2862 11040,2849 11120,2816 11203,2693 11293,2513 11319,2413 11210,2187 11037,1891 10970,1755 10851,1768 10558,1712 10378,1672 10262,1629 9567,1532 9007,1511 8691,1431 8269,1308 7663,1189 7497,1142 7241,962 6969,720 6709,603 6430,599 6188,565 6068,569 5858,672 5779,655 5662,722 5446,825 5343,915 5263,974 5164,1064 5037,1161 4927,1254 4831,1287 4668,1304 4538,1340\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "thinPlateSpline"
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                7189,
+                3833
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.115288686734829,
+                51.033645152755696
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                7205,
+                3587
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.114953047987825,
+                51.03404118874889
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                10158,
+                3336
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.122158999662901,
+                51.03750186011311
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6709,
+                2164
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.111287024586886,
+                51.03583585059678
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                9135,
+                3032
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.118971008236144,
+                51.036937599528926
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/617ed6965f89aba0",
+          "version": "https://annotations.allmaps.org/maps/617ed6965f89aba0@d2ee8ee8af05afe6",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/74f5e5ded8bb0cd1",
+            "version": "https://annotations.allmaps.org/images/74f5e5ded8bb0cd1@e69805b86e5bb59f",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/c61a53e04080cb79",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/4df05388ffc38e20"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 4.681375,
+          "area": 1003675.26
+        }
+      }
+    }
+  ]
+}

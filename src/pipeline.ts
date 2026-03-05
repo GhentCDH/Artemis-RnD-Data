@@ -32,6 +32,15 @@ type IndexEntry = {
   manifestAllmapsId: string;
   manifestAllmapsUrl: string;
   manifestAllmapsStatus: number;
+  canvasAllmapsHits: Array<{
+    canvasId: string;
+    canvasAllmapsId: string;
+    canvasAllmapsUrl: string;
+    canvasAllmapsStatus: number;
+    mirroredAllmapsAnnotationPath: string;
+  }>;
+  georefDetectedBy: "none" | "manifest" | "canvas";
+  isVerzamelblad: boolean;
 
   canvasIds: string[];
 };
@@ -108,14 +117,15 @@ async function getStatus(url: string): Promise<number> {
   return res.status;
 }
 
-async function mirrorAllmapsManifestAnnotation(
-  manifestAllmapsId: string,
+async function mirrorAllmapsAnnotation(
+  endpoint: "manifests" | "canvases",
+  allmapsId: string,
   allmapsUrl: string
 ): Promise<{ status: number; relPath: string }> {
-  const outDir = "build/allmaps/manifests";
+  const outDir = `build/allmaps/${endpoint}`;
   await mkdir(outDir, { recursive: true });
 
-  const outAbs = `${outDir}/${manifestAllmapsId}.json`;
+  const outAbs = `${outDir}/${allmapsId}.json`;
   const outRel = outAbs.replace(/^build\//, "");
 
   if (await exists(outAbs)) {
@@ -137,7 +147,8 @@ async function mirrorAllmapsManifestAnnotation(
  */
 function compileV2ManifestAttachOtherContent(
   source: V2Manifest,
-  mirroredAnnotationRelPath: string,
+  mirroredManifestAnnotationRelPath: string,
+  mirroredCanvasAnnotationRelPaths: Record<string, string>,
   buildBaseUrl: string | null
 ): V2Manifest {
   const out: V2Manifest = JSON.parse(JSON.stringify(source));
@@ -145,14 +156,15 @@ function compileV2ManifestAttachOtherContent(
   const canvases = out?.sequences?.[0]?.canvases;
   if (!Array.isArray(canvases)) return out;
 
-  // If we have a base URL (GitHub Pages), we can embed full URLs in manifests.
-  // Otherwise we store relative paths; your viewer can resolve them.
-  const annotationId = buildBaseUrl
-    ? `${buildBaseUrl.replace(/\/+$/, "")}/${mirroredAnnotationRelPath}`
-    : mirroredAnnotationRelPath;
+  const absOrRel = (path: string): string =>
+    buildBaseUrl ? `${buildBaseUrl.replace(/\/+$/, "")}/${path}` : path;
 
   for (const canvas of canvases) {
     if (!canvas || typeof canvas !== "object") continue;
+    const canvasId = (canvas["@id"] ?? "").toString();
+    const relPath = mirroredCanvasAnnotationRelPaths[canvasId] || mirroredManifestAnnotationRelPath;
+    if (!relPath) continue;
+    const annotationId = absOrRel(relPath);
 
     const entry = {
       "@id": annotationId,
@@ -180,10 +192,25 @@ function compileV2ManifestAttachOtherContent(
   // Add provenance metadata (minimal, non-destructive)
   out.metadata = Array.isArray(out.metadata) ? out.metadata : [];
   out.metadata.push(
-    { label: "Artemis pipeline", value: "Compiled manifest with mirrored Allmaps georeferencing" }
+    {
+      label: "Artemis pipeline",
+      value: "Compiled manifest with mirrored Allmaps georeferencing (manifest- and canvas-level)"
+    }
   );
 
   return out;
+}
+
+function hasVerzamelbladIdentifier(man: V2Manifest, url: string, label: string): boolean {
+  const blob = [
+    url,
+    label,
+    (man?.["@id"] ?? "").toString(),
+    (man?.label ?? "").toString(),
+    JSON.stringify(man?.identifier ?? ""),
+    JSON.stringify(man?.metadata ?? "")
+  ].join(" ");
+  return /\bverzamelblad\b/i.test(blob);
 }
 
 async function resolveSourceGroup(collectionUrl: string): Promise<SourceGroup> {
@@ -215,25 +242,61 @@ async function processManifestRef(
 
   const man = (await cachedJson(url, "cache/manifests")) as V2Manifest;
   const canvasIds = extractCanvasIdsFromV2Manifest(man);
+  const isVerzamelblad = hasVerzamelbladIdentifier(man, url, label);
 
   const manifestAllmapsId = await generateId(url);
   const manifestAllmapsUrl = `https://annotations.allmaps.org/manifests/${manifestAllmapsId}`;
-
   const manifestAllmapsStatus = await getStatus(manifestAllmapsUrl);
+  const manifestGeoreferenced = manifestAllmapsStatus === 200;
 
-  let mirroredRel = "";
-  if (manifestAllmapsStatus === 200) {
-    const mirror = await mirrorAllmapsManifestAnnotation(manifestAllmapsId, manifestAllmapsUrl);
-    if (mirror.status === 200 && mirror.relPath) mirroredRel = mirror.relPath;
+  let mirroredManifestRel = "";
+  if (manifestGeoreferenced) {
+    const mirror = await mirrorAllmapsAnnotation("manifests", manifestAllmapsId, manifestAllmapsUrl);
+    if (mirror.status === 200 && mirror.relPath) mirroredManifestRel = mirror.relPath;
   }
+
+  const canvasAllmapsHits: IndexEntry["canvasAllmapsHits"] = [];
+  const mirroredCanvasRelByCanvasId: Record<string, string> = {};
+  for (const canvasId of canvasIds) {
+    const canvasAllmapsId = await generateId(canvasId);
+    const canvasAllmapsUrl = `https://annotations.allmaps.org/canvases/${canvasAllmapsId}`;
+    const canvasAllmapsStatus = await getStatus(canvasAllmapsUrl);
+    let mirroredAllmapsAnnotationPath = "";
+    if (canvasAllmapsStatus === 200) {
+      const mirror = await mirrorAllmapsAnnotation("canvases", canvasAllmapsId, canvasAllmapsUrl);
+      if (mirror.status === 200 && mirror.relPath) {
+        mirroredAllmapsAnnotationPath = mirror.relPath;
+        mirroredCanvasRelByCanvasId[canvasId] = mirror.relPath;
+      }
+    }
+    canvasAllmapsHits.push({
+      canvasId,
+      canvasAllmapsId,
+      canvasAllmapsUrl,
+      canvasAllmapsStatus,
+      mirroredAllmapsAnnotationPath
+    });
+  }
+  const hasCanvasGeoref = canvasAllmapsHits.some((x) => x.canvasAllmapsStatus === 200);
+  const georefDetectedBy: IndexEntry["georefDetectedBy"] = manifestGeoreferenced
+    ? "manifest"
+    : hasCanvasGeoref
+      ? "canvas"
+      : "none";
+  const georefDetected = georefDetectedBy !== "none";
 
   const slug = sha1(url).slice(0, 16);
   const compiledManifestRel = `manifests/${slug}.json`;
   const compiledManifestAbs = `build/${compiledManifestRel}`;
 
   let didCompile = false;
-  if (mirroredRel) {
-    const compiled = compileV2ManifestAttachOtherContent(man, mirroredRel, buildBaseUrl);
+  if (mirroredManifestRel || hasCanvasGeoref) {
+    const compiled = compileV2ManifestAttachOtherContent(
+      man,
+      mirroredManifestRel,
+      mirroredCanvasRelByCanvasId,
+      buildBaseUrl
+    );
     await writeFile(compiledManifestAbs, JSON.stringify(compiled, null, 2), "utf-8");
     didCompile = true;
   } else {
@@ -247,15 +310,18 @@ async function processManifestRef(
       sourceManifestUrl: url,
       sourceCollectionUrl,
       compiledManifestPath: compiledManifestRel,
-      mirroredAllmapsAnnotationPath: mirroredRel,
+      mirroredAllmapsAnnotationPath: mirroredManifestRel,
       canvasCount: canvasIds.length,
       manifestAllmapsId,
       manifestAllmapsUrl,
       manifestAllmapsStatus,
+      canvasAllmapsHits,
+      georefDetectedBy,
+      isVerzamelblad,
       canvasIds
     },
-    georef: manifestAllmapsStatus === 200,
-    mirrored: mirroredRel.length > 0,
+    georef: georefDetected,
+    mirrored: mirroredManifestRel.length > 0 || hasCanvasGeoref,
     compiled: didCompile
   };
 }
@@ -346,6 +412,14 @@ async function main() {
     manifestCount: number;
     georefCount: number;
   }> = [];
+  const renderLayerMeta: Array<{
+    sourceCollectionUrl: string;
+    sourceCollectionLabel: string;
+    renderLayerKey: "default" | "verzamelblad";
+    compiledCollectionPath: string;
+    manifestCount: number;
+    georefCount: number;
+  }> = [];
 
   for (const group of sourceGroups) {
     const entries = index.filter((e) => e.sourceCollectionUrl === group.sourceCollectionUrl);
@@ -372,8 +446,45 @@ async function main() {
       sourceCollectionLabel: group.sourceCollectionLabel,
       compiledCollectionPath: colRelPath,
       manifestCount: entries.length,
-      georefCount: entries.filter((e) => e.manifestAllmapsStatus === 200).length
+      georefCount: entries.filter((e) => e.georefDetectedBy !== "none").length
     });
+
+    const entriesByRenderLayer: Record<"default" | "verzamelblad", IndexEntry[]> = {
+      default: entries.filter((e) => !e.isVerzamelblad),
+      verzamelblad: entries.filter((e) => e.isVerzamelblad)
+    };
+
+    for (const renderLayerKey of ["default", "verzamelblad"] as const) {
+      const renderEntries = entriesByRenderLayer[renderLayerKey];
+      if (renderEntries.length < 1) continue;
+      const renderLayerSlug = sha1(`${group.sourceCollectionUrl}::${renderLayerKey}`).slice(0, 16);
+      const renderLayerRelPath = `collections/${renderLayerSlug}.json`;
+      const renderLayerAbsPath = `build/${renderLayerRelPath}`;
+      const renderLayerLabel = renderLayerKey === "verzamelblad"
+        ? `${group.sourceCollectionLabel || group.sourceCollectionUrl} - Verzamelblad`
+        : group.sourceCollectionLabel || group.sourceCollectionUrl;
+      const renderLayerColId = base(renderLayerRelPath);
+      const renderLayerCol: V2Collection = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": renderLayerColId,
+        "@type": "sc:Collection",
+        label: renderLayerLabel,
+        manifests: renderEntries.map((e) => ({
+          "@id": base(e.compiledManifestPath),
+          "@type": "sc:Manifest",
+          label: e.label
+        }))
+      };
+      await writeFile(renderLayerAbsPath, JSON.stringify(renderLayerCol, null, 2), "utf-8");
+      renderLayerMeta.push({
+        sourceCollectionUrl: group.sourceCollectionUrl,
+        sourceCollectionLabel: group.sourceCollectionLabel,
+        renderLayerKey,
+        compiledCollectionPath: renderLayerRelPath,
+        manifestCount: renderEntries.length,
+        georefCount: renderEntries.filter((e) => e.georefDetectedBy !== "none").length
+      });
+    }
   }
 
   // index.json: layer list + full per-manifest detail (grouped)
@@ -384,6 +495,7 @@ async function main() {
     mirroredOk,
     compiledOk,
     layers: layerMeta,
+    renderLayers: renderLayerMeta,
     problematicManifests,
     index
   };
@@ -409,10 +521,12 @@ async function main() {
     "@id": topColId,
     "@type": "sc:Collection",
     label: "Artemis compiled collection",
-    collections: layerMeta.map((l) => ({
+    collections: renderLayerMeta.map((l) => ({
       "@id": base(l.compiledCollectionPath),
       "@type": "sc:Collection",
-      label: l.sourceCollectionLabel || l.sourceCollectionUrl
+      label: l.renderLayerKey === "verzamelblad"
+        ? `${l.sourceCollectionLabel || l.sourceCollectionUrl} - Verzamelblad`
+        : l.sourceCollectionLabel || l.sourceCollectionUrl
     }))
   };
   await writeFile("build/collection.json", JSON.stringify(topCollection, null, 2), "utf-8");

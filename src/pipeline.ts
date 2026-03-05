@@ -210,12 +210,16 @@ function hasVerzamelbladIdentifier(man: V2Manifest, url: string, label: string):
     JSON.stringify(man?.identifier ?? ""),
     JSON.stringify(man?.metadata ?? "")
   ].join(" ");
-  return /\bverzamelblad\b/i.test(blob);
+  return /\bverzamel(?:blad|plan(?:nen)?)\b/i.test(blob);
+}
+
+function normalizeSourceCollectionLabel(label: string): string {
+  return label.replace(/^\s*artemis\s*[-–—:]\s*/i, "").trim();
 }
 
 async function resolveSourceGroup(collectionUrl: string): Promise<SourceGroup> {
   const json = (await cachedJson(collectionUrl, "cache/collections")) as V2Collection;
-  const label = (json.label ?? "").toString();
+  const label = normalizeSourceCollectionLabel((json.label ?? "").toString());
   let refs = listManifestRefs(json);
   // If the URL has no manifests array, treat it as a direct manifest
   if (refs.length === 0) {

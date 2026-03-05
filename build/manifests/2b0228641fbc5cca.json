@@ -1,0 +1,128 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000",
+  "@type": "sc:Manifest",
+  "label": "Wetteren - Sectie D",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "OOST-VLAANDEREN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "WETTEREN"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Wetteren"
+    },
+    {
+      "label": "Lengteg",
+      "value": "3.88341"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.00526"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie D"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1833]"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06778_000:550_0001_000_06778_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06778_000:550_0001_000_06778_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/canvas/550_0001_000_06778_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 8904,
+          "width": 7476,
+          "label": "Wetteren - Sectie D, Percelen van 1 tot 405, 'Jabeek'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/annotation/550_0001_000_06778_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/canvas/550_0001_000_06778_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06778_000:550_0001_000_06778_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 8904,
+                "width": 7476,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06778_000:550_0001_000_06778_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/2b0228641fbc5cca.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/canvas/550_0001_000_06778_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 7788,
+          "width": 12487,
+          "label": "Wetteren - Sectie D, Percelen van 406 tot 1000, 'Jabeek'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/annotation/550_0001_000_06778_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/canvas/550_0001_000_06778_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06778_000:550_0001_000_06778_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7788,
+                "width": 12487,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06778_000:550_0001_000_06778_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/2b0228641fbc5cca.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000",
+  "@type": "sc:Manifest",
+  "label": "HEFFEN - Sectie B",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "MECHELEN"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "HEFFEN"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.41599"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.04722"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie B"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1834]"
+    },
+    {
+      "label": "Opmerkingen",
+      "value": "Naam landmeter = Van de Laar"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03014_000:550_0001_000_03014_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03014_000:550_0001_000_03014_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000/canvas/550_0001_000_03014_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 5235,
+          "width": 7840,
+          "label": "HEFFEN - Sectie B, Percelen van 1 tot 131, 'Boelenblok'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000/annotation/550_0001_000_03014_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000/canvas/550_0001_000_03014_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03014_000:550_0001_000_03014_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 5235,
+                "width": 7840,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03014_000:550_0001_000_03014_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000/canvas/550_0001_000_03014_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 5100,
+          "width": 7951,
+          "label": "HEFFEN - Sectie B, Percelen van 132 tot 280, 'Boelenblok'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000/annotation/550_0001_000_03014_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03014_000/canvas/550_0001_000_03014_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03014_000:550_0001_000_03014_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 5100,
+                "width": 7951,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03014_000:550_0001_000_03014_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

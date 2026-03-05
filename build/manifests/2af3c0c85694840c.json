@@ -1,0 +1,114 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000",
+  "@type": "sc:Manifest",
+  "label": "Sint-Denijs-Westrem - Sectie B",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "OOST-VLAANDEREN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "GENT"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Sint-Denijs-Westrem"
+    },
+    {
+      "label": "Lengteg",
+      "value": "3.67202"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.02135"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie B"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1833]"
+    },
+    {
+      "label": "Opmerkingen",
+      "value": "Naam landmeter = Vandernaillen"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06216_000:550_0001_000_06216_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06216_000:550_0001_000_06216_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000/canvas/550_0001_000_06216_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 7796,
+          "width": 11759,
+          "label": "Sint-Denijs-Westrem - Sectie B, Percelen van 1 tot 51 en 73 tot 280 en 394 tot 448, 'St Denis Veld'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000/annotation/550_0001_000_06216_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000/canvas/550_0001_000_06216_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06216_000:550_0001_000_06216_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7796,
+                "width": 11759,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06216_000:550_0001_000_06216_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000/canvas/550_0001_000_06216_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 7692,
+          "width": 11465,
+          "label": "Sint-Denijs-Westrem - Sectie B, Percelen van 52 tot 72 en 281 tot 393, 'De Putten'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000/annotation/550_0001_000_06216_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06216_000/canvas/550_0001_000_06216_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06216_000:550_0001_000_06216_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7692,
+                "width": 11465,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06216_000:550_0001_000_06216_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -170,6 +170,19 @@ function compileV2ManifestAttachOtherContent(
   return out;
 }
 
+async function resolveManifestRefs(
+  url: string
+): Promise<Array<{ url: string; label: string }>> {
+  const json = (await cachedJson(url, "cache/collections")) as V2Collection;
+  const refs = listManifestRefs(json);
+  // If the URL has no manifests array, treat it as a direct manifest
+  if (refs.length === 0) {
+    const label = (json as any).label ?? "";
+    return [{ url, label: label.toString() }];
+  }
+  return refs;
+}
+
 async function main() {
   await mkdir("cache/collections", { recursive: true });
   await mkdir("cache/manifests", { recursive: true });
@@ -180,21 +193,31 @@ async function main() {
   const collectionUrls = parseLines(sourcesTxt);
   if (collectionUrls.length < 1) throw new Error("No collection URLs found in data/sources/collections.txt");
 
-  const collectionUrl = collectionUrls[0];
-
   // Optional: set BUILD_BASE_URL to your GH Pages root later
   // e.g. https://ghentcdh.github.io/Artemis-RnD-Data
   const buildBaseUrl = process.env.BUILD_BASE_URL ?? null;
 
-  console.log(`[1/6] Fetch collection: ${collectionUrl}`);
-  const col = (await cachedJson(collectionUrl, "cache/collections")) as V2Collection;
+  console.log(`[1/6] Resolving manifests from ${collectionUrls.length} source(s)...`);
+  let allManifestRefs: Array<{ url: string; label: string }> = [];
+  for (const collectionUrl of collectionUrls) {
+    console.log(`  - ${collectionUrl}`);
+    const refs = await resolveManifestRefs(collectionUrl);
+    console.log(`    -> ${refs.length} manifest(s)`);
+    allManifestRefs = allManifestRefs.concat(refs);
+  }
+  // Deduplicate by URL
+  const seen = new Set<string>();
+  allManifestRefs = allManifestRefs.filter(({ url }) => {
+    if (seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
 
-  const manifestRefs = listManifestRefs(col);
-  console.log(`[2/6] Manifests in collection: ${manifestRefs.length}`);
+  console.log(`[2/6] Total manifests: ${allManifestRefs.length}`);
 
   const limit = process.env.LIMIT ? Number(process.env.LIMIT) : undefined;
   const slice =
-    typeof limit === "number" && Number.isFinite(limit) ? manifestRefs.slice(0, limit) : manifestRefs;
+    typeof limit === "number" && Number.isFinite(limit) ? allManifestRefs.slice(0, limit) : allManifestRefs;
 
   console.log(`[3/6] Processing manifests: ${slice.length}${limit ? ` (LIMIT=${limit})` : ""}`);
 
@@ -258,7 +281,7 @@ async function main() {
 
   console.log(`[4/6] Writing build/index.json`);
   const indexOut = {
-    collectionUrl,
+    collectionUrls,
     generatedAt: new Date().toISOString(),
     totalManifests: index.length,
     georefManifests,
@@ -278,7 +301,7 @@ async function main() {
     "@context": "http://iiif.io/api/presentation/2/context.json",
     "@id": buildCollectionId,
     "@type": "sc:Collection",
-    label: (col.label ?? "Artemis compiled collection").toString(),
+    label: "Artemis compiled collection",
     manifests: index.map((e) => {
       const mid = buildBaseUrl
         ? `${buildBaseUrl.replace(/\/+$/, "")}/${e.compiledManifestPath}`

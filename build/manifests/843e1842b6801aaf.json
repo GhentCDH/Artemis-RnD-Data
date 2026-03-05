@@ -1,0 +1,170 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000",
+  "@type": "sc:Manifest",
+  "label": "Willebroek - Sectie A",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "WILLEBROEK"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Willebroek"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.36019"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.06041"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie A"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1834]"
+    },
+    {
+      "label": "Opmerkingen",
+      "value": "Naam landmeter = Ceerinck"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 4995,
+          "width": 7960,
+          "label": "Willebroek - Sectie A, Percelen van 1 tot 108, 'West Polders'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/annotation/550_0001_000_03259_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4995,
+                "width": 7960,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 5276,
+          "width": 8037,
+          "label": "Willebroek - Sectie A, Percelen van 109 tot 462, 'West Polders'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/annotation/550_0001_000_03259_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 5276,
+                "width": 8037,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0003",
+          "@type": "sc:Canvas",
+          "height": 5286,
+          "width": 7861,
+          "label": "Willebroek - Sectie A, Percelen van 463 to 630, 'West Polders'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/annotation/550_0001_000_03259_000_0_0003",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0003",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0003/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 5286,
+                "width": 7861,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0003",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0004",
+          "@type": "sc:Canvas",
+          "height": 4983,
+          "width": 7959,
+          "label": "Willebroek - Sectie A, Percelen van 631 tot 1048, 'West Polders'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/annotation/550_0001_000_03259_000_0_0004",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03259_000/canvas/550_0001_000_03259_000_0_0004",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0004/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4983,
+                "width": 7959,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03259_000:550_0001_000_03259_000_0_0004",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

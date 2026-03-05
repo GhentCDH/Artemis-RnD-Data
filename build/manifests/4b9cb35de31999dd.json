@@ -1,0 +1,114 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000",
+  "@type": "sc:Manifest",
+  "label": "WALEM - Sectie A",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "MECHELEN"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "WALEM"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.45842"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.06705"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie A"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1834]"
+    },
+    {
+      "label": "Opmerkingen",
+      "value": "Naam landmeter = Franssen"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03017_000:550_0001_000_03017_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03017_000:550_0001_000_03017_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 5266,
+          "width": 7832,
+          "label": "WALEM - Sectie A, Percelen van 1 tot 248, 'Batten Broek'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/annotation/550_0001_000_03017_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03017_000:550_0001_000_03017_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 5266,
+                "width": 7832,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03017_000:550_0001_000_03017_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 5078,
+          "width": 7983,
+          "label": "WALEM - Sectie A, Percelen van 249 tot 430, 'Batten Broek'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/annotation/550_0001_000_03017_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03017_000:550_0001_000_03017_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 5078,
+                "width": 7983,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03017_000:550_0001_000_03017_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

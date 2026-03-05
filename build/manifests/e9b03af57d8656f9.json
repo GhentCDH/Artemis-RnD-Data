@@ -1,0 +1,110 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000",
+  "@type": "sc:Manifest",
+  "label": "Zwijndrecht - Sectie G",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "ZWIJNDRECHT"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Zwijndrecht"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.32664"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.21979"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie G"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1834]"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03324_000:550_0001_000_03324_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03324_000:550_0001_000_03324_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000/canvas/550_0001_000_03324_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 4853,
+          "width": 7450,
+          "label": "Zwijndrecht - Sectie G, Percelen van 1 tot 77",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000/annotation/550_0001_000_03324_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000/canvas/550_0001_000_03324_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03324_000:550_0001_000_03324_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4853,
+                "width": 7450,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03324_000:550_0001_000_03324_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000/canvas/550_0001_000_03324_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 4972,
+          "width": 7833,
+          "label": "Zwijndrecht - Sectie G, Percelen van 78 tot 169",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000/annotation/550_0001_000_03324_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03324_000/canvas/550_0001_000_03324_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03324_000:550_0001_000_03324_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4972,
+                "width": 7833,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03324_000:550_0001_000_03324_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000",
+  "@type": "sc:Manifest",
+  "label": "Melle - Sectie D",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "OOST-VLAANDEREN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "MELLE"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Melle"
+    },
+    {
+      "label": "Lengteg",
+      "value": "3.80526"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.00232"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie D"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1833]"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06507_000:550_0001_000_06507_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06507_000:550_0001_000_06507_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/canvas/550_0001_000_06507_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 7728,
+          "width": 11819,
+          "label": "Melle - Sectie D, Percelen van 1 tot 378, 'Cloosterwyck en Boschwyck'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/annotation/550_0001_000_06507_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/canvas/550_0001_000_06507_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06507_000:550_0001_000_06507_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7728,
+                "width": 11819,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06507_000:550_0001_000_06507_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/0e71ea4ce0e8a56b.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/canvas/550_0001_000_06507_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 7828,
+          "width": 11838,
+          "label": "Melle - Sectie D, Percelen van 379 tot 689",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/annotation/550_0001_000_06507_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/canvas/550_0001_000_06507_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06507_000:550_0001_000_06507_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7828,
+                "width": 11838,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06507_000:550_0001_000_06507_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/0e71ea4ce0e8a56b.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

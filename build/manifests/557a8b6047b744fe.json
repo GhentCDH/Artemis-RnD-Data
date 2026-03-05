@@ -1,0 +1,163 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000",
+  "@type": "sc:Manifest",
+  "label": "Grembergen - Sectie A",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "OOST-VLAANDEREN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "DENDERMONDE"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Grembergen"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.10458"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.05406"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie A"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1833]"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 7868,
+          "width": 11757,
+          "label": "Grembergen - Sectie A, Percelen van 1 tot 355",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/annotation/550_0001_000_06071_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7868,
+                "width": 11757,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/557a8b6047b744fe.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 7860,
+          "width": 11812,
+          "label": "Grembergen - Sectie A, Percelen van 356 tot 1101, 'der Kerke'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/annotation/550_0001_000_06071_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7860,
+                "width": 11812,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/557a8b6047b744fe.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0003",
+          "@type": "sc:Canvas",
+          "height": 7708,
+          "width": 11807,
+          "label": "Grembergen - Sectie A, Percelen van 1102 tot 1684, 'der Kerke'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/annotation/550_0001_000_06071_000_0_0003",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0003",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0003/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7708,
+                "width": 11807,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06071_000:550_0001_000_06071_000_0_0003",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/557a8b6047b744fe.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

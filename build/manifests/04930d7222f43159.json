@@ -1,0 +1,198 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000",
+  "@type": "sc:Manifest",
+  "label": "ANTWERPEN - Verzamelplan",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.40026"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.22047"
+    },
+    {
+      "label": "Sectie",
+      "value": "Verzamelplan"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1834]"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 4779,
+          "width": 6987,
+          "label": "ANTWERPEN - Verzamelplan",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/annotation/550_0001_000_02553_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4779,
+                "width": 6987,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/04930d7222f43159.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0002",
+          "@type": "sc:Canvas",
+          "height": 4833,
+          "width": 7091,
+          "label": "ANTWERPEN - Verzamelplan",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/annotation/550_0001_000_02553_000_0_0002",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0002",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0002/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4833,
+                "width": 7091,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0002",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/04930d7222f43159.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0003",
+          "@type": "sc:Canvas",
+          "height": 5100,
+          "width": 7924,
+          "label": "ANTWERPEN - Verzamelplan",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/annotation/550_0001_000_02553_000_0_0003",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0003",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0003/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 5100,
+                "width": 7924,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0003",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/04930d7222f43159.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        },
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0004",
+          "@type": "sc:Canvas",
+          "height": 4880,
+          "width": 7554,
+          "label": "ANTWERPEN - Verzamelplan",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/annotation/550_0001_000_02553_000_0_0004",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000/canvas/550_0001_000_02553_000_0_0004",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0004/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4880,
+                "width": 7554,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_02553_000:550_0001_000_02553_000_0_0004",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/04930d7222f43159.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

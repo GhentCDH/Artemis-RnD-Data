@@ -1,0 +1,86 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03162_000",
+  "@type": "sc:Manifest",
+  "label": "Rumst - Sectie D",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "ANTWERPEN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "RUMST"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Rumst"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.42217"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.08153"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie D"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1834]"
+    },
+    {
+      "label": "Opmerkingen",
+      "value": "Naam landmeter = Le Brun"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03162_000:550_0001_000_03162_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03162_000:550_0001_000_03162_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03162_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03162_000/canvas/550_0001_000_03162_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 4437,
+          "width": 7233,
+          "label": "Rumst - Sectie D, Percelen van 1 tot 313, 'du Village'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03162_000/annotation/550_0001_000_03162_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03162_000/canvas/550_0001_000_03162_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03162_000:550_0001_000_03162_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 4437,
+                "width": 7233,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_03162_000:550_0001_000_03162_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

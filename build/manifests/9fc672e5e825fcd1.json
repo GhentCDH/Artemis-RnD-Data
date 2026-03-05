@@ -1,0 +1,97 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06095_000",
+  "@type": "sc:Manifest",
+  "label": "Heusden - Sectie E",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "OOST-VLAANDEREN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "DESTELBERGEN"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Heusden"
+    },
+    {
+      "label": "Lengteg",
+      "value": "5.28013"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.03664"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie E"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1833]"
+    },
+    {
+      "label": "Opmerkingen",
+      "value": "Naam landmeter = Hellinckx"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06095_000:550_0001_000_06095_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06095_000:550_0001_000_06095_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06095_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06095_000/canvas/550_0001_000_06095_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 7608,
+          "width": 10573,
+          "label": "Heusden - Sectie E, Percelen van 756 tot 863, 'Ter Laeken'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06095_000/annotation/550_0001_000_06095_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06095_000/canvas/550_0001_000_06095_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06095_000:550_0001_000_06095_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 7608,
+                "width": 10573,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06095_000:550_0001_000_06095_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/9fc672e5e825fcd1.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

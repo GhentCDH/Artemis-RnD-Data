@@ -1,0 +1,431 @@
+{
+  "id": "https://annotations.allmaps.org/manifests/5da86e413652beff",
+  "type": "AnnotationPage",
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "items": [
+    {
+      "id": "https://annotations.allmaps.org/maps/d0e9b6dea4e74da5",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2025-11-14T14:27:17.325Z",
+      "modified": "2025-11-14T14:27:17.325Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06360_000:550_0001_000_06360_000_0_0002",
+          "type": "ImageService2",
+          "height": 7156,
+          "width": 11291,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06360_000/canvas/550_0001_000_06360_000_0_0002",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Kruibeke - Sectie B, Percelen van 12 tot 26 en 50 tot 113"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06360_000",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Kruibeke - Sectie B"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"11291\" height=\"7156\"><polygon points=\"4192,1380 4490,1553 5326,1918 5493,2117 5788,2539 6038,2874 6492,3178 7141,3594 6833,4174 6743,5229 6669,6270 4383,6076 4356,3920 4468,3919 4387,2830 4279,2551 4040,2431 4208,1537 4135,1502\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "polynomial",
+          "options": {
+            "order": 1
+          }
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4099,
+                2406
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.320437698087176,
+                51.1806238523144
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4273,
+                1559
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.317990739117079,
+                51.18103356161967
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4468,
+                2843
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.321810196604304,
+                51.181287953381485
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4522,
+                3838
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.324876594624271,
+                51.181309741643446
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5228,
+                2527
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.320916093224071,
+                51.18280953870456
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                6895,
+                3732
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.325014148327455,
+                51.18588156699002
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5428,
+                2227
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.3201504839668985,
+                51.18319281172734
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5031,
+                2857
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.321923902493523,
+                51.18236008606476
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                5162,
+                1937
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.319179491294477,
+                51.18269638475135
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/d0e9b6dea4e74da5",
+          "version": "https://annotations.allmaps.org/maps/d0e9b6dea4e74da5@0da8da5db6ba1cad",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/ea1dcef3512cd3a3",
+            "version": "https://annotations.allmaps.org/images/ea1dcef3512cd3a3@72f8ddf6298af1d6",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/65a1136bca740b57",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/5da86e413652beff"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 4.690478,
+          "area": 433966.82
+        }
+      }
+    },
+    {
+      "id": "https://annotations.allmaps.org/maps/ee59fb5535d13912",
+      "type": "Annotation",
+      "@context": [
+        "http://iiif.io/api/extension/georef/1/context.json",
+        "http://iiif.io/api/presentation/3/context.json"
+      ],
+      "created": "2025-11-14T14:03:40.272Z",
+      "modified": "2025-11-14T14:03:40.272Z",
+      "motivation": "georeferencing",
+      "target": {
+        "type": "SpecificResource",
+        "source": {
+          "id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06360_000:550_0001_000_06360_000_0_0003",
+          "type": "ImageService2",
+          "height": 10548,
+          "width": 8240,
+          "partOf": [
+            {
+              "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06360_000/canvas/550_0001_000_06360_000_0_0003",
+              "type": "Canvas",
+              "label": {
+                "none": [
+                  "Kruibeke - Sectie B, Percelen van 114 tot 486, 'Broek-Hoek'"
+                ]
+              },
+              "partOf": [
+                {
+                  "id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06360_000",
+                  "type": "Manifest",
+                  "label": {
+                    "none": [
+                      "Kruibeke - Sectie B"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "provider": [
+            {
+              "type": "Organization",
+              "label": {
+                "none": [
+                  "Ghent Centre for Digital Humanities"
+                ]
+              },
+              "homepage": [
+                {
+                  "id": "https://ghentcdh.ugent.be"
+                }
+              ]
+            }
+          ]
+        },
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg width=\"8240\" height=\"10548\"><polygon points=\"7545,705 7491,2039 7659,2059 7657,2134 7480,2140 7429,2627 7397,2938 7363,3262 7321,3531 7305,4050 7296,4557 7286,4917 7283,5175 7308,5490 7321,5793 7336,6097 7335,6385 7344,6581 7344,6847 7362,7211 7365,7620 7419,7938 7424,8373 7429,8774 5524,8635 5172,8694 4914,8563 4651,8548 3936,8295 3058,7974 2247,7660 1374,7333 916,7139 703,7558 561,7453 720,6997 856,6710 970,6501 998,6375 673,6054 875,5732 1224,5904 1418,5412 1546,5125 1716,4687 1758,4578 1931,4133 2067,3732 2026,3714 2121,3345 2195,3362 2369,2828 2471,2541 2593,2230 2741,1970 2818,1723 2813,1435 2794,1323 2712,1287 2717,1187 2777,1167 2859,1025 2919,815 3069,870 3809,1082 3905,899 4292,769 5172,754 5215,714 5302,655 5416,615 5458,542\" /></svg>"
+        }
+      },
+      "body": {
+        "type": "FeatureCollection",
+        "transformation": {
+          "type": "polynomial",
+          "options": {
+            "order": 1
+          }
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3281,
+                3208
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.318894683186613,
+                51.176590591070635
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                1393,
+                5844
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.315700497879504,
+                51.16895009838913
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                3835,
+                1172
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.32044955259488,
+                51.18052599267085
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                4988,
+                8348
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.324500127420237,
+                51.16680727989001
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                1081,
+                7183
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.313327530183528,
+                51.17142087220245
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "resourceCoords": [
+                1392,
+                5844
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                4.3165165819227695,
+                51.1716044966785
+              ]
+            }
+          }
+        ],
+        "_allmaps": {
+          "id": "https://annotations.allmaps.org/maps/ee59fb5535d13912",
+          "version": "https://annotations.allmaps.org/maps/ee59fb5535d13912@7efa454316506f4c",
+          "image": {
+            "id": "https://annotations.allmaps.org/images/a85bcb35fa2a3363",
+            "version": "https://annotations.allmaps.org/images/a85bcb35fa2a3363@de8054f87f61a148",
+            "canvases": [
+              {
+                "id": "https://annotations.allmaps.org/canvases/c933194f5bcba64f",
+                "manifests": [
+                  {
+                    "id": "https://annotations.allmaps.org/manifests/5da86e413652beff"
+                  }
+                ]
+              }
+            ]
+          },
+          "scale": 5.394452,
+          "area": 1444511.53
+        }
+      }
+    }
+  ]
+}

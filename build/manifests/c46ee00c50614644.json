@@ -1,0 +1,82 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06069_000",
+  "@type": "sc:Manifest",
+  "label": "Sint-Gillis-bij-Dendermonde - Sectie D",
+  "metadata": [
+    {
+      "label": "Provincie",
+      "value": "OOST-VLAANDEREN"
+    },
+    {
+      "label": "Fusiegemeente",
+      "value": "DENDERMONDE"
+    },
+    {
+      "label": "Deelgemeente",
+      "value": "Sint-Gillis-bij-Dendermonde"
+    },
+    {
+      "label": "Lengteg",
+      "value": "4.11146"
+    },
+    {
+      "label": "Breedteg",
+      "value": "51.01905"
+    },
+    {
+      "label": "Sectie",
+      "value": "Sectie D"
+    },
+    {
+      "label": "Periode",
+      "value": "[1830-1833]"
+    }
+  ],
+  "thumbnail": {
+    "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06069_000:550_0001_000_06069_000_0_0001/full/!80,100/0/default.jpg",
+    "service": {
+      "@context": "http://iiif.io/api/image/2/context.json",
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06069_000:550_0001_000_06069_000_0_0001",
+      "profile": "http://iiif.io/api/image/2/level1.json"
+    },
+    "@type": "dctypes:Image"
+  },
+  "sequences": [
+    {
+      "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06069_000/sequence/default",
+      "@type": "sc:Sequence",
+      "label": "Default",
+      "canvases": [
+        {
+          "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06069_000/canvas/550_0001_000_06069_000_0_0001",
+          "@type": "sc:Canvas",
+          "height": 8592,
+          "width": 10600,
+          "label": "Sint-Gillis-bij-Dendermonde - Sectie D, Percelen van 1 tot 748, 'Boon Myl'",
+          "metadata": [],
+          "images": [
+            {
+              "@id": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06069_000/annotation/550_0001_000_06069_000_0_0001",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "on": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06069_000/canvas/550_0001_000_06069_000_0_0001",
+              "resource": {
+                "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06069_000:550_0001_000_06069_000_0_0001/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "height": 8592,
+                "width": 10600,
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://iiif.ghentcdh.ugent.be/iiif/images/primitief_kadaster:550_0001_000_06069_000:550_0001_000_06069_000_0_0001",
+                  "profile": "http://iiif.io/api/image/2/level1.json"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

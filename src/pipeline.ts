@@ -13,9 +13,16 @@ type V2Collection = {
 
 type V2Manifest = Record<string, any>;
 
+type SourceGroup = {
+  sourceCollectionUrl: string;
+  sourceCollectionLabel: string;
+  refs: Array<{ url: string; label: string }>;
+};
+
 type IndexEntry = {
   label: string;
   sourceManifestUrl: string;
+  sourceCollectionUrl: string;
 
   compiledManifestPath: string; // build/manifests/<slug>.json (relative to build/)
   mirroredAllmapsAnnotationPath: string; // build/allmaps/manifests/<id>.json (relative to build/)
@@ -170,17 +177,78 @@ function compileV2ManifestAttachOtherContent(
   return out;
 }
 
-async function resolveManifestRefs(
-  url: string
-): Promise<Array<{ url: string; label: string }>> {
-  const json = (await cachedJson(url, "cache/collections")) as V2Collection;
-  const refs = listManifestRefs(json);
+async function resolveSourceGroup(collectionUrl: string): Promise<SourceGroup> {
+  const json = (await cachedJson(collectionUrl, "cache/collections")) as V2Collection;
+  const label = (json.label ?? "").toString();
+  let refs = listManifestRefs(json);
   // If the URL has no manifests array, treat it as a direct manifest
   if (refs.length === 0) {
-    const label = (json as any).label ?? "";
-    return [{ url, label: label.toString() }];
+    refs = [{ url: collectionUrl, label }];
   }
-  return refs;
+  // Deduplicate within this source
+  const seen = new Set<string>();
+  refs = refs.filter(({ url }) => {
+    if (seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
+  return { sourceCollectionUrl: collectionUrl, sourceCollectionLabel: label, refs };
+}
+
+async function processManifestRef(
+  { url, label }: { url: string; label: string },
+  sourceCollectionUrl: string,
+  buildBaseUrl: string | null,
+  i: number,
+  total: number
+): Promise<{ entry: IndexEntry; georef: boolean; mirrored: boolean; compiled: boolean }> {
+  console.log(`  - [${i + 1}/${total}] ${label || "(no label)"} :: ${url}`);
+
+  const man = (await cachedJson(url, "cache/manifests")) as V2Manifest;
+  const canvasIds = extractCanvasIdsFromV2Manifest(man);
+
+  const manifestAllmapsId = await generateId(url);
+  const manifestAllmapsUrl = `https://annotations.allmaps.org/manifests/${manifestAllmapsId}`;
+
+  const manifestAllmapsStatus = await getStatus(manifestAllmapsUrl);
+
+  let mirroredRel = "";
+  if (manifestAllmapsStatus === 200) {
+    const mirror = await mirrorAllmapsManifestAnnotation(manifestAllmapsId, manifestAllmapsUrl);
+    if (mirror.status === 200 && mirror.relPath) mirroredRel = mirror.relPath;
+  }
+
+  const slug = sha1(url).slice(0, 16);
+  const compiledManifestRel = `manifests/${slug}.json`;
+  const compiledManifestAbs = `build/${compiledManifestRel}`;
+
+  let didCompile = false;
+  if (mirroredRel) {
+    const compiled = compileV2ManifestAttachOtherContent(man, mirroredRel, buildBaseUrl);
+    await writeFile(compiledManifestAbs, JSON.stringify(compiled, null, 2), "utf-8");
+    didCompile = true;
+  } else {
+    // Still write the manifest untouched so the collection stays complete
+    await writeFile(compiledManifestAbs, JSON.stringify(man, null, 2), "utf-8");
+  }
+
+  return {
+    entry: {
+      label: (man.label ?? label ?? "").toString(),
+      sourceManifestUrl: url,
+      sourceCollectionUrl,
+      compiledManifestPath: compiledManifestRel,
+      mirroredAllmapsAnnotationPath: mirroredRel,
+      canvasCount: canvasIds.length,
+      manifestAllmapsId,
+      manifestAllmapsUrl,
+      manifestAllmapsStatus,
+      canvasIds
+    },
+    georef: manifestAllmapsStatus === 200,
+    mirrored: mirroredRel.length > 0,
+    compiled: didCompile
+  };
 }
 
 async function main() {
@@ -188,6 +256,7 @@ async function main() {
   await mkdir("cache/manifests", { recursive: true });
   await mkdir("build", { recursive: true });
   await mkdir("build/manifests", { recursive: true });
+  await mkdir("build/collections", { recursive: true });
 
   const sourcesTxt = await readFile("data/sources/collections.txt", "utf-8");
   const collectionUrls = parseLines(sourcesTxt);
@@ -196,128 +265,119 @@ async function main() {
   // Optional: set BUILD_BASE_URL to your GH Pages root later
   // e.g. https://ghentcdh.github.io/Artemis-RnD-Data
   const buildBaseUrl = process.env.BUILD_BASE_URL ?? null;
+  const base = (path: string) =>
+    buildBaseUrl ? `${buildBaseUrl.replace(/\/+$/, "")}/${path}` : path;
 
-  console.log(`[1/6] Resolving manifests from ${collectionUrls.length} source(s)...`);
-  let allManifestRefs: Array<{ url: string; label: string }> = [];
+  console.log(`[1/5] Resolving manifests from ${collectionUrls.length} source(s)...`);
+  const sourceGroups: SourceGroup[] = [];
   for (const collectionUrl of collectionUrls) {
     console.log(`  - ${collectionUrl}`);
-    const refs = await resolveManifestRefs(collectionUrl);
-    console.log(`    -> ${refs.length} manifest(s)`);
-    allManifestRefs = allManifestRefs.concat(refs);
+    const group = await resolveSourceGroup(collectionUrl);
+    console.log(`    label: "${group.sourceCollectionLabel}" -> ${group.refs.length} manifest(s)`);
+    sourceGroups.push(group);
   }
-  // Deduplicate by URL
-  const seen = new Set<string>();
-  allManifestRefs = allManifestRefs.filter(({ url }) => {
-    if (seen.has(url)) return false;
-    seen.add(url);
-    return true;
-  });
-
-  console.log(`[2/6] Total manifests: ${allManifestRefs.length}`);
 
   const limit = process.env.LIMIT ? Number(process.env.LIMIT) : undefined;
-  const slice =
-    typeof limit === "number" && Number.isFinite(limit) ? allManifestRefs.slice(0, limit) : allManifestRefs;
+  const totalRefs = sourceGroups.reduce((n, g) => n + g.refs.length, 0);
+  console.log(`[2/5] Total manifests: ${totalRefs}${limit ? ` (LIMIT=${limit} applied per source)` : ""}`);
 
-  console.log(`[3/6] Processing manifests: ${slice.length}${limit ? ` (LIMIT=${limit})` : ""}`);
-
+  console.log(`[3/5] Processing manifests per source...`);
   const index: IndexEntry[] = [];
   let georefManifests = 0;
   let mirroredOk = 0;
   let compiledOk = 0;
 
-  for (let i = 0; i < slice.length; i++) {
-    const { url, label } = slice[i];
-    console.log(`  - [${i + 1}/${slice.length}] ${label || "(no label)"} :: ${url}`);
+  for (const group of sourceGroups) {
+    console.log(`  Source: ${group.sourceCollectionUrl}`);
+    const slice = typeof limit === "number" && Number.isFinite(limit)
+      ? group.refs.slice(0, limit)
+      : group.refs;
 
-    const man = (await cachedJson(url, "cache/manifests")) as V2Manifest;
-    const canvasIds = extractCanvasIdsFromV2Manifest(man);
-
-    const manifestAllmapsId = await generateId(url);
-    const manifestAllmapsUrl = `https://annotations.allmaps.org/manifests/${manifestAllmapsId}`;
-    if (i === 0) console.log(`    allmaps url: ${manifestAllmapsUrl}`);
-
-    const manifestAllmapsStatus = await getStatus(manifestAllmapsUrl);
-    if (manifestAllmapsStatus === 200) georefManifests++;
-
-    let mirroredRel = "";
-    if (manifestAllmapsStatus === 200) {
-      const mirror = await mirrorAllmapsManifestAnnotation(manifestAllmapsId, manifestAllmapsUrl);
-      if (mirror.status === 200 && mirror.relPath) {
-        mirroredOk++;
-        mirroredRel = mirror.relPath;
-      }
+    for (let i = 0; i < slice.length; i++) {
+      const result = await processManifestRef(
+        slice[i],
+        group.sourceCollectionUrl,
+        buildBaseUrl,
+        i,
+        slice.length
+      );
+      index.push(result.entry);
+      if (result.georef) georefManifests++;
+      if (result.mirrored) mirroredOk++;
+      if (result.compiled) compiledOk++;
     }
+  }
 
-    const slug = sha1(url).slice(0, 16);
-    const compiledManifestRel = `manifests/${slug}.json`;
-    const compiledManifestAbs = `build/${compiledManifestRel}`;
+  console.log(`[4/5] Writing per-source compiled collections and build/index.json`);
 
-    if (mirroredRel) {
-      const compiled = compileV2ManifestAttachOtherContent(man, mirroredRel, buildBaseUrl);
-      await writeFile(compiledManifestAbs, JSON.stringify(compiled, null, 2), "utf-8");
-      compiledOk++;
-    } else {
-      // Still write the manifest untouched so the collection stays complete
-      await writeFile(compiledManifestAbs, JSON.stringify(man, null, 2), "utf-8");
-    }
+  // Group index entries back by source for per-layer output
+  const layerMeta: Array<{
+    sourceCollectionUrl: string;
+    sourceCollectionLabel: string;
+    compiledCollectionPath: string;
+    manifestCount: number;
+    georefCount: number;
+  }> = [];
 
-    index.push({
-      label: (man.label ?? label ?? "").toString(),
-      sourceManifestUrl: url,
+  for (const group of sourceGroups) {
+    const entries = index.filter((e) => e.sourceCollectionUrl === group.sourceCollectionUrl);
+    const colSlug = sha1(group.sourceCollectionUrl).slice(0, 16);
+    const colRelPath = `collections/${colSlug}.json`;
+    const colAbsPath = `build/${colRelPath}`;
 
-      compiledManifestPath: compiledManifestRel,
-      mirroredAllmapsAnnotationPath: mirroredRel,
+    const colId = base(colRelPath);
+    const col: V2Collection = {
+      "@context": "http://iiif.io/api/presentation/2/context.json",
+      "@id": colId,
+      "@type": "sc:Collection",
+      label: group.sourceCollectionLabel || group.sourceCollectionUrl,
+      manifests: entries.map((e) => ({
+        "@id": base(e.compiledManifestPath),
+        "@type": "sc:Manifest",
+        label: e.label
+      }))
+    };
+    await writeFile(colAbsPath, JSON.stringify(col, null, 2), "utf-8");
 
-      canvasCount: canvasIds.length,
-
-      manifestAllmapsId,
-      manifestAllmapsUrl,
-      manifestAllmapsStatus,
-
-      canvasIds
+    layerMeta.push({
+      sourceCollectionUrl: group.sourceCollectionUrl,
+      sourceCollectionLabel: group.sourceCollectionLabel,
+      compiledCollectionPath: colRelPath,
+      manifestCount: entries.length,
+      georefCount: entries.filter((e) => e.manifestAllmapsStatus === 200).length
     });
   }
 
-  console.log(`[4/6] Writing build/index.json`);
+  // index.json: layer list + full per-manifest detail (grouped)
   const indexOut = {
-    collectionUrls,
     generatedAt: new Date().toISOString(),
     totalManifests: index.length,
     georefManifests,
     mirroredOk,
     compiledOk,
+    layers: layerMeta,
     index
   };
   await writeFile("build/index.json", JSON.stringify(indexOut, null, 2), "utf-8");
 
-  console.log(`[5/6] Writing build/collection.json`);
-  // Build a published v2 collection that points to our compiled manifests
-  const buildCollectionId = buildBaseUrl
-    ? `${buildBaseUrl.replace(/\/+$/, "")}/collection.json`
-    : "collection.json";
-
-  const buildCollection: V2Collection = {
+  console.log(`[5/5] Writing build/collection.json (top-level IIIF collection of sub-collections)`);
+  // Top-level IIIF v2 collection referencing per-source sub-collections
+  // Viewers that support collection nesting can use this to load each source as a layer.
+  const topColId = base("collection.json");
+  const topCollection = {
     "@context": "http://iiif.io/api/presentation/2/context.json",
-    "@id": buildCollectionId,
+    "@id": topColId,
     "@type": "sc:Collection",
     label: "Artemis compiled collection",
-    manifests: index.map((e) => {
-      const mid = buildBaseUrl
-        ? `${buildBaseUrl.replace(/\/+$/, "")}/${e.compiledManifestPath}`
-        : e.compiledManifestPath;
-
-      return {
-        "@id": mid,
-        "@type": "sc:Manifest",
-        label: e.label
-      };
-    })
+    collections: layerMeta.map((l) => ({
+      "@id": base(l.compiledCollectionPath),
+      "@type": "sc:Collection",
+      label: l.sourceCollectionLabel || l.sourceCollectionUrl
+    }))
   };
+  await writeFile("build/collection.json", JSON.stringify(topCollection, null, 2), "utf-8");
 
-  await writeFile("build/collection.json", JSON.stringify(buildCollection, null, 2), "utf-8");
-
-  console.log(`[6/6] Done. manifests=${index.length}, georefManifests=${georefManifests}, mirroredOk=${mirroredOk}, compiledOk=${compiledOk}`);
+  console.log(`Done. sources=${sourceGroups.length}, manifests=${index.length}, georefManifests=${georefManifests}, mirroredOk=${mirroredOk}, compiledOk=${compiledOk}`);
 }
 
 main().catch((err) => {

@@ -18,6 +18,8 @@ A data pipeline that crawls IIIF v2 collections, mirrors Allmaps georeferencing 
 | `bun run crawl` | `src/pipeline.ts` | full pipeline run |
 | `bun run crawl10` | `src/pipeline.ts` | pipeline with LIMIT=10 |
 | `bun run crawl1` | `src/pipeline.ts` | pipeline with LIMIT=1 |
+| `bun run buildSearch` | `src/toponyms.ts` | builds toponym search index only (`build/Toponyms/index.json`) |
+| `bun run toponyms` | `src/toponyms.ts` | alias of `buildSearch` |
 
 ## Pipeline (`src/pipeline.ts`)
 
@@ -74,17 +76,20 @@ index.json            ← fetch once to enumerate layers (small)
 
 ```
 data/sources/collections.txt      # input: one IIIF collection URL per line
+data/sources/Toponyms/README.txt  # note about local-only toponym source files
 cache/collections/                # disk cache for fetched collections
 cache/manifests/                  # disk cache for fetched manifests
 build/
   collection.json                 # top-level IIIF v2 Collection of sub-collections
   collections/<sha1>.json         # compiled IIIF v2 Collections (source-level + render-layer splits)
   index.json                      # { layers, renderLayers, index, stats } — layer lists + per-manifest metadata
+  Toponyms/index.json             # toponym search index for viewer/GitHub Pages
   manifests/<slug>.json           # compiled manifests with Allmaps otherContent injected
   allmaps/manifests/<id>.json     # mirrored Allmaps annotation JSONs
   allmaps/canvases/<id>.json      # mirrored Allmaps canvas annotation JSONs
 src/
   pipeline.ts                     # main pipeline
+  toponyms.ts                     # toponym search index builder
   index.ts                        # placeholder
 ```
 
@@ -153,3 +158,49 @@ src/
 - Manifests without detected georeferencing are still compiled and included (unmodified) to keep the collection complete
 - `verzamelblad` detection is string-based against URL/label/identifier/metadata in the source manifest; if present, it is split into a dedicated render layer.
 - `build/` is committed to the repo (acts as the published artifact)
+
+---
+
+## Session Update — 2026-03-06 (Toponyms Search Build)
+
+### What Changed
+- Added a separate search build script: `bun run buildSearch` (alias: `bun run toponyms`).
+- Implemented `src/toponyms.ts` to compile source toponym GeoJSON/JSON files into a single search artifact:
+  - `build/Toponyms/index.json`
+- Toponym search build is independent from `crawl` and can be run without touching IIIF/Allmaps outputs.
+
+### Toponym Source Policy
+- Raw toponym source files are local input only and should not be committed.
+- Keep only `data/sources/Toponyms/README.txt` in git; source files are ignored via `.gitignore`.
+- Expected local source layout:
+  - `data/sources/Toponyms/<SourceGroup>/*.geojson`
+  - `data/sources/Toponyms/<SourceGroup>/*.json`
+
+### `build/Toponyms/index.json` Contract
+- Top-level metadata includes `generatedAt`, `sourceRoot`, `sourceFileCount`, `itemCount`, and `sourceGroups`.
+- Each `items[]` entry contains:
+  - `id`, `text`, `textNormalized`
+  - `sourceGroup`, `sourceFile`
+  - `mapId`, `mapName` where both represent the containing source folder (e.g. `ferarris` / `Ferarris`)
+  - `featureIndex`, `lon`, `lat` (centroid from geometry bounds)
+- Non-essential source properties (e.g. `pixel_geometry`, bbox-like payloads) are excluded from the index.
+
+---
+
+## Session Update — 2026-03-06 (Parcels Dataset Cleanup)
+
+### What Changed
+- Parcel artifacts in `build/Parcels/Primitive/*.geojson` were cleaned to remove OCR text bounding polygons.
+- Only actual parcel polygons are now retained (`properties.type === "parcel"`).
+
+### Current Primitive Parcel Dataset State
+- Unified file: `build/Parcels/Primitive/index.geojson`
+- Feature count is now `8538` (all `parcel`).
+- Previously removed from unified file: `19669` `text` features.
+- `index.geojson` metadata updated accordingly:
+  - `sourceCount: 8538`
+  - `featureCount: 8538`
+
+### Notes
+- This cleanup was applied directly to built artifacts (not yet wired through a dedicated generator in `src/`).
+- Viewer-side parcel rendering can now assume the Primitive parcel dataset is parcel-only.

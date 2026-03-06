@@ -46,6 +46,22 @@ type IndexEntry = {
   canvasIds: string[];
 };
 
+type ProblematicManifest = {
+  manifestAllmapsId: string;
+  label: string;
+  sourceManifestUrl: string;
+  reason: string;
+  issueTypes: string[];
+  annotationPaths: string[];
+  potentialSolutions: string[];
+};
+
+type AnnotationIssue = {
+  code: "mask-out-of-bounds" | "duplicate-geo-gcp" | "tps-low-gcp";
+  message: string;
+  annotationPath: string;
+};
+
 // Manifests with self-intersecting resource masks — excluded from build.
 // These cause CDT triangulation failures in Allmaps (Edge intersects already constrained edge).
 const PROBLEMATIC_MANIFEST_IDS = new Set([
@@ -64,6 +80,88 @@ function parseLines(txt: string): string[] {
 
 function sha1(s: string): string {
   return createHash("sha1").update(s).digest("hex");
+}
+
+function parseSvgPolygonPoints(svg: string): Array<[number, number]> {
+  const m = svg.match(/points="([^"]+)"/);
+  if (!m) return [];
+  const pairs = m[1].trim().split(/\s+/g);
+  const out: Array<[number, number]> = [];
+  for (const pair of pairs) {
+    const [xRaw, yRaw] = pair.split(",");
+    const x = Number(xRaw);
+    const y = Number(yRaw);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    out.push([x, y]);
+  }
+  return out;
+}
+
+function uniqueStrings(xs: string[]): string[] {
+  return [...new Set(xs.filter((x) => x && x.trim().length > 0))];
+}
+
+function issueSolutionsFor(codes: AnnotationIssue["code"][]): string[] {
+  const solutions: string[] = [];
+  if (codes.includes("mask-out-of-bounds")) {
+    solutions.push("Clamp resource mask polygon points to image bounds (0..width, 0..height).");
+  }
+  if (codes.includes("duplicate-geo-gcp")) {
+    solutions.push("Remove or merge duplicate geographic GCPs in the annotation.");
+  }
+  if (codes.includes("tps-low-gcp")) {
+    solutions.push("For low GCP counts, use polynomial order 1 instead of thinPlateSpline.");
+  }
+  return uniqueStrings(solutions);
+}
+
+function analyzeMirroredAnnotation(raw: any, annotationPath: string): AnnotationIssue[] {
+  const issues: AnnotationIssue[] = [];
+  const items = Array.isArray(raw?.items) ? raw.items : [];
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
+    const width = Number(item?.target?.source?.width);
+    const height = Number(item?.target?.source?.height);
+    const selector = item?.target?.selector?.value;
+    if (typeof selector === "string" && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      const points = parseSvgPolygonPoints(selector);
+      const oobCount = points.filter(([x, y]) => x < 0 || y < 0 || x > width || y > height).length;
+      if (oobCount > 0) {
+        issues.push({
+          code: "mask-out-of-bounds",
+          message: `item[${idx}] has ${oobCount} resource mask points outside image bounds`,
+          annotationPath
+        });
+      }
+    }
+
+    const body = item?.body;
+    const features = Array.isArray(body?.features) ? body.features : [];
+    const pointFeatures = features.filter((f: any) => f?.geometry?.type === "Point");
+    const gcpCount = pointFeatures.length;
+
+    if (body?.transformation?.type === "thinPlateSpline" && gcpCount < 5) {
+      issues.push({
+        code: "tps-low-gcp",
+        message: `item[${idx}] uses thinPlateSpline with only ${gcpCount} GCPs`,
+        annotationPath
+      });
+    }
+
+    const geoKeys = pointFeatures
+      .map((f: any) => f?.geometry?.coordinates)
+      .filter((c: any) => Array.isArray(c) && c.length >= 2)
+      .map((c: any) => `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`);
+    const dupGeo = geoKeys.length - new Set(geoKeys).size;
+    if (dupGeo > 0) {
+      issues.push({
+        code: "duplicate-geo-gcp",
+        message: `item[${idx}] has ${dupGeo} duplicate geographic GCP(s)`,
+        annotationPath
+      });
+    }
+  }
+  return issues;
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -242,7 +340,10 @@ async function processManifestRef(
   buildBaseUrl: string | null,
   i: number,
   total: number
-): Promise<{ entry: IndexEntry; georef: boolean; mirrored: boolean; compiled: boolean }> {
+): Promise<
+  | { kind: "ok"; entry: IndexEntry; georef: boolean; mirrored: boolean; compiled: boolean }
+  | { kind: "problematic"; problematic: ProblematicManifest }
+> {
   console.log(`  - [${i + 1}/${total}] ${label || "(no label)"} :: ${url}`);
 
   const man = (await cachedJson(url, "cache/manifests")) as V2Manifest;
@@ -295,6 +396,38 @@ async function processManifestRef(
   const compiledManifestAbs = `build/${compiledManifestRel}`;
 
   let didCompile = false;
+  const annotationPathsToCheck = uniqueStrings([
+    mirroredManifestRel,
+    ...Object.values(mirroredCanvasRelByCanvasId)
+  ]);
+  const annotationIssues: AnnotationIssue[] = [];
+  for (const relPath of annotationPathsToCheck) {
+    const absPath = `build/${relPath}`;
+    try {
+      const raw = JSON.parse(await readFile(absPath, "utf-8"));
+      annotationIssues.push(...analyzeMirroredAnnotation(raw, relPath));
+    } catch (err: any) {
+      console.warn(`[WARN] Could not parse mirrored annotation for QA: ${absPath} (${err?.message ?? err})`);
+    }
+  }
+  if (annotationIssues.length > 0) {
+    const issueCodes = uniqueStrings(annotationIssues.map((x) => x.code)) as AnnotationIssue["code"][];
+    const issueMessages = uniqueStrings(annotationIssues.map((x) => `${x.code}: ${x.message}`));
+    console.warn(`[SKIP] Annotation QA failed: ${url} (${manifestAllmapsId}) -> ${issueCodes.join(", ")}`);
+    return {
+      kind: "problematic",
+      problematic: {
+        manifestAllmapsId,
+        label: (man.label ?? label ?? "").toString(),
+        sourceManifestUrl: url,
+        reason: issueMessages.join(" | "),
+        issueTypes: issueCodes,
+        annotationPaths: uniqueStrings(annotationIssues.map((x) => x.annotationPath)),
+        potentialSolutions: issueSolutionsFor(issueCodes)
+      }
+    };
+  }
+
   if (mirroredManifestRel || hasCanvasGeoref) {
     const compiled = compileV2ManifestAttachOtherContent(
       man,
@@ -310,6 +443,7 @@ async function processManifestRef(
   }
 
   return {
+    kind: "ok",
     entry: {
       label: (man.label ?? label ?? "").toString(),
       sourceManifestUrl: url,
@@ -371,12 +505,7 @@ async function main() {
 
   console.log(`[3/5] Processing manifests per source...`);
   const index: IndexEntry[] = [];
-  const problematicManifests: Array<{
-    manifestAllmapsId: string;
-    label: string;
-    sourceManifestUrl: string;
-    reason: string;
-  }> = [];
+  const problematicManifests: ProblematicManifest[] = [];
   let georefManifests = 0;
   let mirroredOk = 0;
   let compiledOk = 0;
@@ -396,7 +525,10 @@ async function main() {
           manifestAllmapsId: checkId,
           label: ref.label,
           sourceManifestUrl: ref.url,
-          reason: "self-intersecting resource mask"
+          reason: "self-intersecting resource mask",
+          issueTypes: ["self-intersecting-resource-mask"],
+          annotationPaths: [],
+          potentialSolutions: ["Exclude manifest from build or repair mask polygon to remove self-intersections."]
         });
         continue;
       }
@@ -408,6 +540,10 @@ async function main() {
         i,
         slice.length
       );
+      if (result.kind === "problematic") {
+        problematicManifests.push(result.problematic);
+        continue;
+      }
       index.push(result.entry);
       if (result.georef) georefManifests++;
       if (result.mirrored) mirroredOk++;
@@ -564,7 +700,14 @@ async function main() {
   await writeFile("build/index.json", JSON.stringify(indexOut, null, 2), "utf-8");
 
   const problematicLog = problematicManifests.map((m) =>
-    `[SKIP] ${m.manifestAllmapsId}  ${m.label}\n       ${m.sourceManifestUrl}\n       reason: ${m.reason}`
+    [
+      `[SKIP] ${m.manifestAllmapsId}  ${m.label}`,
+      `       ${m.sourceManifestUrl}`,
+      `       reason: ${m.reason}`,
+      `       issueTypes: ${m.issueTypes.join(", ") || "-"}`,
+      `       annotationPaths: ${m.annotationPaths.join(", ") || "-"}`,
+      `       potentialSolutions: ${m.potentialSolutions.join(" | ") || "-"}`
+    ].join("\n")
   ).join("\n");
   await writeFile(
     "build/problematic-manifests.log",

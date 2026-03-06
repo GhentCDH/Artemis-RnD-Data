@@ -1,10 +1,22 @@
-Fixed manifests (22) — generated 2026-03-06T11:09:10.479Z
+Annotation QA report — generated 2026-03-06T11:37:27.879Z
+
+Fixed manifests: 24
 
 [FIXED] 7d8b2f5bdd3bac39  ANTWERPEN - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000
        issuesBefore: tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs | mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | tps-low-gcp: item[7] uses thinPlateSpline with only 4 GCPs | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/7d8b2f5bdd3bac39.json, allmaps/canvases/1ffb399b63fe220e.json, allmaps/canvases/2caa88886676ca07.json, allmaps/canvases/17d4f63a1ff432dc.json, allmaps/canvases/3cd3402c953d9834.json, allmaps/canvases/6050dd5fcca4a9fc.json, allmaps/canvases/8ce63b20276c7ebd.json, allmaps/canvases/3f4e207872fb8f7a.json, allmaps/canvases/1611abcbd904ed55.json
        appliedFixes: allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[0]:gcp=4 | allmaps/manifests/7d8b2f5bdd3bac39.json:clamped-mask-points:item[1]:1 | allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[7]:gcp=4 | allmaps/canvases/1ffb399b63fe220e.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/2caa88886676ca07.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/1611abcbd904ed55.json:clamped-mask-points:item[0]:1
+[FIXED] 787106327b287f41  ANTWERPEN - Sectie B
+       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000
+       issuesBefore: self-intersecting-mask: item[1] mask polygon is self-intersecting | self-intersecting-mask: item[3] mask polygon is self-intersecting | self-intersecting-mask: item[0] mask polygon is self-intersecting
+       annotationPaths: allmaps/manifests/787106327b287f41.json, allmaps/canvases/fb23fe8244d9d470.json, allmaps/canvases/e48e337386ad69db.json, allmaps/canvases/2c781898cb5deb8a.json, allmaps/canvases/ef859e4dca743a7b.json, allmaps/canvases/2793e419625254cc.json, allmaps/canvases/7e9bb374f5f7427e.json, allmaps/canvases/a8f1988e3fd8fffc.json, allmaps/canvases/4b2f43c0df7ff0a1.json, allmaps/canvases/d502d469a540f6cf.json, allmaps/canvases/7ad4854d7249b46f.json, allmaps/canvases/a1caaf66f0fa22b2.json, allmaps/canvases/4f2317cae53c87c9.json, allmaps/canvases/5d41a63dc8b42bb0.json
+       appliedFixes: allmaps/manifests/787106327b287f41.json:repaired-self-intersection:item[1]:convex-hull:126->14 | allmaps/manifests/787106327b287f41.json:repaired-self-intersection:item[3]:convex-hull:90->16 | allmaps/canvases/7ad4854d7249b46f.json:repaired-self-intersection:item[0]:convex-hull:90->16 | allmaps/canvases/4f2317cae53c87c9.json:repaired-self-intersection:item[0]:convex-hull:126->14
+[FIXED] 949c44555577f899  ANTWERPEN - Sectie C
+       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02556_000
+       issuesBefore: self-intersecting-mask: item[1] mask polygon is self-intersecting | self-intersecting-mask: item[0] mask polygon is self-intersecting
+       annotationPaths: allmaps/manifests/949c44555577f899.json, allmaps/canvases/1b61beea409e7a1f.json, allmaps/canvases/9f50c2b49039335d.json, allmaps/canvases/288989d3549b6c68.json, allmaps/canvases/8986afffbf30a685.json
+       appliedFixes: allmaps/manifests/949c44555577f899.json:repaired-self-intersection:item[1]:convex-hull:72->11 | allmaps/canvases/288989d3549b6c68.json:repaired-self-intersection:item[0]:convex-hull:72->11
 [FIXED] da45aea5bd763705  Berlare - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05918_000
        issuesBefore: mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
@@ -110,3 +122,6 @@ Fixed manifests (22) — generated 2026-03-06T11:09:10.479Z
        issuesBefore: mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/588997c6103d6706.json, allmaps/canvases/e633e95ae729cac8.json, allmaps/canvases/95b0ff058c13d495.json, allmaps/canvases/c9a1997ffc48c922.json
        appliedFixes: allmaps/manifests/588997c6103d6706.json:clamped-mask-points:item[1]:1 | allmaps/canvases/e633e95ae729cac8.json:clamped-mask-points:item[0]:1
+
+Excluded manifests: 0
+  (none)

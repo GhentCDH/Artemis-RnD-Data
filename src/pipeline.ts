@@ -60,7 +60,7 @@ type ProblematicManifest = {
 };
 
 type AnnotationIssue = {
-  code: "mask-out-of-bounds" | "duplicate-geo-gcp" | "tps-low-gcp";
+  code: "mask-out-of-bounds" | "duplicate-geo-gcp" | "tps-low-gcp" | "self-intersecting-mask";
   message: string;
   annotationPath: string;
 };
@@ -128,11 +128,105 @@ function issueSolutionsFor(codes: AnnotationIssue["code"][]): string[] {
   if (codes.includes("tps-low-gcp")) {
     solutions.push("For low GCP counts, use polynomial order 1 instead of thinPlateSpline.");
   }
+  if (codes.includes("self-intersecting-mask")) {
+    solutions.push("Rewrite self-intersecting mask polygons to a valid non-self-intersecting ring (e.g. convex hull fallback).");
+  }
   return uniqueStrings(solutions);
 }
 
 function serializeSvgPolygonPoints(points: Array<[number, number]>): string {
   return points.map(([x, y]) => `${x},${y}`).join(" ");
+}
+
+function pointKey([x, y]: [number, number]): string {
+  return `${x.toFixed(6)},${y.toFixed(6)}`;
+}
+
+function normalizePolygon(points: Array<[number, number]>): Array<[number, number]> {
+  if (points.length < 2) return points;
+  const out: Array<[number, number]> = [];
+  for (const p of points) {
+    if (out.length === 0 || pointKey(out[out.length - 1]) !== pointKey(p)) out.push(p);
+  }
+  if (out.length > 2 && pointKey(out[0]) === pointKey(out[out.length - 1])) out.pop();
+  return out;
+}
+
+function cross(o: [number, number], a: [number, number], b: [number, number]): number {
+  return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+}
+
+function onSegment(a: [number, number], b: [number, number], p: [number, number]): boolean {
+  const eps = 1e-9;
+  return (
+    Math.min(a[0], b[0]) - eps <= p[0] &&
+    p[0] <= Math.max(a[0], b[0]) + eps &&
+    Math.min(a[1], b[1]) - eps <= p[1] &&
+    p[1] <= Math.max(a[1], b[1]) + eps
+  );
+}
+
+function orientation(a: [number, number], b: [number, number], c: [number, number]): number {
+  const v = cross(a, b, c);
+  if (Math.abs(v) < 1e-9) return 0;
+  return v > 0 ? 1 : -1;
+}
+
+function segmentsIntersect(a1: [number, number], a2: [number, number], b1: [number, number], b2: [number, number]): boolean {
+  const o1 = orientation(a1, a2, b1);
+  const o2 = orientation(a1, a2, b2);
+  const o3 = orientation(b1, b2, a1);
+  const o4 = orientation(b1, b2, a2);
+
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && onSegment(a1, a2, b1)) return true;
+  if (o2 === 0 && onSegment(a1, a2, b2)) return true;
+  if (o3 === 0 && onSegment(b1, b2, a1)) return true;
+  if (o4 === 0 && onSegment(b1, b2, a2)) return true;
+  return false;
+}
+
+function hasSelfIntersections(pointsInput: Array<[number, number]>): boolean {
+  const points = normalizePolygon(pointsInput);
+  const n = points.length;
+  if (n < 4) return false;
+  for (let i = 0; i < n; i++) {
+    const a1 = points[i];
+    const a2 = points[(i + 1) % n];
+    for (let j = i + 1; j < n; j++) {
+      const b1 = points[j];
+      const b2 = points[(j + 1) % n];
+      const adjacent =
+        i === j ||
+        (i + 1) % n === j ||
+        i === (j + 1) % n;
+      if (adjacent) continue;
+      if (segmentsIntersect(a1, a2, b1, b2)) return true;
+    }
+  }
+  return false;
+}
+
+function convexHull(pointsInput: Array<[number, number]>): Array<[number, number]> {
+  const uniqMap = new Map<string, [number, number]>();
+  for (const p of pointsInput) uniqMap.set(pointKey(p), p);
+  const points = [...uniqMap.values()].sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+  if (points.length <= 2) return points;
+
+  const lower: Array<[number, number]> = [];
+  for (const p of points) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: Array<[number, number]> = [];
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop();
+  upper.pop();
+  return [...lower, ...upper];
 }
 
 function analyzeMirroredAnnotation(raw: any, annotationPath: string): AnnotationIssue[] {
@@ -145,6 +239,13 @@ function analyzeMirroredAnnotation(raw: any, annotationPath: string): Annotation
     const selector = item?.target?.selector?.value;
     if (typeof selector === "string" && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
       const points = parseSvgPolygonPoints(selector);
+      if (hasSelfIntersections(points)) {
+        issues.push({
+          code: "self-intersecting-mask",
+          message: `item[${idx}] mask polygon is self-intersecting`,
+          annotationPath
+        });
+      }
       const oobCount = points.filter(([x, y]) => x < 0 || y < 0 || x > width || y > height).length;
       if (oobCount > 0) {
         issues.push({
@@ -206,6 +307,15 @@ function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string
         if (clampedCount > 0) {
           selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(clamped)}"`);
           appliedFixes.push(`clamped-mask-points:item[${idx}]:${clampedCount}`);
+        }
+
+        const normalized = normalizePolygon(parseSvgPolygonPoints(selector.value));
+        if (hasSelfIntersections(normalized)) {
+          const hull = convexHull(normalized);
+          if (hull.length >= 3 && !hasSelfIntersections(hull)) {
+            selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(hull)}"`);
+            appliedFixes.push(`repaired-self-intersection:item[${idx}]:convex-hull:${normalized.length}->${hull.length}`);
+          }
         }
       }
     }
@@ -602,6 +712,10 @@ async function main() {
   for (const dir of ["build/manifests", "build/collections", "build/allmaps"]) {
     await rm(dir, { recursive: true, force: true });
   }
+  // Remove legacy QA logs; report.log is now the single consolidated output.
+  for (const file of ["build/fixed-manifests.log", "build/problematic-manifests.log", "build/report.log"]) {
+    await rm(file, { force: true });
+  }
   await mkdir("build", { recursive: true });
   await mkdir("build/manifests", { recursive: true });
   await mkdir("build/collections", { recursive: true });
@@ -647,21 +761,7 @@ async function main() {
       const ref = slice[i];
       const checkId = await generateId(ref.url);
       if (PROBLEMATIC_MANIFEST_IDS.has(checkId)) {
-        console.warn(`[SKIP] Problematic manifest excluded: ${ref.url} (${checkId})`);
-        problematicManifests.push({
-          manifestAllmapsId: checkId,
-          label: ref.label,
-          sourceManifestUrl: ref.url,
-          reason: "self-intersecting resource mask",
-          issueTypes: ["self-intersecting-resource-mask"],
-          annotationPaths: [],
-          potentialSolutions: ["Exclude manifest from build or repair mask polygon to remove self-intersections."]
-            ,
-          fixAttempted: false,
-          appliedFixes: [],
-          unresolvedIssues: ["self-intersecting-resource-mask"]
-        });
-        continue;
+        console.warn(`[WARN] Known problematic manifest entering auto-fix path: ${ref.url} (${checkId})`);
       }
 
       const result = await processManifestRef(
@@ -698,14 +798,13 @@ async function main() {
   const renderLayerMeta: Array<{
     sourceCollectionUrl: string;
     sourceCollectionLabel: string;
-    renderLayerKey: "default" | "verzamelblad" | "single-canvas" | "multi-canvas";
-    parentRenderLayerKey?: "default";
+    renderLayerKey: "default" | "verzamelblad";
     compiledCollectionPath: string;
     manifestCount: number;
     georefCount: number;
     singleCanvasGeorefCount: number;
     multiCanvasGeorefCount: number;
-    hidden: boolean;
+    hidden: false;
   }> = [];
 
   for (const group of sourceGroups) {
@@ -776,44 +875,6 @@ async function main() {
         multiCanvasGeorefCount: renderEntries.filter((e) => e.annotSource === "multi").length,
         hidden: false
       });
-
-      // Debug sub-layers immediately follow their parent so the viewer renders them
-      // in the correct position (not separated by other layers such as verzamelblad).
-      if (renderLayerKey === "default") {
-        const defaultLabel = group.sourceCollectionLabel || group.sourceCollectionUrl;
-        for (const canvasKey of ["single-canvas", "multi-canvas"] as const) {
-          const annotSource = canvasKey === "single-canvas" ? "single" : "multi";
-          const subEntries = renderEntries.filter((e) => e.annotSource === annotSource);
-          if (subEntries.length < 1) continue;
-          const subSlug = sha1(`${group.sourceCollectionUrl}::default::${canvasKey}`).slice(0, 16);
-          const subRelPath = `collections/${subSlug}.json`;
-          const subAbsPath = `build/${subRelPath}`;
-          const subCol: V2Collection = {
-            "@context": "http://iiif.io/api/presentation/2/context.json",
-            "@id": base(subRelPath),
-            "@type": "sc:Collection",
-            label: `${defaultLabel} (${canvasKey})`,
-            manifests: subEntries.map((e) => ({
-              "@id": base(e.compiledManifestPath),
-              "@type": "sc:Manifest",
-              label: e.label
-            }))
-          };
-          await writeFile(subAbsPath, JSON.stringify(subCol, null, 2), "utf-8");
-          renderLayerMeta.push({
-            sourceCollectionUrl: group.sourceCollectionUrl,
-            sourceCollectionLabel: group.sourceCollectionLabel,
-            renderLayerKey: canvasKey,
-            parentRenderLayerKey: "default",
-            compiledCollectionPath: subRelPath,
-            manifestCount: subEntries.length,
-            georefCount: subEntries.length,
-            singleCanvasGeorefCount: canvasKey === "single-canvas" ? subEntries.length : 0,
-            multiCanvasGeorefCount: canvasKey === "multi-canvas" ? subEntries.length : 0,
-            hidden: true
-          });
-        }
-      }
     }
   }
 
@@ -842,14 +903,6 @@ async function main() {
       `       potentialSolutions: ${m.potentialSolutions.join(" | ") || "-"}`
     ].join("\n")
   ).join("\n");
-  await writeFile(
-    "build/problematic-manifests.log",
-    problematicManifests.length > 0
-      ? `Excluded manifests (${problematicManifests.length}) — generated ${new Date().toISOString()}\n\n${problematicLog}\n`
-      : `No excluded manifests — generated ${new Date().toISOString()}\n`,
-    "utf-8"
-  );
-
   const fixedLog = fixedManifests.map((m) =>
     [
       `[FIXED] ${m.manifestAllmapsId}  ${m.label}`,
@@ -860,10 +913,17 @@ async function main() {
     ].join("\n")
   ).join("\n");
   await writeFile(
-    "build/fixed-manifests.log",
-    fixedManifests.length > 0
-      ? `Fixed manifests (${fixedManifests.length}) — generated ${new Date().toISOString()}\n\n${fixedLog}\n`
-      : `No fixed manifests — generated ${new Date().toISOString()}\n`,
+    "build/report.log",
+    [
+      `Annotation QA report — generated ${new Date().toISOString()}`,
+      "",
+      `Fixed manifests: ${fixedManifests.length}`,
+      fixedManifests.length > 0 ? `\n${fixedLog}` : "  (none)",
+      "",
+      `Excluded manifests: ${problematicManifests.length}`,
+      problematicManifests.length > 0 ? `\n${problematicLog}` : "  (none)",
+      ""
+    ].join("\n"),
     "utf-8"
   );
 

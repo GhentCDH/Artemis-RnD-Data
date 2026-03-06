@@ -54,12 +54,24 @@ type ProblematicManifest = {
   issueTypes: string[];
   annotationPaths: string[];
   potentialSolutions: string[];
+  fixAttempted: boolean;
+  appliedFixes: string[];
+  unresolvedIssues: string[];
 };
 
 type AnnotationIssue = {
   code: "mask-out-of-bounds" | "duplicate-geo-gcp" | "tps-low-gcp";
   message: string;
   annotationPath: string;
+};
+
+type SuccessfulFixManifest = {
+  manifestAllmapsId: string;
+  label: string;
+  sourceManifestUrl: string;
+  annotationPaths: string[];
+  issuesBefore: string[];
+  appliedFixes: string[];
 };
 
 // Manifests with self-intersecting resource masks — excluded from build.
@@ -101,6 +113,10 @@ function uniqueStrings(xs: string[]): string[] {
   return [...new Set(xs.filter((x) => x && x.trim().length > 0))];
 }
 
+function summarizeIssues(issues: AnnotationIssue[]): string[] {
+  return uniqueStrings(issues.map((x) => `${x.code}: ${x.message}`));
+}
+
 function issueSolutionsFor(codes: AnnotationIssue["code"][]): string[] {
   const solutions: string[] = [];
   if (codes.includes("mask-out-of-bounds")) {
@@ -113,6 +129,10 @@ function issueSolutionsFor(codes: AnnotationIssue["code"][]): string[] {
     solutions.push("For low GCP counts, use polynomial order 1 instead of thinPlateSpline.");
   }
   return uniqueStrings(solutions);
+}
+
+function serializeSvgPolygonPoints(points: Array<[number, number]>): string {
+  return points.map(([x, y]) => `${x},${y}`).join(" ");
 }
 
 function analyzeMirroredAnnotation(raw: any, annotationPath: string): AnnotationIssue[] {
@@ -162,6 +182,86 @@ function analyzeMirroredAnnotation(raw: any, annotationPath: string): Annotation
     }
   }
   return issues;
+}
+
+function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string[] } {
+  const out = JSON.parse(JSON.stringify(raw));
+  const appliedFixes: string[] = [];
+  const items = Array.isArray(out?.items) ? out.items : [];
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
+    const width = Number(item?.target?.source?.width);
+    const height = Number(item?.target?.source?.height);
+    const selector = item?.target?.selector;
+    if (typeof selector?.value === "string" && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      const points = parseSvgPolygonPoints(selector.value);
+      if (points.length > 0) {
+        let clampedCount = 0;
+        const clamped = points.map(([x, y]) => {
+          const nx = Math.max(0, Math.min(width, x));
+          const ny = Math.max(0, Math.min(height, y));
+          if (nx !== x || ny !== y) clampedCount++;
+          return [nx, ny] as [number, number];
+        });
+        if (clampedCount > 0) {
+          selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(clamped)}"`);
+          appliedFixes.push(`clamped-mask-points:item[${idx}]:${clampedCount}`);
+        }
+      }
+    }
+
+    const body = item?.body;
+    const features = Array.isArray(body?.features) ? body.features : [];
+    if (features.length > 0) {
+      const seenGeo = new Set<string>();
+      let removed = 0;
+      const deduped: any[] = [];
+      for (const f of features) {
+        if (f?.geometry?.type !== "Point") {
+          deduped.push(f);
+          continue;
+        }
+        const c = f?.geometry?.coordinates;
+        if (!Array.isArray(c) || c.length < 2) {
+          deduped.push(f);
+          continue;
+        }
+        const key = `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`;
+        if (seenGeo.has(key)) {
+          removed++;
+          continue;
+        }
+        seenGeo.add(key);
+        deduped.push(f);
+      }
+      if (removed > 0) {
+        body.features = deduped;
+        appliedFixes.push(`removed-duplicate-geo-gcp:item[${idx}]:${removed}`);
+      }
+    }
+
+    const pointFeatures = (Array.isArray(body?.features) ? body.features : []).filter((f: any) => f?.geometry?.type === "Point");
+    const gcpCount = pointFeatures.length;
+    if (body?.transformation?.type === "thinPlateSpline" && gcpCount < 5) {
+      body.transformation = { type: "polynomial", options: { order: 1 } };
+      appliedFixes.push(`downgraded-tps:item[${idx}]:gcp=${gcpCount}`);
+    }
+  }
+  return { json: out, appliedFixes: uniqueStrings(appliedFixes) };
+}
+
+async function collectAnnotationIssues(annotationPaths: string[]): Promise<AnnotationIssue[]> {
+  const annotationIssues: AnnotationIssue[] = [];
+  for (const relPath of annotationPaths) {
+    const absPath = `build/${relPath}`;
+    try {
+      const raw = JSON.parse(await readFile(absPath, "utf-8"));
+      annotationIssues.push(...analyzeMirroredAnnotation(raw, relPath));
+    } catch (err: any) {
+      console.warn(`[WARN] Could not parse mirrored annotation for QA: ${absPath} (${err?.message ?? err})`);
+    }
+  }
+  return annotationIssues;
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -341,7 +441,7 @@ async function processManifestRef(
   i: number,
   total: number
 ): Promise<
-  | { kind: "ok"; entry: IndexEntry; georef: boolean; mirrored: boolean; compiled: boolean }
+  | { kind: "ok"; entry: IndexEntry; georef: boolean; mirrored: boolean; compiled: boolean; fixed?: SuccessfulFixManifest }
   | { kind: "problematic"; problematic: ProblematicManifest }
 > {
   console.log(`  - [${i + 1}/${total}] ${label || "(no label)"} :: ${url}`);
@@ -400,19 +500,28 @@ async function processManifestRef(
     mirroredManifestRel,
     ...Object.values(mirroredCanvasRelByCanvasId)
   ]);
-  const annotationIssues: AnnotationIssue[] = [];
-  for (const relPath of annotationPathsToCheck) {
-    const absPath = `build/${relPath}`;
-    try {
-      const raw = JSON.parse(await readFile(absPath, "utf-8"));
-      annotationIssues.push(...analyzeMirroredAnnotation(raw, relPath));
-    } catch (err: any) {
-      console.warn(`[WARN] Could not parse mirrored annotation for QA: ${absPath} (${err?.message ?? err})`);
+  const issuesBeforeFix = await collectAnnotationIssues(annotationPathsToCheck);
+  let appliedFixes: string[] = [];
+  if (issuesBeforeFix.length > 0) {
+    for (const relPath of annotationPathsToCheck) {
+      const absPath = `build/${relPath}`;
+      try {
+        const raw = JSON.parse(await readFile(absPath, "utf-8"));
+        const sanitized = sanitizeMirroredAnnotation(raw);
+        if (sanitized.appliedFixes.length > 0) {
+          appliedFixes.push(...sanitized.appliedFixes.map((f) => `${relPath}:${f}`));
+          await writeFile(absPath, JSON.stringify(sanitized.json, null, 2), "utf-8");
+        }
+      } catch (err: any) {
+        console.warn(`[WARN] Could not sanitize mirrored annotation: ${absPath} (${err?.message ?? err})`);
+      }
     }
+    appliedFixes = uniqueStrings(appliedFixes);
   }
-  if (annotationIssues.length > 0) {
-    const issueCodes = uniqueStrings(annotationIssues.map((x) => x.code)) as AnnotationIssue["code"][];
-    const issueMessages = uniqueStrings(annotationIssues.map((x) => `${x.code}: ${x.message}`));
+  const issuesAfterFix = await collectAnnotationIssues(annotationPathsToCheck);
+  if (issuesAfterFix.length > 0) {
+    const issueCodes = uniqueStrings(issuesAfterFix.map((x) => x.code)) as AnnotationIssue["code"][];
+    const issueMessages = summarizeIssues(issuesAfterFix);
     console.warn(`[SKIP] Annotation QA failed: ${url} (${manifestAllmapsId}) -> ${issueCodes.join(", ")}`);
     return {
       kind: "problematic",
@@ -422,8 +531,12 @@ async function processManifestRef(
         sourceManifestUrl: url,
         reason: issueMessages.join(" | "),
         issueTypes: issueCodes,
-        annotationPaths: uniqueStrings(annotationIssues.map((x) => x.annotationPath)),
+        annotationPaths: uniqueStrings(issuesAfterFix.map((x) => x.annotationPath)),
         potentialSolutions: issueSolutionsFor(issueCodes)
+          .concat(appliedFixes.length > 0 ? ["Review applied local auto-fixes and re-validate in viewer."] : []),
+        fixAttempted: issuesBeforeFix.length > 0,
+        appliedFixes,
+        unresolvedIssues: issueMessages
       }
     };
   }
@@ -441,6 +554,18 @@ async function processManifestRef(
     // Still write the manifest untouched so the collection stays complete
     await writeFile(compiledManifestAbs, JSON.stringify(man, null, 2), "utf-8");
   }
+
+  const fixedManifest: SuccessfulFixManifest | undefined =
+    issuesBeforeFix.length > 0
+      ? {
+          manifestAllmapsId,
+          label: (man.label ?? label ?? "").toString(),
+          sourceManifestUrl: url,
+          annotationPaths: annotationPathsToCheck,
+          issuesBefore: summarizeIssues(issuesBeforeFix),
+          appliedFixes
+        }
+      : undefined;
 
   return {
     kind: "ok",
@@ -462,7 +587,8 @@ async function processManifestRef(
     },
     georef: georefDetected,
     mirrored: mirroredManifestRel.length > 0 || hasCanvasGeoref,
-    compiled: didCompile
+    compiled: didCompile,
+    fixed: fixedManifest
   };
 }
 
@@ -505,6 +631,7 @@ async function main() {
 
   console.log(`[3/5] Processing manifests per source...`);
   const index: IndexEntry[] = [];
+  const fixedManifests: SuccessfulFixManifest[] = [];
   const problematicManifests: ProblematicManifest[] = [];
   let georefManifests = 0;
   let mirroredOk = 0;
@@ -529,6 +656,10 @@ async function main() {
           issueTypes: ["self-intersecting-resource-mask"],
           annotationPaths: [],
           potentialSolutions: ["Exclude manifest from build or repair mask polygon to remove self-intersections."]
+            ,
+          fixAttempted: false,
+          appliedFixes: [],
+          unresolvedIssues: ["self-intersecting-resource-mask"]
         });
         continue;
       }
@@ -545,6 +676,7 @@ async function main() {
         continue;
       }
       index.push(result.entry);
+      if (result.fixed) fixedManifests.push(result.fixed);
       if (result.georef) georefManifests++;
       if (result.mirrored) mirroredOk++;
       if (result.compiled) compiledOk++;
@@ -694,6 +826,7 @@ async function main() {
     compiledOk,
     layers: layerMeta,
     renderLayers: renderLayerMeta,
+    fixedManifests,
     problematicManifests,
     index
   };
@@ -714,6 +847,23 @@ async function main() {
     problematicManifests.length > 0
       ? `Excluded manifests (${problematicManifests.length}) — generated ${new Date().toISOString()}\n\n${problematicLog}\n`
       : `No excluded manifests — generated ${new Date().toISOString()}\n`,
+    "utf-8"
+  );
+
+  const fixedLog = fixedManifests.map((m) =>
+    [
+      `[FIXED] ${m.manifestAllmapsId}  ${m.label}`,
+      `       ${m.sourceManifestUrl}`,
+      `       issuesBefore: ${m.issuesBefore.join(" | ") || "-"}`,
+      `       annotationPaths: ${m.annotationPaths.join(", ") || "-"}`,
+      `       appliedFixes: ${m.appliedFixes.join(" | ") || "-"}`
+    ].join("\n")
+  ).join("\n");
+  await writeFile(
+    "build/fixed-manifests.log",
+    fixedManifests.length > 0
+      ? `Fixed manifests (${fixedManifests.length}) — generated ${new Date().toISOString()}\n\n${fixedLog}\n`
+      : `No fixed manifests — generated ${new Date().toISOString()}\n`,
     "utf-8"
   );
 

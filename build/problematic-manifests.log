@@ -1,4 +1,4 @@
-Excluded manifests (27) — generated 2026-03-06T11:00:14.326Z
+Excluded manifests (4) — generated 2026-03-06T11:09:10.479Z
 
 [SKIP] 04930d7222f43159  ANTWERPEN - Verzamelplan
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02553_000
@@ -6,12 +6,6 @@ Excluded manifests (27) — generated 2026-03-06T11:00:14.326Z
        issueTypes: self-intersecting-resource-mask
        annotationPaths: -
        potentialSolutions: Exclude manifest from build or repair mask polygon to remove self-intersections.
-[SKIP] 7d8b2f5bdd3bac39  ANTWERPEN - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000
-       reason: tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs | mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | tps-low-gcp: item[7] uses thinPlateSpline with only 4 GCPs | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: tps-low-gcp, mask-out-of-bounds
-       annotationPaths: allmaps/manifests/7d8b2f5bdd3bac39.json, allmaps/canvases/1ffb399b63fe220e.json, allmaps/canvases/2caa88886676ca07.json, allmaps/canvases/1611abcbd904ed55.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height). | For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
 [SKIP] 787106327b287f41  ANTWERPEN - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000
        reason: self-intersecting resource mask
@@ -24,141 +18,9 @@ Excluded manifests (27) — generated 2026-03-06T11:00:14.326Z
        issueTypes: self-intersecting-resource-mask
        annotationPaths: -
        potentialSolutions: Exclude manifest from build or repair mask polygon to remove self-intersections.
-[SKIP] da45aea5bd763705  Berlare - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05918_000
-       reason: mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/da45aea5bd763705.json, allmaps/canvases/732561f756574389.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 8f62f46e09c55a74  Berlare - Sectie B
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05919_000
-       reason: mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds | tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
-       issueTypes: mask-out-of-bounds, tps-low-gcp
-       annotationPaths: allmaps/manifests/8f62f46e09c55a74.json, allmaps/canvases/83b7d526aafeae0b.json, allmaps/canvases/bda8b7392a80f62b.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height). | For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] af67bb62f0ede330  Buggenhout - Sectie C
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000
-       reason: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds | mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/af67bb62f0ede330.json, allmaps/canvases/7bc3c417c9155ddb.json, allmaps/canvases/0ae1c44d9386296c.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 4217a284ec05d38f  Buggenhout - Sectie D
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06003_000
-       reason: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/4217a284ec05d38f.json, allmaps/canvases/05910d780fd00a03.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 8a86f46ba908c161  Dendermonde - Sectie B
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06058_000
-       reason: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/8a86f46ba908c161.json, allmaps/canvases/e6684c17d1cb8b20.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 5b387ce6ccc7844a  Dendermonde - Sectie C
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06059_000
-       reason: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
-       issueTypes: mask-out-of-bounds, tps-low-gcp
-       annotationPaths: allmaps/manifests/5b387ce6ccc7844a.json, allmaps/canvases/b68b5cfe7d18ef28.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height). | For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] 49cfa0dd767cac73  Dendermonde - Sectie D
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06060_000
-       reason: mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs
-       issueTypes: mask-out-of-bounds, tps-low-gcp
-       annotationPaths: allmaps/manifests/49cfa0dd767cac73.json, allmaps/canvases/817bc532e4ed50b1.json, allmaps/canvases/b7a2a368d128872e.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height). | For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] 808c6d2744018271  Appels - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06063_000
-       reason: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/808c6d2744018271.json, allmaps/canvases/3c6ce0bee9d63669.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 8a0d9395a79a08d2  Sint-Gillis-bij-Dendermonde - Sectie B
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06067_000
-       reason: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/8a0d9395a79a08d2.json, allmaps/canvases/33cf8c20d249c8b4.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 557a8b6047b744fe  Grembergen - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000
-       reason: mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/557a8b6047b744fe.json, allmaps/canvases/8441965ed4c1fba2.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 5122e64494db51c3  Ghent - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06163_000
-       reason: tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs | tps-low-gcp: item[1] uses thinPlateSpline with only 3 GCPs
-       issueTypes: tps-low-gcp
-       annotationPaths: allmaps/manifests/5122e64494db51c3.json, allmaps/canvases/63ded1aba2651ec2.json, allmaps/canvases/af5287bba6dd17c4.json
-       potentialSolutions: For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] 4fcaaa3e4554068f  Hamme - Verzamelplan
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06288_000
-       reason: mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/4fcaaa3e4554068f.json, allmaps/canvases/ea070f0060d77342.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 064a3ae0ac0d19f7  Hamme - Sectie B
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06290_000
-       reason: tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
-       issueTypes: tps-low-gcp
-       annotationPaths: allmaps/manifests/064a3ae0ac0d19f7.json, allmaps/canvases/02a966aac83e4039.json
-       potentialSolutions: For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] 5916031e1780cb72  Moerzeke - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06295_000
-       reason: tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
-       issueTypes: tps-low-gcp
-       annotationPaths: allmaps/manifests/5916031e1780cb72.json, allmaps/canvases/78fbf2b8f676ae33.json
-       potentialSolutions: For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] a7e9237ceaf8e635  Moerzeke - Sectie B
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06296_000
-       reason: tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
-       issueTypes: tps-low-gcp
-       annotationPaths: allmaps/manifests/a7e9237ceaf8e635.json, allmaps/canvases/676af43eba945066.json
-       potentialSolutions: For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] 6c078ea636fd0b3d  Bazel - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06363_000
-       reason: mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[2] has 4 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/6c078ea636fd0b3d.json, allmaps/canvases/61215bdef518415e.json, allmaps/canvases/8b67e5e1964cb32f.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
 [SKIP] e621fad69cecfcb5  Kalken - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06383_000
        reason: self-intersecting resource mask
        issueTypes: self-intersecting-resource-mask
        annotationPaths: -
        potentialSolutions: Exclude manifest from build or repair mask polygon to remove self-intersections.
-[SKIP] 6982d065bda5b025  Kalken - Sectie C-D
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06385_000
-       reason: duplicate-geo-gcp: item[0] has 1 duplicate geographic GCP(s)
-       issueTypes: duplicate-geo-gcp
-       annotationPaths: allmaps/manifests/6982d065bda5b025.json, allmaps/canvases/b6fb234749565370.json
-       potentialSolutions: Remove or merge duplicate geographic GCPs in the annotation.
-[SKIP] 40ab3add66c5f9b8  Lokeren - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06450_000
-       reason: tps-low-gcp: item[4] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
-       issueTypes: tps-low-gcp
-       annotationPaths: allmaps/manifests/40ab3add66c5f9b8.json, allmaps/canvases/5d2b470374cd5d8c.json
-       potentialSolutions: For low GCP counts, use polynomial order 1 instead of thinPlateSpline.
-[SKIP] 831566b63f7f8d0c  Melle - Sectie A
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06508_000
-       reason: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/831566b63f7f8d0c.json, allmaps/canvases/793b3462c55649cc.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 81ebe1a7e47670eb  Wetteren - Sectie B
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06775_000
-       reason: mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/81ebe1a7e47670eb.json, allmaps/canvases/3122e00e7a77661b.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 14dc46e75f78fe89  Wetteren - Sectie G
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06776_000
-       reason: mask-out-of-bounds: item[3] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/14dc46e75f78fe89.json, allmaps/canvases/8fe525cd3f18fcbe.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).
-[SKIP] 588997c6103d6706  Wichelen - Sectie C
-       https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06790_000
-       reason: mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
-       issueTypes: mask-out-of-bounds
-       annotationPaths: allmaps/manifests/588997c6103d6706.json, allmaps/canvases/e633e95ae729cac8.json
-       potentialSolutions: Clamp resource mask polygon points to image bounds (0..width, 0..height).

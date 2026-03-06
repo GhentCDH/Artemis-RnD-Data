@@ -1,1 +1,3 @@
-## this repo contains merged IIIF manifests to improve annotation management
+# Artemis-RnD-Data
+
+See [README.md](./README.md) for full documentation.

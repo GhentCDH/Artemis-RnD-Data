@@ -224,3 +224,26 @@ src/
 ### Notes
 - This cleanup was applied directly to built artifacts (not yet wired through a dedicated generator in `src/`).
 - Viewer-side parcel rendering can now assume the Primitive parcel dataset is parcel-only.
+
+---
+
+## Session Update — 2026-03-06 (Search Index Hardening + Place Prefix)
+
+### Toponyms Search Build (`src/toponyms.ts`)
+- Builder now fails fast if:
+  - no source files are found under `data/sources/Toponyms`
+  - source files are found but produce zero indexed items
+- `build/Toponyms/index.json` is written pretty-printed (readable diff/debug), not minified one-line JSON.
+
+### Toponym Entry Shape Changes
+- Added place-aware display/search text for disambiguation:
+  - `text` now uses place prefix when available (e.g. `Aalst - Cappel`)
+- Preserved original OCR token in:
+  - `rawText`
+- Added optional:
+  - `placeName`
+- `mapName` / `mapId` remain source-folder level (`Ferarris`, `Gereduceerd`) to identify dataset origin.
+
+### Manifest Coordinates in Main Index
+- `build/index.json` `index[]` entries can include `centerLon` / `centerLat`, derived from mirrored annotation geo points.
+- This supports manifest search click-to-location in viewer without introducing extra files or fetches.

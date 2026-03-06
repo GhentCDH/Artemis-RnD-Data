@@ -1,5 +1,5 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, join, relative } from "node:path";
+import { basename, extname, join, relative } from "node:path";
 import { createHash } from "node:crypto";
 
 type Position = [number, number];
@@ -25,6 +25,8 @@ type SourceFeatureCollection = {
 type IndexItem = {
   id: string;
   text: string;
+  rawText: string;
+  placeName?: string;
   textNormalized: string;
   sourceGroup: string;
   sourceFile: string;
@@ -46,6 +48,14 @@ function normalizeText(text: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function placeNameFromSourceFile(sourceFile: string): string | undefined {
+  const fileBase = basename(sourceFile, extname(sourceFile));
+  const m = fileBase.match(/^([A-Za-zÀ-ÖØ-öø-ÿ' -]+)_\d/);
+  if (!m) return undefined;
+  const place = m[1]?.trim();
+  return place && place.length > 0 ? place : undefined;
 }
 
 function getPositions(geometry: GeoGeometry): Position[] {
@@ -130,6 +140,7 @@ async function main() {
     const sourceFile = relative(sourceRoot, file).replace(/\\/g, "/");
     const mapId = sourceGroup.toLowerCase();
     const mapName = sourceGroup;
+    const placeName = placeNameFromSourceFile(sourceFile);
 
     if (!sourceSummary.has(sourceGroup)) {
       sourceSummary.set(sourceGroup, { fileCount: 0, featureCount: 0 });
@@ -151,11 +162,14 @@ async function main() {
 
       const idSeed = `${sourceFile}:${featureIndex}:${textRaw}`;
       const id = sha1(idSeed).slice(0, 16);
+      const displayText = placeName ? `${placeName} - ${textRaw}` : textRaw;
 
       indexItems.push({
         id,
-        text: textRaw,
-        textNormalized: normalizeText(textRaw),
+        text: displayText,
+        rawText: textRaw,
+        ...(placeName ? { placeName } : {}),
+        textNormalized: normalizeText(displayText),
         sourceGroup,
         sourceFile,
         mapId,

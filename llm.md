@@ -105,6 +105,7 @@ src/
 - **SourceGroup**: `{ sourceCollectionUrl, sourceCollectionLabel, refs[] }` — one per source URL
 - **IndexEntry**: per-manifest record including:
   - `label`, `sourceManifestUrl`, `sourceCollectionUrl`, `compiledManifestPath`
+  - `centerLon?`, `centerLat?` — optional map center derived from mirrored annotation geo points
   - `manifestAllmapsId`, `manifestAllmapsUrl`, `manifestAllmapsStatus`, `mirroredAllmapsAnnotationPath`
   - `canvasAllmapsHits[]`: `{ canvasId, canvasAllmapsId, canvasAllmapsUrl, canvasAllmapsStatus, mirroredAllmapsAnnotationPath }` — one entry per canvas
   - `georefDetectedBy`: `"none" | "manifest" | "canvas"` — canvas hits take priority over manifest
@@ -158,6 +159,25 @@ src/
 - Manifests without detected georeferencing are still compiled and included (unmodified) to keep the collection complete
 - `verzamelblad` detection is string-based against URL/label/identifier/metadata in the source manifest; if present, it is split into a dedicated render layer.
 - `build/` is committed to the repo (acts as the published artifact)
+
+---
+
+## Session Update — 2026-03-06 (Manifest Center Coordinates)
+
+### What Changed
+- `src/pipeline.ts` now derives optional per-manifest center coordinates from mirrored annotation geo GCP points.
+- `build/index.json` `index[]` entries can now include:
+  - `centerLon`
+  - `centerLat`
+
+### Why
+- Viewer manifest search requires click-to-location behavior for each manifest result.
+- Coordinates are embedded in existing `build/index.json` to avoid extra files/fetches.
+
+### Derivation Strategy
+- Prefer center computed from mirrored manifest annotation when available.
+- Fall back to merged canvas-level mirrored annotations.
+- Center is bbox-center over available geo point features.
 
 ---
 

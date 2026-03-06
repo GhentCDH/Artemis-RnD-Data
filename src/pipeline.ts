@@ -23,6 +23,8 @@ type IndexEntry = {
   label: string;
   sourceManifestUrl: string;
   sourceCollectionUrl: string;
+  centerLon?: number;
+  centerLat?: number;
 
   compiledManifestPath: string; // build/manifests/<slug>.json (relative to build/)
   mirroredAllmapsAnnotationPath: string; // build/allmaps/manifests/<id>.json (relative to build/)
@@ -136,6 +138,74 @@ function issueSolutionsFor(codes: AnnotationIssue["code"][]): string[] {
 
 function serializeSvgPolygonPoints(points: Array<[number, number]>): string {
   return points.map(([x, y]) => `${x},${y}`).join(" ");
+}
+
+function extractGeoPointsFromMirroredAnnotation(raw: any): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  const items = Array.isArray(raw?.items) ? raw.items : [];
+  for (const item of items) {
+    const features = Array.isArray(item?.body?.features) ? item.body.features : [];
+    for (const feature of features) {
+      if (feature?.geometry?.type !== "Point") continue;
+      const c = feature?.geometry?.coordinates;
+      if (!Array.isArray(c) || c.length < 2) continue;
+      const lon = Number(c[0]);
+      const lat = Number(c[1]);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+      out.push([lon, lat]);
+    }
+  }
+  return out;
+}
+
+function centerFromGeoPoints(points: Array<[number, number]>): [number, number] | null {
+  if (points.length < 1) return null;
+  let minLon = Infinity;
+  let minLat = Infinity;
+  let maxLon = -Infinity;
+  let maxLat = -Infinity;
+  for (const [lon, lat] of points) {
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  if (![minLon, minLat, maxLon, maxLat].every(Number.isFinite)) return null;
+  return [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
+}
+
+async function deriveAnnotationCenter(
+  preferredAnnotationPath: string,
+  fallbackAnnotationPaths: string[]
+): Promise<[number, number] | null> {
+  const readCenter = async (relPath: string): Promise<[number, number] | null> => {
+    if (!relPath) return null;
+    const absPath = `build/${relPath}`;
+    try {
+      const raw = JSON.parse(await readFile(absPath, "utf-8"));
+      const points = extractGeoPointsFromMirroredAnnotation(raw);
+      return centerFromGeoPoints(points);
+    } catch {
+      return null;
+    }
+  };
+
+  // Prefer manifest annotation center (aggregated + canonical), then fall back to canvases.
+  const preferred = await readCenter(preferredAnnotationPath);
+  if (preferred) return preferred;
+
+  const allFallback = uniqueStrings(fallbackAnnotationPaths);
+  const merged: Array<[number, number]> = [];
+  for (const relPath of allFallback) {
+    const absPath = `build/${relPath}`;
+    try {
+      const raw = JSON.parse(await readFile(absPath, "utf-8"));
+      merged.push(...extractGeoPointsFromMirroredAnnotation(raw));
+    } catch {
+      // ignore bad/missing fallback annotation paths
+    }
+  }
+  return centerFromGeoPoints(merged);
 }
 
 function pointKey([x, y]: [number, number]): string {
@@ -677,12 +747,18 @@ async function processManifestRef(
         }
       : undefined;
 
+  const center = await deriveAnnotationCenter(
+    mirroredManifestRel,
+    Object.values(mirroredCanvasRelByCanvasId)
+  );
+
   return {
     kind: "ok",
     entry: {
       label: (man.label ?? label ?? "").toString(),
       sourceManifestUrl: url,
       sourceCollectionUrl,
+      ...(center ? { centerLon: center[0], centerLat: center[1] } : {}),
       compiledManifestPath: compiledManifestRel,
       mirroredAllmapsAnnotationPath: mirroredManifestRel,
       canvasCount: canvasIds.length,

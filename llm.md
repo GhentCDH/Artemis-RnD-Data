@@ -21,30 +21,35 @@ A data pipeline that crawls IIIF v2 collections, mirrors Allmaps georeferencing 
 
 ## Pipeline (`src/pipeline.ts`)
 
-Each source collection URL is treated as a distinct logical source. Build outputs now expose both:
-- source-level layers (`layers`)
-- viewer render layers (`renderLayers`) that can split out `verzamelblad` manifests separately.
+Each source collection URL is treated as a distinct logical source. Build outputs expose:
+- source-level layers (`layers`) — one per source, for stats/debug
+- viewer render layers (`renderLayers`) — visible layers + hidden annotation-source sub-layers
 
 1. Reads collection URLs from `data/sources/collections.txt` (one URL per line, `#` = comment)
 2. Resolves each URL into a `SourceGroup` (fetches IIIF v2 Collection, cached to `cache/collections/`); deduplication happens within each source independently
 3. For each source group, processes its manifests (cached to `cache/manifests/`):
    - Generates an Allmaps ID via `@allmaps/id` from the manifest URL
    - Checks `https://annotations.allmaps.org/manifests/<id>` for georeferencing annotations (HTTP status)
-   - Extracts canvas IDs from the IIIF v2 manifest and checks each at `https://annotations.allmaps.org/canvases/<canvas-id-hash>`
+   - Extracts canvas IDs from the IIIF v2 manifest and checks **each canvas** at `https://annotations.allmaps.org/canvases/<canvas-id-hash>`
    - Mirrors available annotation JSONs:
-     - manifest endpoint -> `build/allmaps/manifests/<id>.json`
-     - canvas endpoint -> `build/allmaps/canvases/<id>.json`
-   - Georef detection is now combined: `manifest OR any canvas`
+     - manifest endpoint → `build/allmaps/manifests/<id>.json`
+     - canvas endpoint → `build/allmaps/canvases/<id>.json`
+   - **Annotation source priority**: canvas endpoints are checked first. If any canvas returns 200 → `georefDetectedBy = "canvas"`. Only if no canvas hits but manifest returns 200 → `georefDetectedBy = "manifest"`. This correctly handles multi-canvas manifests where the Allmaps manifest endpoint is an aggregation of per-canvas annotations.
    - Compiles the manifest:
      - injects `otherContent` on every canvas
      - prefers canvas-specific mirrored annotation when available
      - otherwise falls back to the mirrored manifest annotation
      - adds provenance metadata
    - Writes compiled manifest to `build/manifests/<sha1-slug>.json`
-4. Writes one `build/collections/<sha1(sourceUrl)>.json` per source — a IIIF v2 Collection listing only that source's compiled manifests (this is the unit the viewer loads per layer)
-5. Writes additional per-source render-layer collections:
-   - `default` (non-`verzamelblad`)
-   - `verzamelblad` (only manifests identified as `verzamelblad`)
+4. Writes one `build/collections/<sha1(sourceUrl)>.json` per source — a IIIF v2 Collection listing only that source's compiled manifests
+5. Writes per-source render-layer collections. For each source there are up to 6 collections:
+   - `default` — all non-`verzamelblad` entries — **visible**
+   - `verzamelblad` — entries identified as verzamelblad — **visible**
+   - `annot-manifest` (parent: `default`) — non-verzamelblad entries with manifest-level annotations — **hidden**
+   - `annot-canvas` (parent: `default`) — non-verzamelblad entries with canvas-level annotations — **hidden**
+   - `annot-manifest` (parent: `verzamelblad`) — verzamelblad entries with manifest-level annotations — **hidden**
+   - `annot-canvas` (parent: `verzamelblad`) — verzamelblad entries with canvas-level annotations — **hidden**
+   - Empty splits are skipped (e.g. Gereduceerd will have no `annot-canvas` layers)
 6. Writes `build/index.json` — stats + `layers` + `renderLayers` + full flat `index` array for tooling
 7. Writes `build/collection.json` — top-level IIIF v2 Collection referencing render-layer sub-collections (not source-level collections)
 
@@ -57,14 +62,15 @@ index.json            ← fetch once to enumerate layers (small)
                  └─ manifests/<slug>.json  ← fetch on demand
 ```
 
-### Viewer migration notes (important)
-- Use `renderLayers` for layer toggles in the viewer.
-- Keep `layers` for source-level stats/debug only.
-- For georef readiness:
-  - prefer `georefDetectedBy !== "none"`
-  - do not rely solely on `manifestAllmapsStatus === 200` anymore.
-- For special handling:
-  - `isVerzamelblad === true` indicates items meant for the dedicated `verzamelblad` render layer.
+### Viewer notes
+- Use `renderLayers` for layer toggles; keep `layers` for source-level stats/debug only.
+- For georef readiness: use `georefDetectedBy !== "none"`. Do not rely solely on `manifestAllmapsStatus === 200` — the manifest endpoint is an aggregation and always returns 200 if any canvas is georeferenced.
+- `isVerzamelblad === true` → entry belongs to the `verzamelblad` visible render layer.
+- `hidden: false` render layers (`default`, `verzamelblad`) are the visible UI layers.
+- `hidden: true` render layers (`annot-manifest`, `annot-canvas`) are annotation-source sub-layers. Use `parentRenderLayerKey` to associate them with their visible parent:
+  - `renderLayers.filter(l => l.hidden && l.parentRenderLayerKey === "default")` → annotation splits for the default layer
+  - `renderLayers.filter(l => l.hidden && l.parentRenderLayerKey === "verzamelblad")` → annotation splits for verzamelblad
+- The compiled manifest already has `otherContent` pointing to the correct mirrored annotation file per canvas (canvas-specific if available, manifest fallback otherwise). The viewer does not need to consult `annotSource` to render correctly — it just follows `otherContent`.
 
 ## Directory Layout
 
@@ -96,11 +102,17 @@ src/
 - **SourceGroup**: `{ sourceCollectionUrl, sourceCollectionLabel, refs[] }` — one per source URL
 - **IndexEntry**: per-manifest record including:
   - `label`, `sourceManifestUrl`, `sourceCollectionUrl`, `compiledManifestPath`
-  - manifest-level Allmaps fields: `manifestAllmapsId`, `manifestAllmapsUrl`, `manifestAllmapsStatus`, `mirroredAllmapsAnnotationPath`
-  - canvas-level Allmaps fields: `canvasAllmapsHits[]` with `{ canvasId, canvasAllmapsId, canvasAllmapsUrl, canvasAllmapsStatus, mirroredAllmapsAnnotationPath }`
-  - `georefDetectedBy`: `"none" | "manifest" | "canvas"`
+  - `manifestAllmapsId`, `manifestAllmapsUrl`, `manifestAllmapsStatus`, `mirroredAllmapsAnnotationPath`
+  - `canvasAllmapsHits[]`: `{ canvasId, canvasAllmapsId, canvasAllmapsUrl, canvasAllmapsStatus, mirroredAllmapsAnnotationPath }` — one entry per canvas
+  - `georefDetectedBy`: `"none" | "manifest" | "canvas"` — canvas hits take priority over manifest
+  - `annotSource`: `"manifest" | "canvas" | "none"` — same value as `georefDetectedBy`, used for hidden sub-layer routing
   - `isVerzamelblad`: boolean
-  - `canvasIds`
+  - `canvasCount`, `canvasIds`
+- **renderLayerMeta entry** fields:
+  - `renderLayerKey`: `"default" | "verzamelblad" | "annot-manifest" | "annot-canvas"`
+  - `parentRenderLayerKey`: `"default" | "verzamelblad"` — only present on hidden sub-layers
+  - `hidden`: boolean
+  - `manifestCount`, `georefCount`, `annotManifestCount`, `annotCanvasCount`
 - **V2Collection / V2Manifest**: typed IIIF v2 shapes (permissive `Record<string, any>` for manifests)
 
 ## Current Data Sources

@@ -66,8 +66,8 @@ index.json            ← fetch once to enumerate layers (small)
 - Per-entry `annotSource` (`"single"` / `"multi"` / `"none"`) and `singleCanvasGeorefCount`/`multiCanvasGeorefCount` on each layer carry all canvas-count information — no separate sub-layer collection files are needed.
 - The compiled manifest already has `otherContent` on every canvas pointing to the correct mirrored annotation — the viewer does not need `annotSource` for rendering, it just follows `otherContent`.
 - **Annotation loading strategy in viewer** (`getMirroredAnnotationRequests`):
-  - `annotSource === "multi"` → prefer manifest annotation (`mirroredAllmapsAnnotationPath`). The manifest endpoint aggregates all georef'd canvases into one AnnotationPage, so one `addGeoreferenceAnnotation` call handles the whole manifest. Falls back to individual canvas paths only if manifest annotation is absent.
-  - `annotSource === "single"` → prefer canvas annotation. Falls back to manifest if no canvas path.
+  - Always prefer the manifest annotation (`mirroredAllmapsAnnotationPath`) for all entries — it is the canonical source and ensures a single `addGeoreferenceAnnotation` call regardless of canvas count.
+  - Canvas paths (from `canvasAllmapsHits`) are only used as fallback when no manifest annotation was mirrored.
 - Build output dirs (`build/manifests/`, `build/collections/`, `build/allmaps/`) are wiped at the start of each pipeline run. Only `cache/` persists.
 
 ## Directory Layout
@@ -119,6 +119,33 @@ src/
 `data/sources/collections.txt` currently points to two collections:
 - `https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json` (Gereduceerd Kadaster)
 - `https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster` (Primitief Kadaster)
+
+## Known rendering bug — Primitief single-canvas
+
+**Symptom**: Enabling the Primitief `single-canvas` hidden sub-layer causes visual artifacts: maps load intermittently, only a small portion renders, and visible maps flicker. The Gereduceerd `single-canvas` layer (96 maps) renders correctly. Primitief `multi-canvas` (83 manifests) also renders correctly.
+
+**What was ruled out**:
+- IIIF server connectivity — all 10 images respond fine: `info.json` <10ms, tiles 130–200ms
+- Self-intersecting resource mask polygons — none found (checked all 10 programmatically)
+- Polygon complexity — Gereduceerd has masks up to 639 pts and works fine; Primitief single-canvas max is 368 pts
+- GCP coordinate errors — all 10 entries have valid Belgium coordinates
+- Wrong GCP count — counts range from 4 to 78, mix of polynomial and thinPlateSpline
+- Canvas vs manifest annotation format — both are structurally identical; switching to manifest annotations for all entries made no difference
+- Layer overlap — bug persists even when Primitief single-canvas is the only active layer
+
+**10 affected manifests** (see also `/home/def/Documents/primitief-single-canvas.txt`):
+- Sinaai - Sectie A en B — canvas `2b1590f8e163db39`
+- Overmere - Sectie B — canvas `8f02aba1d89c9431`
+- Dendermonde - Sectie C — canvas `b68b5cfe7d18ef28`
+- Appels - Sectie A — canvas `3c6ce0bee9d63669`
+- Sint-Gillis-bij-Dendermonde - Sectie B — canvas `33cf8c20d249c8b4`
+- Sint-Gillis-bij-Dendermonde - Sectie C — canvas `e675aa4b2b9ef18f`
+- Oudegem - Sectie A — canvas `1822684cedf15b29`
+- Heusden - Sectie E — canvas `9a5c1c6984b0e9c9`
+- Bazel - Sectie C — canvas `fdb91d7591e7146f`
+- Kalken - Sectie C-D — canvas `b6fb234749565370`
+
+**Next debugging step**: Test these manifests directly in the Allmaps viewer (`viewer.allmaps.org`) to see if the same flickering/partial rendering occurs outside our pipeline. If it does, the root cause is in the annotation data itself (GCP quality, mask shape, or transformation parameters) rather than our rendering code.
 
 ## Notes
 

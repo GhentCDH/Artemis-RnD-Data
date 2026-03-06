@@ -430,12 +430,14 @@ async function main() {
   const renderLayerMeta: Array<{
     sourceCollectionUrl: string;
     sourceCollectionLabel: string;
-    renderLayerKey: "default" | "verzamelblad";
+    renderLayerKey: "default" | "verzamelblad" | "single-canvas" | "multi-canvas";
+    parentRenderLayerKey?: "default";
     compiledCollectionPath: string;
     manifestCount: number;
     georefCount: number;
     singleCanvasGeorefCount: number;
     multiCanvasGeorefCount: number;
+    hidden: boolean;
   }> = [];
 
   for (const group of sourceGroups) {
@@ -503,7 +505,45 @@ async function main() {
         manifestCount: renderEntries.length,
         georefCount: renderEntries.filter((e) => e.georefDetectedBy !== "none").length,
         singleCanvasGeorefCount: renderEntries.filter((e) => e.annotSource === "single").length,
-        multiCanvasGeorefCount: renderEntries.filter((e) => e.annotSource === "multi").length
+        multiCanvasGeorefCount: renderEntries.filter((e) => e.annotSource === "multi").length,
+        hidden: false
+      });
+    }
+
+    // Debug sub-layers: split the default layer by canvas count so the viewer can
+    // load single-canvas and multi-canvas annotations independently to isolate rendering bugs.
+    const defaultEntries = entriesByRenderLayer["default"];
+    const defaultLabel = group.sourceCollectionLabel || group.sourceCollectionUrl;
+    for (const canvasKey of ["single-canvas", "multi-canvas"] as const) {
+      const annotSource = canvasKey === "single-canvas" ? "single" : "multi";
+      const subEntries = defaultEntries.filter((e) => e.annotSource === annotSource);
+      if (subEntries.length < 1) continue;
+      const subSlug = sha1(`${group.sourceCollectionUrl}::default::${canvasKey}`).slice(0, 16);
+      const subRelPath = `collections/${subSlug}.json`;
+      const subAbsPath = `build/${subRelPath}`;
+      const subCol: V2Collection = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": base(subRelPath),
+        "@type": "sc:Collection",
+        label: `${defaultLabel} (${canvasKey})`,
+        manifests: subEntries.map((e) => ({
+          "@id": base(e.compiledManifestPath),
+          "@type": "sc:Manifest",
+          label: e.label
+        }))
+      };
+      await writeFile(subAbsPath, JSON.stringify(subCol, null, 2), "utf-8");
+      renderLayerMeta.push({
+        sourceCollectionUrl: group.sourceCollectionUrl,
+        sourceCollectionLabel: group.sourceCollectionLabel,
+        renderLayerKey: canvasKey,
+        parentRenderLayerKey: "default",
+        compiledCollectionPath: subRelPath,
+        manifestCount: subEntries.length,
+        georefCount: subEntries.length,
+        singleCanvasGeorefCount: canvasKey === "single-canvas" ? subEntries.length : 0,
+        multiCanvasGeorefCount: canvasKey === "multi-canvas" ? subEntries.length : 0,
+        hidden: true
       });
     }
   }

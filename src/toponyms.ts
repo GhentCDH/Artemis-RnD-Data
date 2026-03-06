@@ -111,6 +111,11 @@ async function main() {
 
   const files = await listSourceFiles(sourceRoot);
   console.log(`[1/2] Found ${files.length} source files under ${sourceRoot}`);
+  if (files.length < 1) {
+    throw new Error(
+      `No toponym source files found under ${sourceRoot}. Refusing to overwrite existing ${outIndex}.`
+    );
+  }
 
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
@@ -182,9 +187,12 @@ async function main() {
       .sort((a, b) => a.sourceGroup.localeCompare(b.sourceGroup)),
     items: indexItems,
   };
+  if (indexItems.length < 1) {
+    throw new Error(`Toponym source files were found but produced 0 index items. Refusing to write ${outIndex}.`);
+  }
 
   console.log(`[2/2] Writing ${outIndex}`);
-  await writeFile(outIndex, JSON.stringify(indexPayload), "utf-8");
+  await writeFile(outIndex, JSON.stringify(indexPayload, null, 2), "utf-8");
 
   console.log(`Done. files=${files.length}, items=${indexItems.length}`);
 }

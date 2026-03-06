@@ -65,6 +65,9 @@ index.json            ← fetch once to enumerate layers (small)
 - `renderLayers` contains only visible UI layers (`default`, `verzamelblad`).
 - Per-entry `annotSource` (`"single"` / `"multi"` / `"none"`) and `singleCanvasGeorefCount`/`multiCanvasGeorefCount` on each layer carry all canvas-count information — no separate sub-layer collection files are needed.
 - The compiled manifest already has `otherContent` on every canvas pointing to the correct mirrored annotation — the viewer does not need `annotSource` for rendering, it just follows `otherContent`.
+- **Annotation loading strategy in viewer** (`getMirroredAnnotationRequests`):
+  - `annotSource === "multi"` → prefer manifest annotation (`mirroredAllmapsAnnotationPath`). The manifest endpoint aggregates all georef'd canvases into one AnnotationPage, so one `addGeoreferenceAnnotation` call handles the whole manifest. Falls back to individual canvas paths only if manifest annotation is absent.
+  - `annotSource === "single"` → prefer canvas annotation. Falls back to manifest if no canvas path.
 - Build output dirs (`build/manifests/`, `build/collections/`, `build/allmaps/`) are wiped at the start of each pipeline run. Only `cache/` persists.
 
 ## Directory Layout
@@ -104,8 +107,11 @@ src/
   - `isVerzamelblad`: boolean
   - `canvasCount`, `canvasIds`
 - **renderLayerMeta entry** fields:
-  - `renderLayerKey`: `"default" | "verzamelblad"`
+  - `renderLayerKey`: `"default" | "verzamelblad" | "single-canvas" | "multi-canvas"`
+  - `parentRenderLayerKey?`: `"default"` — set on hidden sub-layers
+  - `hidden`: boolean — `true` for `single-canvas`/`multi-canvas` debug sub-layers
   - `manifestCount`, `georefCount`, `singleCanvasGeorefCount`, `multiCanvasGeorefCount`
+  - Hidden sub-layers exist only for the `default` layer of each source; they split entries by `annotSource` for isolated render testing
 - **V2Collection / V2Manifest**: typed IIIF v2 shapes (permissive `Record<string, any>` for manifests)
 
 ## Current Data Sources

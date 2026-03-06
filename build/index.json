@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-06T08:56:11.669Z",
+  "generatedAt": "2026-03-06T09:15:21.841Z",
   "totalManifests": 571,
   "georefManifests": 211,
   "mirroredOk": 211,
@@ -11,8 +11,8 @@
       "compiledCollectionPath": "collections/dbd858bb241ff374.json",
       "manifestCount": 248,
       "georefCount": 103,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 103
+      "singleCanvasGeorefCount": 96,
+      "multiCanvasGeorefCount": 7
     },
     {
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
@@ -20,8 +20,8 @@
       "compiledCollectionPath": "collections/87eb94ed85ae9008.json",
       "manifestCount": 323,
       "georefCount": 108,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 108
+      "singleCanvasGeorefCount": 25,
+      "multiCanvasGeorefCount": 83
     }
   ],
   "renderLayers": [
@@ -32,21 +32,8 @@
       "compiledCollectionPath": "collections/d5443d67bd8c69ec.json",
       "manifestCount": 248,
       "georefCount": 103,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 103,
-      "hidden": false
-    },
-    {
-      "sourceCollectionUrl": "https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json",
-      "sourceCollectionLabel": "Gereduceerd Kadaster",
-      "renderLayerKey": "annot-canvas",
-      "parentRenderLayerKey": "default",
-      "compiledCollectionPath": "collections/65e745964e4d5d72.json",
-      "manifestCount": 103,
-      "georefCount": 103,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 103,
-      "hidden": true
+      "singleCanvasGeorefCount": 96,
+      "multiCanvasGeorefCount": 7
     },
     {
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
@@ -55,9 +42,8 @@
       "compiledCollectionPath": "collections/6d61d16e4261308b.json",
       "manifestCount": 259,
       "georefCount": 93,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 93,
-      "hidden": false
+      "singleCanvasGeorefCount": 10,
+      "multiCanvasGeorefCount": 83
     },
     {
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
@@ -66,33 +52,8 @@
       "compiledCollectionPath": "collections/00617abd57335483.json",
       "manifestCount": 64,
       "georefCount": 15,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 15,
-      "hidden": false
-    },
-    {
-      "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "sourceCollectionLabel": "Primitief Kadaster",
-      "renderLayerKey": "annot-canvas",
-      "parentRenderLayerKey": "default",
-      "compiledCollectionPath": "collections/6fa1c6a50cd82182.json",
-      "manifestCount": 93,
-      "georefCount": 93,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 93,
-      "hidden": true
-    },
-    {
-      "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "sourceCollectionLabel": "Primitief Kadaster",
-      "renderLayerKey": "annot-canvas",
-      "parentRenderLayerKey": "verzamelblad",
-      "compiledCollectionPath": "collections/8719ce6744e0f19a.json",
-      "manifestCount": 15,
-      "georefCount": 15,
-      "annotManifestCount": 0,
-      "annotCanvasCount": 15,
-      "hidden": true
+      "singleCanvasGeorefCount": 15,
+      "multiCanvasGeorefCount": 0
     }
   ],
   "problematicManifests": [
@@ -143,7 +104,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Appels/canvas/Appels_1852"
       ]
@@ -169,7 +130,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Audeghem/canvas/Audeghem_1852"
       ]
@@ -195,7 +156,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Baesrode/canvas/Baesrode_1852"
       ]
@@ -221,7 +182,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Berlaere/canvas/Berlaere_1852"
       ]
@@ -247,7 +208,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Buggenhout/canvas/Buggenhout_1852"
       ]
@@ -273,7 +234,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Calcken/canvas/Calcken_1852"
       ]
@@ -299,7 +260,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Cherscamp/canvas/Cherscamp_1852_"
       ]
@@ -325,7 +286,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Denderbelle/canvas/Denderbelle_1852"
       ]
@@ -351,7 +312,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Grembergen/canvas/Grembergen_1852"
       ]
@@ -377,7 +338,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Hamme/canvas/Hamme_1852"
       ]
@@ -403,7 +364,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Laerne/canvas/Laerne_1852"
       ]
@@ -507,7 +468,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Moerzeke/canvas/Moerzeke_1852"
       ]
@@ -533,7 +494,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Opdorp/canvas/Opdorp_1852"
       ]
@@ -559,7 +520,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Overmeire/canvas/Overmeire_1852"
       ]
@@ -585,7 +546,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Schellebelle/canvas/Schellebelle_1852"
       ]
@@ -611,7 +572,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:St_Gilles-lez-Termonde/canvas/St_Gilles-lez-Termonde_1852"
       ]
@@ -637,7 +598,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Termonde/canvas/Termonde_1852"
       ]
@@ -663,7 +624,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Uytbergen/canvas/Uytbergen_1852"
       ]
@@ -689,7 +650,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Waesmunster/canvas/Waesmunster_1852"
       ]
@@ -715,7 +676,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Wetteren/canvas/Wetteren_1852"
       ]
@@ -741,7 +702,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Wichelen/canvas/Wichelen_1852"
       ]
@@ -767,7 +728,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Wieze/canvas/Wieze_1852"
       ]
@@ -793,7 +754,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Termonde:Zele/canvas/Zele_1852"
       ]
@@ -819,7 +780,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Aertselaer/canvas/Aertselaer_1851"
       ]
@@ -845,7 +806,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Anvers/canvas/Anvers_1852"
       ]
@@ -871,7 +832,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Austruweel/canvas/Austruweel_1851"
       ]
@@ -897,7 +858,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Beirendrecht/canvas/Beirendrecht_1852"
       ]
@@ -923,7 +884,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Berchem/canvas/Berchem_1851"
       ]
@@ -949,7 +910,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Boom/canvas/Boom_1851"
       ]
@@ -975,7 +936,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Borgerhout/canvas/Borgerhout_1851"
       ]
@@ -1001,7 +962,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Borsbeeck/canvas/Borsbeeck_1851"
       ]
@@ -1027,7 +988,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Bouchout/canvas/Bouchout_1851"
       ]
@@ -1060,7 +1021,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Brasschaet/canvas/Brasschaet_1_2__1851",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Brasschaet/canvas/Brasschaet_2_2__1851"
@@ -1094,7 +1055,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Brecht/canvas/Brecht_1_2__1852",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Brecht/canvas/Brecht_2_2__1852"
@@ -1121,7 +1082,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Broechem/canvas/Broechem_1851"
       ]
@@ -1161,7 +1122,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Calmpthout/canvas/Calmpthout_1_3__1852",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Calmpthout/canvas/Calmpthout_2_3__1852",
@@ -1189,7 +1150,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Cappellen/canvas/Cappellen_1852"
       ]
@@ -1215,7 +1176,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Contich/canvas/Contich_1851"
       ]
@@ -1241,7 +1202,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Deurne/canvas/Deurne_1851"
       ]
@@ -1267,7 +1228,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Edegem/canvas/Edegem_1851"
       ]
@@ -1300,7 +1261,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Eekeren/canvas/Eekeren_1_2__1851",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Eekeren/canvas/Eekeren_2_2__1851"
@@ -1327,7 +1288,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Emblehem/canvas/Emblehem_1852"
       ]
@@ -1360,7 +1321,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Esschen/canvas/Esschen_1_2__1852",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Esschen/canvas/Esschen_2_2__1852"
@@ -1387,7 +1348,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Halle/canvas/Halle_1851"
       ]
@@ -1413,7 +1374,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Hemixem/canvas/Hemixem_1851"
       ]
@@ -1439,7 +1400,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Hoboken/canvas/Hoboken_1851"
       ]
@@ -1465,7 +1426,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Hove/canvas/Hove_1851"
       ]
@@ -1491,7 +1452,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Lillo/canvas/Lillo_1852"
       ]
@@ -1517,7 +1478,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Loenhout/canvas/Loenhout_1852"
       ]
@@ -1543,7 +1504,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Massenhoven/canvas/Massenhoven_1852"
       ]
@@ -1569,7 +1530,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Merxem/canvas/Merxem_1851"
       ]
@@ -1595,7 +1556,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Mortsel/canvas/Mortsel_1851"
       ]
@@ -1621,7 +1582,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Niel/canvas/Niel_1851"
       ]
@@ -1647,7 +1608,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Oeleghem/canvas/Oeleghem_1852"
       ]
@@ -1673,7 +1634,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Oorderen/canvas/Oorderen_1851"
       ]
@@ -1803,7 +1764,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Reeth/canvas/Reeth_1851"
       ]
@@ -1829,7 +1790,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Rumpst/canvas/Rumpst_1851"
       ]
@@ -1855,7 +1816,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:S_Gravenwezel/canvas/S_Gravenwezel_1851"
       ]
@@ -1933,7 +1894,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Santvliet/canvas/Santvliet_1852"
       ]
@@ -1959,7 +1920,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Schelle/canvas/Schelle_1851"
       ]
@@ -2011,7 +1972,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Schooten/canvas/Schooten_1851"
       ]
@@ -2063,7 +2024,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Stabroek/canvas/Stabroek_1852"
       ]
@@ -2141,7 +2102,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Waerloos/canvas/Waerloos_1851"
       ]
@@ -2193,7 +2154,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Wilmarsdonck/canvas/Wilmarsdonck_1851"
       ]
@@ -2219,7 +2180,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Wilryck/canvas/Wilryck_1851"
       ]
@@ -2245,7 +2206,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Anvers:Wommelghem/canvas/Wommelghem_1851"
       ]
@@ -2606,7 +2567,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Destelbergen/canvas/Destelbergen_1_2__1852",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Destelbergen/canvas/Destelbergen_2_2__1852"
@@ -2797,7 +2758,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Gand/canvas/Gand_1853"
       ]
@@ -2849,7 +2810,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Gendbrugge/canvas/Gendbrugge_1852"
       ]
@@ -2875,7 +2836,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Gontrode/canvas/Gontrode_1852"
       ]
@@ -3005,7 +2966,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Heusden/canvas/Heusden_1852"
       ]
@@ -3135,7 +3096,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Ledeberg/canvas/Ledeberg_1852"
       ]
@@ -3187,7 +3148,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Lemberge/canvas/Lemberge_1852"
       ]
@@ -3395,7 +3356,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Melle/canvas/Melle_1852"
       ]
@@ -3671,7 +3632,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Oostacker/canvas/Oostacker_1852"
       ]
@@ -4321,7 +4282,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Gand:Wondelgem/canvas/Wondelgem_1853"
       ]
@@ -4451,7 +4412,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Basel/canvas/Basel_1852"
       ]
@@ -4503,7 +4464,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Beveren/canvas/Beveren_1852"
       ]
@@ -4529,7 +4490,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Burght/canvas/Burght_1852"
       ]
@@ -4555,7 +4516,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Calloo/canvas/Calloo_1852"
       ]
@@ -4607,7 +4568,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Cruybeke/canvas/Cruybeke_1852"
       ]
@@ -4633,7 +4594,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Dacknam/canvas/Dacknam_1852"
       ]
@@ -4659,7 +4620,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Doel/canvas/Doel_1852"
       ]
@@ -4685,7 +4646,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Elversele/canvas/Elversele_1852"
       ]
@@ -4789,7 +4750,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Kieldrecht/canvas/Kieldrecht_1852"
       ]
@@ -4822,7 +4783,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Lokeren/canvas/Lokeren_1_2__1852",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Lokeren/canvas/Lokeren_2_2__1852"
@@ -4875,7 +4836,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Melsele/canvas/Melsele_1852"
       ]
@@ -4927,7 +4888,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Rupelmonde/canvas/Rupelmonde_1852"
       ]
@@ -5083,7 +5044,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Tamise/canvas/Tamise_1852"
       ]
@@ -5109,7 +5070,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Thielrode/canvas/Thielrode_1852"
       ]
@@ -5187,7 +5148,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:SaintNicolas:Zwyndrecht/canvas/Zwyndrecht_1852"
       ]
@@ -5291,7 +5252,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Blaesveld/canvas/Blaesveld_1851"
       ]
@@ -5369,7 +5330,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Bornhem/canvas/Bornhem_1851"
       ]
@@ -5421,7 +5382,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Duffel/canvas/Duffel_1851"
       ]
@@ -5473,7 +5434,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Heffen/canvas/Heffen_1851"
       ]
@@ -5499,7 +5460,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Heyndonck/canvas/Heyndonck_1851"
       ]
@@ -5551,7 +5512,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Hingene/canvas/Hingene_1851"
       ]
@@ -5819,7 +5780,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Mariekerke/canvas/Mariekerke_1851"
       ]
@@ -5949,7 +5910,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Ruysbroeck/canvas/Ruysbroeck_1851"
       ]
@@ -6001,7 +5962,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Saint-Amand/canvas/Saint-Amand_1851"
       ]
@@ -6079,7 +6040,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Waelhem/canvas/Waelhem_1851"
       ]
@@ -6157,7 +6118,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Weert/canvas/Weert_1851"
       ]
@@ -6209,7 +6170,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/gereduceerd_kadaster:Malines:Willebroeck/canvas/Willebroeck_1851"
       ]
@@ -6711,7 +6672,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_01588_000/canvas/550_0001_000_01588_000_0_0001"
       ]
@@ -6786,7 +6747,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000/canvas/550_0001_000_02554_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000/canvas/550_0001_000_02554_000_0_0002",
@@ -7036,7 +6997,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02559_000/canvas/550_0001_000_02559_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02559_000/canvas/550_0001_000_02559_000_0_0002",
@@ -7283,7 +7244,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02595_000/canvas/550_0001_000_02595_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02595_000/canvas/550_0001_000_02595_000_0_0002",
@@ -9316,7 +9277,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03097_000/canvas/550_0001_000_03097_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03097_000/canvas/550_0001_000_03097_000_0_0002"
@@ -10777,7 +10738,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03327_000/canvas/550_0001_000_03327_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03327_000/canvas/550_0001_000_03327_000_0_0002",
@@ -10995,7 +10956,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05917_000/canvas/550_0001_000_05917_000_0_0001"
       ]
@@ -11035,7 +10996,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05918_000/canvas/550_0001_000_05918_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05918_000/canvas/550_0001_000_05918_000_0_0002",
@@ -11070,7 +11031,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05919_000/canvas/550_0001_000_05919_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05919_000/canvas/550_0001_000_05919_000_0_0002"
@@ -11111,7 +11072,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05920_000/canvas/550_0001_000_05920_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05920_000/canvas/550_0001_000_05920_000_0_0002",
@@ -11146,7 +11107,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05921_000/canvas/550_0001_000_05921_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05921_000/canvas/550_0001_000_05921_000_0_0002"
@@ -11173,7 +11134,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05922_000/canvas/550_0001_000_05922_000_0_0001"
       ]
@@ -11206,7 +11167,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05923_000/canvas/550_0001_000_05923_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05923_000/canvas/550_0001_000_05923_000_0_0002"
@@ -11240,7 +11201,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05924_000/canvas/550_0001_000_05924_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05924_000/canvas/550_0001_000_05924_000_0_0002"
@@ -11267,7 +11228,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05925_000/canvas/550_0001_000_05925_000_0_0001"
       ]
@@ -11300,7 +11261,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05926_000/canvas/550_0001_000_05926_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05926_000/canvas/550_0001_000_05926_000_0_0002"
@@ -11327,7 +11288,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05927_000/canvas/550_0001_000_05927_000_0_0001"
       ]
@@ -11360,7 +11321,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05928_000/canvas/550_0001_000_05928_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05928_000/canvas/550_0001_000_05928_000_0_0002"
@@ -11394,7 +11355,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05929_000/canvas/550_0001_000_05929_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05929_000/canvas/550_0001_000_05929_000_0_0002"
@@ -11421,7 +11382,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05999_000/canvas/550_0001_000_05999_000_0_0001"
       ]
@@ -11461,7 +11422,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06000_000/canvas/550_0001_000_06000_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06000_000/canvas/550_0001_000_06000_000_0_0002",
@@ -11503,7 +11464,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06001_000/canvas/550_0001_000_06001_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06001_000/canvas/550_0001_000_06001_000_0_0002",
@@ -11538,7 +11499,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000/canvas/550_0001_000_06002_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000/canvas/550_0001_000_06002_000_0_0002"
@@ -11572,7 +11533,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06003_000/canvas/550_0001_000_06003_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06003_000/canvas/550_0001_000_06003_000_0_0002"
@@ -11606,7 +11567,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06004_000/canvas/550_0001_000_06004_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06004_000/canvas/550_0001_000_06004_000_0_0002"
@@ -11666,7 +11627,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06057_000/canvas/550_0001_000_06057_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06057_000/canvas/550_0001_000_06057_000_0_0002"
@@ -11700,7 +11661,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06058_000/canvas/550_0001_000_06058_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06058_000/canvas/550_0001_000_06058_000_0_0002"
@@ -11727,7 +11688,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06059_000/canvas/550_0001_000_06059_000_0_0001"
       ]
@@ -11760,7 +11721,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06060_000/canvas/550_0001_000_06060_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06060_000/canvas/550_0001_000_06060_000_0_0002"
@@ -11794,7 +11755,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06061_000/canvas/550_0001_000_06061_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06061_000/canvas/550_0001_000_06061_000_0_0002"
@@ -11847,7 +11808,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06063_000/canvas/550_0001_000_06063_000_0_0001"
       ]
@@ -11932,7 +11893,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06066_000/canvas/550_0001_000_06066_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06066_000/canvas/550_0001_000_06066_000_0_0002"
@@ -11959,7 +11920,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06067_000/canvas/550_0001_000_06067_000_0_0001"
       ]
@@ -11985,7 +11946,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06068_000/canvas/550_0001_000_06068_000_0_0001"
       ]
@@ -12037,7 +11998,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06070_000/canvas/550_0001_000_06070_000_0_0001"
       ]
@@ -12077,7 +12038,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0002",
@@ -12119,7 +12080,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06072_000/canvas/550_0001_000_06072_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06072_000/canvas/550_0001_000_06072_000_0_0002",
@@ -12147,7 +12108,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06073_000/canvas/550_0001_000_06073_000_0_0001"
       ]
@@ -12180,7 +12141,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06074_000/canvas/550_0001_000_06074_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06074_000/canvas/550_0001_000_06074_000_0_0002"
@@ -12214,7 +12175,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06075_000/canvas/550_0001_000_06075_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06075_000/canvas/550_0001_000_06075_000_0_0002"
@@ -12248,7 +12209,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06076_000/canvas/550_0001_000_06076_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06076_000/canvas/550_0001_000_06076_000_0_0002"
@@ -12301,7 +12262,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06078_000/canvas/550_0001_000_06078_000_0_0001"
       ]
@@ -12395,7 +12356,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06082_000/canvas/550_0001_000_06082_000_0_0001"
       ]
@@ -12435,7 +12396,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06083_000/canvas/550_0001_000_06083_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06083_000/canvas/550_0001_000_06083_000_0_0002",
@@ -12477,7 +12438,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06084_000/canvas/550_0001_000_06084_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06084_000/canvas/550_0001_000_06084_000_0_0002",
@@ -12519,7 +12480,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06085_000/canvas/550_0001_000_06085_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06085_000/canvas/550_0001_000_06085_000_0_0002",
@@ -12554,7 +12515,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06086_000/canvas/550_0001_000_06086_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06086_000/canvas/550_0001_000_06086_000_0_0002"
@@ -12614,7 +12575,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06088_000/canvas/550_0001_000_06088_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06088_000/canvas/550_0001_000_06088_000_0_0002"
@@ -12655,7 +12616,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06089_000/canvas/550_0001_000_06089_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06089_000/canvas/550_0001_000_06089_000_0_0002",
@@ -12683,7 +12644,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06090_000/canvas/550_0001_000_06090_000_0_0001"
       ]
@@ -12723,7 +12684,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06091_000/canvas/550_0001_000_06091_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06091_000/canvas/550_0001_000_06091_000_0_0002",
@@ -12758,7 +12719,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06092_000/canvas/550_0001_000_06092_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06092_000/canvas/550_0001_000_06092_000_0_0002"
@@ -12792,7 +12753,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06093_000/canvas/550_0001_000_06093_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06093_000/canvas/550_0001_000_06093_000_0_0002"
@@ -12826,7 +12787,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06094_000/canvas/550_0001_000_06094_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06094_000/canvas/550_0001_000_06094_000_0_0002"
@@ -12853,7 +12814,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06095_000/canvas/550_0001_000_06095_000_0_0001"
       ]
@@ -13130,7 +13091,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06163_000/canvas/550_0001_000_06163_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06163_000/canvas/550_0001_000_06163_000_0_0002",
@@ -15022,7 +14983,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06207_000/canvas/550_0001_000_06207_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06207_000/canvas/550_0001_000_06207_000_0_0002"
@@ -15915,7 +15876,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06288_000/canvas/550_0001_000_06288_000_0_0001"
       ]
@@ -15962,7 +15923,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06289_000/canvas/550_0001_000_06289_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06289_000/canvas/550_0001_000_06289_000_0_0002",
@@ -16005,7 +15966,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06290_000/canvas/550_0001_000_06290_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06290_000/canvas/550_0001_000_06290_000_0_0002",
@@ -16054,7 +16015,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06291_000/canvas/550_0001_000_06291_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06291_000/canvas/550_0001_000_06291_000_0_0002",
@@ -16097,7 +16058,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06292_000/canvas/550_0001_000_06292_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06292_000/canvas/550_0001_000_06292_000_0_0002",
@@ -16132,7 +16093,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06293_000/canvas/550_0001_000_06293_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06293_000/canvas/550_0001_000_06293_000_0_0002"
@@ -16159,7 +16120,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06294_000/canvas/550_0001_000_06294_000_0_0001"
       ]
@@ -16199,7 +16160,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06295_000/canvas/550_0001_000_06295_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06295_000/canvas/550_0001_000_06295_000_0_0002",
@@ -16241,7 +16202,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06296_000/canvas/550_0001_000_06296_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06296_000/canvas/550_0001_000_06296_000_0_0002",
@@ -16290,7 +16251,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06297_000/canvas/550_0001_000_06297_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06297_000/canvas/550_0001_000_06297_000_0_0002",
@@ -16510,7 +16471,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06360_000/canvas/550_0001_000_06360_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06360_000/canvas/550_0001_000_06360_000_0_0002",
@@ -16635,7 +16596,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06363_000/canvas/550_0001_000_06363_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06363_000/canvas/550_0001_000_06363_000_0_0002",
@@ -16715,7 +16676,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06365_000/canvas/550_0001_000_06365_000_0_0001"
       ]
@@ -16748,7 +16709,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06366_000/canvas/550_0001_000_06366_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06366_000/canvas/550_0001_000_06366_000_0_0002"
@@ -16775,7 +16736,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06377_000/canvas/550_0001_000_06377_000_0_0001"
       ]
@@ -16808,7 +16769,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06378_000/canvas/550_0001_000_06378_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06378_000/canvas/550_0001_000_06378_000_0_0002"
@@ -16892,7 +16853,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06380_000/canvas/550_0001_000_06380_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06380_000/canvas/550_0001_000_06380_000_0_0002"
@@ -16926,7 +16887,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06381_000/canvas/550_0001_000_06381_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06381_000/canvas/550_0001_000_06381_000_0_0002"
@@ -16953,7 +16914,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06382_000/canvas/550_0001_000_06382_000_0_0001"
       ]
@@ -16986,7 +16947,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06384_000/canvas/550_0001_000_06384_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06384_000/canvas/550_0001_000_06384_000_0_0002"
@@ -17013,7 +16974,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06385_000/canvas/550_0001_000_06385_000_0_0001"
       ]
@@ -17060,7 +17021,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06386_000/canvas/550_0001_000_06386_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06386_000/canvas/550_0001_000_06386_000_0_0002",
@@ -17103,7 +17064,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06387_000/canvas/550_0001_000_06387_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06387_000/canvas/550_0001_000_06387_000_0_0002",
@@ -17180,7 +17141,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06450_000/canvas/550_0001_000_06450_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06450_000/canvas/550_0001_000_06450_000_0_0002",
@@ -17241,7 +17202,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06451_000/canvas/550_0001_000_06451_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06451_000/canvas/550_0001_000_06451_000_0_0002",
@@ -17388,7 +17349,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06453_000/canvas/550_0001_000_06453_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06453_000/canvas/550_0001_000_06453_000_0_0002",
@@ -17748,7 +17709,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06505_000/canvas/550_0001_000_06505_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06505_000/canvas/550_0001_000_06505_000_0_0002"
@@ -17789,7 +17750,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06506_000/canvas/550_0001_000_06506_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06506_000/canvas/550_0001_000_06506_000_0_0002",
@@ -17824,7 +17785,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/canvas/550_0001_000_06507_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/canvas/550_0001_000_06507_000_0_0002"
@@ -17858,7 +17819,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06508_000/canvas/550_0001_000_06508_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06508_000/canvas/550_0001_000_06508_000_0_0002"
@@ -18563,7 +18524,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06757_000/canvas/550_0001_000_06757_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06757_000/canvas/550_0001_000_06757_000_0_0002",
@@ -18847,7 +18808,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06773_000/canvas/550_0001_000_06773_000_0_0001"
       ]
@@ -18887,7 +18848,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06774_000/canvas/550_0001_000_06774_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06774_000/canvas/550_0001_000_06774_000_0_0002",
@@ -18922,7 +18883,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06775_000/canvas/550_0001_000_06775_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06775_000/canvas/550_0001_000_06775_000_0_0002"
@@ -18970,7 +18931,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06776_000/canvas/550_0001_000_06776_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06776_000/canvas/550_0001_000_06776_000_0_0002",
@@ -19006,7 +18967,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06777_000/canvas/550_0001_000_06777_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06777_000/canvas/550_0001_000_06777_000_0_0002"
@@ -19040,7 +19001,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/canvas/550_0001_000_06778_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06778_000/canvas/550_0001_000_06778_000_0_0002"
@@ -19074,7 +19035,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06779_000/canvas/550_0001_000_06779_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06779_000/canvas/550_0001_000_06779_000_0_0002"
@@ -19122,7 +19083,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06780_000/canvas/550_0001_000_06780_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06780_000/canvas/550_0001_000_06780_000_0_0002",
@@ -19151,7 +19112,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06787_000/canvas/550_0001_000_06787_000_0_0001"
       ]
@@ -19184,7 +19145,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06788_000/canvas/550_0001_000_06788_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06788_000/canvas/550_0001_000_06788_000_0_0002"
@@ -19232,7 +19193,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06789_000/canvas/550_0001_000_06789_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06789_000/canvas/550_0001_000_06789_000_0_0002",
@@ -19275,7 +19236,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06790_000/canvas/550_0001_000_06790_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06790_000/canvas/550_0001_000_06790_000_0_0002",
@@ -19303,7 +19264,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "canvas",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06797_000/canvas/550_0001_000_06797_000_0_0001"
       ]
@@ -19350,7 +19311,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06798_000/canvas/550_0001_000_06798_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06798_000/canvas/550_0001_000_06798_000_0_0002",
@@ -19486,7 +19447,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06820_000/canvas/550_0001_000_06820_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06820_000/canvas/550_0001_000_06820_000_0_0002",
@@ -19543,7 +19504,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06821_000/canvas/550_0001_000_06821_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06821_000/canvas/550_0001_000_06821_000_0_0002",
@@ -19601,7 +19562,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06822_000/canvas/550_0001_000_06822_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06822_000/canvas/550_0001_000_06822_000_0_0002",
@@ -19638,7 +19599,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06823_000/canvas/550_0001_000_06823_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06823_000/canvas/550_0001_000_06823_000_0_0002"
@@ -19686,7 +19647,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06824_000/canvas/550_0001_000_06824_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06824_000/canvas/550_0001_000_06824_000_0_0002",
@@ -19722,7 +19683,7 @@
       ],
       "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "canvas",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06825_000/canvas/550_0001_000_06825_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06825_000/canvas/550_0001_000_06825_000_0_0002"

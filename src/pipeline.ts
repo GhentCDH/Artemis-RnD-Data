@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, stat, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { generateId } from "@allmaps/id";
 
@@ -41,7 +41,7 @@ type IndexEntry = {
   }>;
   georefDetectedBy: "none" | "manifest" | "canvas";
   isVerzamelblad: boolean;
-  annotSource: "manifest" | "canvas" | "none";
+  annotSource: "single" | "multi" | "none";
 
   canvasIds: string[];
 };
@@ -323,7 +323,7 @@ async function processManifestRef(
       canvasAllmapsHits,
       georefDetectedBy,
       isVerzamelblad,
-      annotSource: georefDetectedBy === "none" ? "none" : georefDetectedBy,
+      annotSource: georefDetectedBy === "none" ? "none" : canvasIds.length === 1 ? "single" : "multi",
       canvasIds
     },
     georef: georefDetected,
@@ -335,6 +335,13 @@ async function processManifestRef(
 async function main() {
   await mkdir("cache/collections", { recursive: true });
   await mkdir("cache/manifests", { recursive: true });
+
+  // Clean build output dirs so stale files from previous runs don't linger.
+  // Cache is intentionally preserved.
+  console.log("[0/5] Cleaning build output directories...");
+  for (const dir of ["build/manifests", "build/collections", "build/allmaps"]) {
+    await rm(dir, { recursive: true, force: true });
+  }
   await mkdir("build", { recursive: true });
   await mkdir("build/manifests", { recursive: true });
   await mkdir("build/collections", { recursive: true });
@@ -417,20 +424,18 @@ async function main() {
     compiledCollectionPath: string;
     manifestCount: number;
     georefCount: number;
-    annotManifestCount: number;
-    annotCanvasCount: number;
+    singleCanvasGeorefCount: number;
+    multiCanvasGeorefCount: number;
   }> = [];
   const renderLayerMeta: Array<{
     sourceCollectionUrl: string;
     sourceCollectionLabel: string;
-    renderLayerKey: "default" | "verzamelblad" | "annot-manifest" | "annot-canvas";
-    parentRenderLayerKey?: "default" | "verzamelblad";
+    renderLayerKey: "default" | "verzamelblad";
     compiledCollectionPath: string;
     manifestCount: number;
     georefCount: number;
-    annotManifestCount: number;
-    annotCanvasCount: number;
-    hidden: boolean;
+    singleCanvasGeorefCount: number;
+    multiCanvasGeorefCount: number;
   }> = [];
 
   for (const group of sourceGroups) {
@@ -459,8 +464,8 @@ async function main() {
       compiledCollectionPath: colRelPath,
       manifestCount: entries.length,
       georefCount: entries.filter((e) => e.georefDetectedBy !== "none").length,
-      annotManifestCount: entries.filter((e) => e.annotSource === "manifest").length,
-      annotCanvasCount: entries.filter((e) => e.annotSource === "canvas").length
+      singleCanvasGeorefCount: entries.filter((e) => e.annotSource === "single").length,
+      multiCanvasGeorefCount: entries.filter((e) => e.annotSource === "multi").length
     });
 
     const entriesByRenderLayer: Record<"default" | "verzamelblad", IndexEntry[]> = {
@@ -497,54 +502,9 @@ async function main() {
         compiledCollectionPath: renderLayerRelPath,
         manifestCount: renderEntries.length,
         georefCount: renderEntries.filter((e) => e.georefDetectedBy !== "none").length,
-        annotManifestCount: renderEntries.filter((e) => e.annotSource === "manifest").length,
-        annotCanvasCount: renderEntries.filter((e) => e.annotSource === "canvas").length,
-        hidden: false
+        singleCanvasGeorefCount: renderEntries.filter((e) => e.annotSource === "single").length,
+        multiCanvasGeorefCount: renderEntries.filter((e) => e.annotSource === "multi").length
       });
-    }
-
-    // Hidden annotation-source sub-layers: per visible render layer, split by where annotation lives
-    for (const parentKey of ["default", "verzamelblad"] as const) {
-      const parentEntries = entriesByRenderLayer[parentKey];
-      if (parentEntries.length < 1) continue;
-      for (const annotKey of ["annot-manifest", "annot-canvas"] as const) {
-        const annotSource = annotKey === "annot-manifest" ? "manifest" : "canvas";
-        const annotEntries = parentEntries.filter((e) => e.annotSource === annotSource);
-        if (annotEntries.length < 1) continue;
-        const annotLayerSlug = sha1(`${group.sourceCollectionUrl}::${parentKey}::${annotKey}`).slice(0, 16);
-        const annotLayerRelPath = `collections/${annotLayerSlug}.json`;
-        const annotLayerAbsPath = `build/${annotLayerRelPath}`;
-        const parentLabel = parentKey === "verzamelblad"
-          ? `${group.sourceCollectionLabel || group.sourceCollectionUrl} - Verzamelblad`
-          : group.sourceCollectionLabel || group.sourceCollectionUrl;
-        const annotLayerLabel = annotKey === "annot-manifest"
-          ? `${parentLabel} (manifest annotations)`
-          : `${parentLabel} (canvas annotations)`;
-        const annotLayerCol: V2Collection = {
-          "@context": "http://iiif.io/api/presentation/2/context.json",
-          "@id": base(annotLayerRelPath),
-          "@type": "sc:Collection",
-          label: annotLayerLabel,
-          manifests: annotEntries.map((e) => ({
-            "@id": base(e.compiledManifestPath),
-            "@type": "sc:Manifest",
-            label: e.label
-          }))
-        };
-        await writeFile(annotLayerAbsPath, JSON.stringify(annotLayerCol, null, 2), "utf-8");
-        renderLayerMeta.push({
-          sourceCollectionUrl: group.sourceCollectionUrl,
-          sourceCollectionLabel: group.sourceCollectionLabel,
-          renderLayerKey: annotKey,
-          parentRenderLayerKey: parentKey,
-          compiledCollectionPath: annotLayerRelPath,
-          manifestCount: annotEntries.length,
-          georefCount: annotEntries.length, // all have annotSource !== "none"
-          annotManifestCount: annotKey === "annot-manifest" ? annotEntries.length : 0,
-          annotCanvasCount: annotKey === "annot-canvas" ? annotEntries.length : 0,
-          hidden: true
-        });
-      }
     }
   }
 

@@ -391,31 +391,34 @@ function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string
     }
 
     const body = item?.body;
-
-    // [TEST: duplicate-geo-gcp passthrough] Duplicate GCP removal intentionally disabled
-    // to let duplicate geographic GCPs reach the viewer unchanged. This confirms whether
-    // duplicate-geo-gcp is the root cause of viewer rendering failures.
-    // TO REVERT: uncomment the deduplication block below and remove this comment.
-    //
-    // const features = Array.isArray(body?.features) ? body.features : [];
-    // if (features.length > 0) {
-    //   const seenGeo = new Set<string>();
-    //   let removed = 0;
-    //   const deduped: any[] = [];
-    //   for (const f of features) {
-    //     if (f?.geometry?.type !== "Point") { deduped.push(f); continue; }
-    //     const c = f?.geometry?.coordinates;
-    //     if (!Array.isArray(c) || c.length < 2) { deduped.push(f); continue; }
-    //     const key = `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`;
-    //     if (seenGeo.has(key)) { removed++; continue; }
-    //     seenGeo.add(key);
-    //     deduped.push(f);
-    //   }
-    //   if (removed > 0) {
-    //     body.features = deduped;
-    //     appliedFixes.push(`removed-duplicate-geo-gcp:item[${idx}]:${removed}`);
-    //   }
-    // }
+    const features = Array.isArray(body?.features) ? body.features : [];
+    if (features.length > 0) {
+      const seenGeo = new Set<string>();
+      let removed = 0;
+      const deduped: any[] = [];
+      for (const f of features) {
+        if (f?.geometry?.type !== "Point") {
+          deduped.push(f);
+          continue;
+        }
+        const c = f?.geometry?.coordinates;
+        if (!Array.isArray(c) || c.length < 2) {
+          deduped.push(f);
+          continue;
+        }
+        const key = `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`;
+        if (seenGeo.has(key)) {
+          removed++;
+          continue;
+        }
+        seenGeo.add(key);
+        deduped.push(f);
+      }
+      if (removed > 0) {
+        body.features = deduped;
+        appliedFixes.push(`removed-duplicate-geo-gcp:item[${idx}]:${removed}`);
+      }
+    }
 
     const pointFeatures = (Array.isArray(body?.features) ? body.features : []).filter((f: any) => f?.geometry?.type === "Point");
     const gcpCount = pointFeatures.length;
@@ -696,14 +699,9 @@ async function processManifestRef(
     appliedFixes = uniqueStrings(appliedFixes);
   }
   const issuesAfterFix = await collectAnnotationIssues(annotationPathsToCheck);
-  // [TEST: duplicate-geo-gcp passthrough] duplicate-geo-gcp excluded from the blocking QA
-  // gate so manifests with this issue compile and reach the viewer with raw duplicate GCPs.
-  // All other issue types still block the build as normal.
-  // TO REVERT: remove the filter line and rename blockingIssuesAfterFix back to issuesAfterFix.
-  const blockingIssuesAfterFix = issuesAfterFix.filter((x) => x.code !== "duplicate-geo-gcp");
-  if (blockingIssuesAfterFix.length > 0) {
-    const issueCodes = uniqueStrings(blockingIssuesAfterFix.map((x) => x.code)) as AnnotationIssue["code"][];
-    const issueMessages = summarizeIssues(blockingIssuesAfterFix);
+  if (issuesAfterFix.length > 0) {
+    const issueCodes = uniqueStrings(issuesAfterFix.map((x) => x.code)) as AnnotationIssue["code"][];
+    const issueMessages = summarizeIssues(issuesAfterFix);
     console.warn(`[SKIP] Annotation QA failed: ${url} (${manifestAllmapsId}) -> ${issueCodes.join(", ")}`);
     return {
       kind: "problematic",
@@ -713,7 +711,7 @@ async function processManifestRef(
         sourceManifestUrl: url,
         reason: issueMessages.join(" | "),
         issueTypes: issueCodes,
-        annotationPaths: uniqueStrings(blockingIssuesAfterFix.map((x) => x.annotationPath)),
+        annotationPaths: uniqueStrings(issuesAfterFix.map((x) => x.annotationPath)),
         potentialSolutions: issueSolutionsFor(issueCodes)
           .concat(appliedFixes.length > 0 ? ["Review applied local auto-fixes and re-validate in viewer."] : []),
         fixAttempted: issuesBeforeFix.length > 0,

@@ -250,20 +250,6 @@ src/
 
 ---
 
-## TEMPORARY TEST — duplicate-geo-gcp passthrough (updated 2026-03-12)
+## Root Cause Finding — duplicate-geo-gcp (confirmed 2026-03-12)
 
-**Ruled out so far**: `mask-out-of-bounds` (alone), `self-intersecting-mask` (alone), all types combined (viewer broke — root cause narrowed down).
-
-**Current test**: Only `duplicate-geo-gcp` passes through unfixed. All other fixes (clamping, hull repair, tps downgrade) are restored and active. Only the duplicate GCP deduplication is disabled, and `duplicate-geo-gcp` is excluded from the QA blocking gate.
-
-**Affected manifest**: `Kalken - Sectie C-D` (`550_0001_000_06385_000`) — item[0] has 1 duplicate geographic GCP.
-
-**What was changed in `src/pipeline.ts`**:
-
-1. **Duplicate GCP removal disabled** (`sanitizeMirroredAnnotation`) — the deduplication block is commented out. All other fixes are active.
-
-2. **QA gate relaxed for `duplicate-geo-gcp` only** — `blockingIssuesAfterFix` filters out `duplicate-geo-gcp`; all other issue types still block the build.
-
-**To revert** (once confirmed or ruled out):
-1. In `sanitizeMirroredAnnotation`: uncomment the deduplication block (search for `[TEST: duplicate-geo-gcp passthrough]`).
-2. In the QA gate: remove the `blockingIssuesAfterFix` filter line and rename it back to `issuesAfterFix` in the `if` condition and inside the `problematic` return block.
+Testing across all annotation issue types identified `duplicate-geo-gcp` as the root cause of viewer rendering failures. The pipeline's deduplication fix (removing GCPs with identical geographic coordinates) resolves the issue. All fixes and the QA gate are fully restored.

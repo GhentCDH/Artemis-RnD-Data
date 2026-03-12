@@ -250,23 +250,17 @@ src/
 
 ---
 
-## TEMPORARY TEST — self-intersecting-mask passthrough (added 2026-03-12)
+## TEMPORARY TEST — full annotation passthrough (updated 2026-03-12)
 
-**Context**: `mask-out-of-bounds` was tested first and ruled out as the cause. Now testing `self-intersecting-mask`.
+**Ruled out so far**: `mask-out-of-bounds` (tested alone, no viewer breakage), `self-intersecting-mask` (tested alone, no viewer breakage).
 
-**Purpose**: Confirm that self-intersecting mask polygons are the root cause of viewer rendering failures (flickering/partial renders on Primitief single-canvas manifests). Requested by Allmaps maintainers for root-cause isolation.
+**Current test**: All fixes disabled and QA gate fully bypassed — every annotation issue type (`mask-out-of-bounds`, `self-intersecting-mask`, `tps-low-gcp`, `duplicate-geo-gcp`) passes through raw to the viewer simultaneously, with no previously-fixed manifests diluting the test set.
 
 **What was changed in `src/pipeline.ts`**:
 
-1. **Convex hull repair disabled** (`sanitizeMirroredAnnotation`, inside the mask-point loop):
-   - The block that repaired self-intersecting polygons via convex hull fallback is commented out.
-   - Self-intersecting masks now remain in the annotation JSON written to `build/allmaps/`.
-   - Clamping (OOB fix) is still active — only the self-intersection repair is disabled.
+1. **`sanitizeMirroredAnnotation` gutted** — returns a deep copy of raw input with no modifications. All fixes (clamping, hull repair, tps downgrade, duplicate GCP removal) are disabled.
 
-2. **QA gate relaxed** (after `issuesAfterFix` is collected):
-   - `self-intersecting-mask` is filtered out of the blocking issue list via `blockingIssuesAfterFix`.
-   - Manifests that only fail on `self-intersecting-mask` are compiled and included in the build instead of being returned as `"problematic"`.
+2. **QA gate fully bypassed** — replaced with `if (false)` so no manifest is ever returned as `"problematic"`. All manifests compile and reach the viewer unchanged.
 
 **To revert** (once root cause is confirmed or ruled out):
-1. In `sanitizeMirroredAnnotation`: uncomment the hull repair block (search for `[TEST: self-intersecting-mask passthrough]`), and remove the `void normalized;` line.
-2. In the QA gate: remove the `blockingIssuesAfterFix` filter line and rename `blockingIssuesAfterFix` back to `issuesAfterFix` in the `if` condition and `issueCodes`/`issueMessages` derivations.
+- Restore `sanitizeMirroredAnnotation` and the QA gate from git history: `git show f8a0bc4:src/pipeline.ts` (the commit just before the full passthrough was applied). The commit to restore to is the one before the current HEAD.

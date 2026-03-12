@@ -1,4 +1,4 @@
-Annotation QA report — generated 2026-03-12T15:30:33.317Z
+Annotation QA report — generated 2026-03-12T15:39:54.700Z
 
 Fixed manifests: 25
 
@@ -6,7 +6,7 @@ Fixed manifests: 25
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02554_000
        issuesBefore: tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs | mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | tps-low-gcp: item[7] uses thinPlateSpline with only 4 GCPs | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/7d8b2f5bdd3bac39.json, allmaps/canvases/1ffb399b63fe220e.json, allmaps/canvases/2caa88886676ca07.json, allmaps/canvases/17d4f63a1ff432dc.json, allmaps/canvases/3cd3402c953d9834.json, allmaps/canvases/6050dd5fcca4a9fc.json, allmaps/canvases/8ce63b20276c7ebd.json, allmaps/canvases/3f4e207872fb8f7a.json, allmaps/canvases/1611abcbd904ed55.json
-       appliedFixes: allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[0]:gcp=4 | allmaps/manifests/7d8b2f5bdd3bac39.json:clamped-mask-points:item[1]:1 | allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[7]:gcp=4 | allmaps/canvases/1ffb399b63fe220e.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/2caa88886676ca07.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/1611abcbd904ed55.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 [FIXED] 787106327b287f41  ANTWERPEN - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02555_000
        issuesBefore: self-intersecting-mask: item[2] mask polygon is self-intersecting | self-intersecting-mask: item[4] mask polygon is self-intersecting | self-intersecting-mask: item[0] mask polygon is self-intersecting
@@ -21,112 +21,112 @@ Fixed manifests: 25
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000
        issuesBefore: tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs
        annotationPaths: allmaps/manifests/4b9cb35de31999dd.json, allmaps/canvases/fa323ef72bfcb63b.json
-       appliedFixes: allmaps/manifests/4b9cb35de31999dd.json:downgraded-tps:item[0]:gcp=3 | allmaps/canvases/fa323ef72bfcb63b.json:downgraded-tps:item[0]:gcp=3
+       appliedFixes: -
 [FIXED] da45aea5bd763705  Berlare - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05918_000
        issuesBefore: mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/da45aea5bd763705.json, allmaps/canvases/da71b8849d65f47e.json, allmaps/canvases/732561f756574389.json, allmaps/canvases/86df4c7f354f1b44.json
-       appliedFixes: allmaps/manifests/da45aea5bd763705.json:clamped-mask-points:item[1]:2 | allmaps/canvases/732561f756574389.json:clamped-mask-points:item[0]:2
+       appliedFixes: -
 [FIXED] 8f62f46e09c55a74  Berlare - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05919_000
        issuesBefore: mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds | tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
        annotationPaths: allmaps/manifests/8f62f46e09c55a74.json, allmaps/canvases/83b7d526aafeae0b.json, allmaps/canvases/bda8b7392a80f62b.json
-       appliedFixes: allmaps/manifests/8f62f46e09c55a74.json:clamped-mask-points:item[0]:2 | allmaps/manifests/8f62f46e09c55a74.json:downgraded-tps:item[1]:gcp=4 | allmaps/canvases/83b7d526aafeae0b.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/bda8b7392a80f62b.json:clamped-mask-points:item[0]:2
+       appliedFixes: -
 [FIXED] af67bb62f0ede330  Buggenhout - Sectie C
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000
        issuesBefore: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds | mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/af67bb62f0ede330.json, allmaps/canvases/7bc3c417c9155ddb.json, allmaps/canvases/0ae1c44d9386296c.json
-       appliedFixes: allmaps/manifests/af67bb62f0ede330.json:clamped-mask-points:item[0]:1 | allmaps/manifests/af67bb62f0ede330.json:clamped-mask-points:item[1]:2 | allmaps/canvases/7bc3c417c9155ddb.json:clamped-mask-points:item[0]:1 | allmaps/canvases/0ae1c44d9386296c.json:clamped-mask-points:item[0]:2
+       appliedFixes: -
 [FIXED] 4217a284ec05d38f  Buggenhout - Sectie D
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06003_000
        issuesBefore: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/4217a284ec05d38f.json, allmaps/canvases/4223c068b8a3db8f.json, allmaps/canvases/05910d780fd00a03.json
-       appliedFixes: allmaps/manifests/4217a284ec05d38f.json:clamped-mask-points:item[0]:1 | allmaps/canvases/05910d780fd00a03.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 [FIXED] 8a86f46ba908c161  Dendermonde - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06058_000
        issuesBefore: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/8a86f46ba908c161.json, allmaps/canvases/e6684c17d1cb8b20.json, allmaps/canvases/5b4c8d6a039bb6f2.json
-       appliedFixes: allmaps/manifests/8a86f46ba908c161.json:clamped-mask-points:item[0]:1 | allmaps/canvases/e6684c17d1cb8b20.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 [FIXED] 5b387ce6ccc7844a  Dendermonde - Sectie C
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06059_000
        issuesBefore: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
        annotationPaths: allmaps/manifests/5b387ce6ccc7844a.json, allmaps/canvases/b68b5cfe7d18ef28.json
-       appliedFixes: allmaps/manifests/5b387ce6ccc7844a.json:clamped-mask-points:item[0]:1 | allmaps/manifests/5b387ce6ccc7844a.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/b68b5cfe7d18ef28.json:clamped-mask-points:item[0]:1 | allmaps/canvases/b68b5cfe7d18ef28.json:downgraded-tps:item[0]:gcp=4
+       appliedFixes: -
 [FIXED] 49cfa0dd767cac73  Dendermonde - Sectie D
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06060_000
        issuesBefore: mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs
        annotationPaths: allmaps/manifests/49cfa0dd767cac73.json, allmaps/canvases/817bc532e4ed50b1.json, allmaps/canvases/b7a2a368d128872e.json
-       appliedFixes: allmaps/manifests/49cfa0dd767cac73.json:clamped-mask-points:item[0]:4 | allmaps/manifests/49cfa0dd767cac73.json:downgraded-tps:item[0]:gcp=4 | allmaps/manifests/49cfa0dd767cac73.json:downgraded-tps:item[1]:gcp=4 | allmaps/canvases/817bc532e4ed50b1.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/b7a2a368d128872e.json:clamped-mask-points:item[0]:4 | allmaps/canvases/b7a2a368d128872e.json:downgraded-tps:item[0]:gcp=4
+       appliedFixes: -
 [FIXED] 808c6d2744018271  Appels - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06063_000
        issuesBefore: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/808c6d2744018271.json, allmaps/canvases/3c6ce0bee9d63669.json
-       appliedFixes: allmaps/manifests/808c6d2744018271.json:clamped-mask-points:item[0]:1 | allmaps/canvases/3c6ce0bee9d63669.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 [FIXED] 8a0d9395a79a08d2  Sint-Gillis-bij-Dendermonde - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06067_000
        issuesBefore: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/8a0d9395a79a08d2.json, allmaps/canvases/33cf8c20d249c8b4.json
-       appliedFixes: allmaps/manifests/8a0d9395a79a08d2.json:clamped-mask-points:item[0]:1 | allmaps/canvases/33cf8c20d249c8b4.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 [FIXED] 557a8b6047b744fe  Grembergen - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000
        issuesBefore: mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/557a8b6047b744fe.json, allmaps/canvases/189bc3d8c6328e54.json, allmaps/canvases/8441965ed4c1fba2.json, allmaps/canvases/9165ba41d0931758.json
-       appliedFixes: allmaps/manifests/557a8b6047b744fe.json:clamped-mask-points:item[1]:1 | allmaps/canvases/8441965ed4c1fba2.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 [FIXED] 5122e64494db51c3  Ghent - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06163_000
        issuesBefore: tps-low-gcp: item[1] uses thinPlateSpline with only 3 GCPs | tps-low-gcp: item[2] uses thinPlateSpline with only 3 GCPs | tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs
        annotationPaths: allmaps/manifests/5122e64494db51c3.json, allmaps/canvases/63ded1aba2651ec2.json, allmaps/canvases/af5287bba6dd17c4.json, allmaps/canvases/98b6dd5d2a678707.json
-       appliedFixes: allmaps/manifests/5122e64494db51c3.json:downgraded-tps:item[1]:gcp=3 | allmaps/manifests/5122e64494db51c3.json:downgraded-tps:item[2]:gcp=3 | allmaps/canvases/63ded1aba2651ec2.json:downgraded-tps:item[0]:gcp=3 | allmaps/canvases/af5287bba6dd17c4.json:downgraded-tps:item[0]:gcp=3
+       appliedFixes: -
 [FIXED] 4fcaaa3e4554068f  Hamme - Verzamelplan
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06288_000
        issuesBefore: mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/4fcaaa3e4554068f.json, allmaps/canvases/ea070f0060d77342.json
-       appliedFixes: allmaps/manifests/4fcaaa3e4554068f.json:clamped-mask-points:item[0]:4 | allmaps/canvases/ea070f0060d77342.json:clamped-mask-points:item[0]:4
+       appliedFixes: -
 [FIXED] 064a3ae0ac0d19f7  Hamme - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06290_000
        issuesBefore: tps-low-gcp: item[2] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
        annotationPaths: allmaps/manifests/064a3ae0ac0d19f7.json, allmaps/canvases/6ab076a386eac6c1.json, allmaps/canvases/02a966aac83e4039.json, allmaps/canvases/575fcb1227b8f6d9.json
-       appliedFixes: allmaps/manifests/064a3ae0ac0d19f7.json:downgraded-tps:item[2]:gcp=4 | allmaps/canvases/02a966aac83e4039.json:downgraded-tps:item[0]:gcp=4
+       appliedFixes: -
 [FIXED] 5916031e1780cb72  Moerzeke - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06295_000
        issuesBefore: tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
        annotationPaths: allmaps/manifests/5916031e1780cb72.json, allmaps/canvases/90e7c245315398fe.json, allmaps/canvases/260db26d8ad7e275.json, allmaps/canvases/78fbf2b8f676ae33.json
-       appliedFixes: allmaps/manifests/5916031e1780cb72.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/78fbf2b8f676ae33.json:downgraded-tps:item[0]:gcp=4
+       appliedFixes: -
 [FIXED] a7e9237ceaf8e635  Moerzeke - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06296_000
        issuesBefore: tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
        annotationPaths: allmaps/manifests/a7e9237ceaf8e635.json, allmaps/canvases/48c279d0de725770.json, allmaps/canvases/ddcb0be15f27c529.json, allmaps/canvases/676af43eba945066.json
-       appliedFixes: allmaps/manifests/a7e9237ceaf8e635.json:downgraded-tps:item[0]:gcp=4 | allmaps/canvases/676af43eba945066.json:downgraded-tps:item[0]:gcp=4
+       appliedFixes: -
 [FIXED] 6c078ea636fd0b3d  Bazel - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06363_000
        issuesBefore: mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[2] has 4 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/6c078ea636fd0b3d.json, allmaps/canvases/023895e0d62ba440.json, allmaps/canvases/61215bdef518415e.json, allmaps/canvases/7fe59910e5431b8c.json, allmaps/canvases/8b67e5e1964cb32f.json, allmaps/canvases/bb0d7eb439414687.json
-       appliedFixes: allmaps/manifests/6c078ea636fd0b3d.json:clamped-mask-points:item[1]:2 | allmaps/manifests/6c078ea636fd0b3d.json:clamped-mask-points:item[2]:4 | allmaps/canvases/61215bdef518415e.json:clamped-mask-points:item[0]:4 | allmaps/canvases/8b67e5e1964cb32f.json:clamped-mask-points:item[0]:2
+       appliedFixes: -
 [FIXED] 6982d065bda5b025  Kalken - Sectie C-D
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06385_000
        issuesBefore: duplicate-geo-gcp: item[0] has 1 duplicate geographic GCP(s)
        annotationPaths: allmaps/manifests/6982d065bda5b025.json, allmaps/canvases/b6fb234749565370.json
-       appliedFixes: allmaps/manifests/6982d065bda5b025.json:removed-duplicate-geo-gcp:item[0]:1 | allmaps/canvases/b6fb234749565370.json:removed-duplicate-geo-gcp:item[0]:1
+       appliedFixes: -
 [FIXED] 40ab3add66c5f9b8  Lokeren - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06450_000
        issuesBefore: tps-low-gcp: item[4] uses thinPlateSpline with only 4 GCPs | tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs
        annotationPaths: allmaps/manifests/40ab3add66c5f9b8.json, allmaps/canvases/670fc8645302e902.json, allmaps/canvases/7a2fc88f170a6514.json, allmaps/canvases/5d2b470374cd5d8c.json, allmaps/canvases/ba1333f54c6acac1.json, allmaps/canvases/9b5333c8623120f7.json, allmaps/canvases/ea15c0badd8ffd73.json, allmaps/canvases/d37a6b0dadfd10fb.json
-       appliedFixes: allmaps/manifests/40ab3add66c5f9b8.json:downgraded-tps:item[4]:gcp=4 | allmaps/canvases/5d2b470374cd5d8c.json:downgraded-tps:item[0]:gcp=4
+       appliedFixes: -
 [FIXED] 831566b63f7f8d0c  Melle - Sectie A
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06508_000
        issuesBefore: mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/831566b63f7f8d0c.json, allmaps/canvases/793b3462c55649cc.json, allmaps/canvases/c61e1cc760db29a2.json
-       appliedFixes: allmaps/manifests/831566b63f7f8d0c.json:clamped-mask-points:item[0]:1 | allmaps/canvases/793b3462c55649cc.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 [FIXED] 81ebe1a7e47670eb  Wetteren - Sectie B
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06775_000
        issuesBefore: mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/81ebe1a7e47670eb.json, allmaps/canvases/3122e00e7a77661b.json, allmaps/canvases/ba78a8c153a6f2f6.json
-       appliedFixes: allmaps/manifests/81ebe1a7e47670eb.json:clamped-mask-points:item[1]:2 | allmaps/canvases/3122e00e7a77661b.json:clamped-mask-points:item[0]:2
+       appliedFixes: -
 [FIXED] 588997c6103d6706  Wichelen - Sectie C
        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06790_000
        issuesBefore: mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds | mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds
        annotationPaths: allmaps/manifests/588997c6103d6706.json, allmaps/canvases/e633e95ae729cac8.json, allmaps/canvases/95b0ff058c13d495.json, allmaps/canvases/c9a1997ffc48c922.json
-       appliedFixes: allmaps/manifests/588997c6103d6706.json:clamped-mask-points:item[1]:1 | allmaps/canvases/e633e95ae729cac8.json:clamped-mask-points:item[0]:1
+       appliedFixes: -
 
 Excluded manifests: 0
   (none)

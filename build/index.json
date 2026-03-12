@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-03-06T15:21:48.428Z",
+  "generatedAt": "2026-03-12T15:18:32.668Z",
   "totalManifests": 575,
-  "georefManifests": 215,
-  "mirroredOk": 215,
-  "compiledOk": 215,
+  "georefManifests": 228,
+  "mirroredOk": 228,
+  "compiledOk": 228,
   "layers": [
     {
       "sourceCollectionUrl": "https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json",
@@ -19,9 +19,9 @@
       "sourceCollectionLabel": "Primitief Kadaster",
       "compiledCollectionPath": "collections/87eb94ed85ae9008.json",
       "manifestCount": 327,
-      "georefCount": 112,
-      "singleCanvasGeorefCount": 25,
-      "multiCanvasGeorefCount": 87
+      "georefCount": 125,
+      "singleCanvasGeorefCount": 29,
+      "multiCanvasGeorefCount": 96
     }
   ],
   "renderLayers": [
@@ -42,9 +42,9 @@
       "renderLayerKey": "default",
       "compiledCollectionPath": "collections/6d61d16e4261308b.json",
       "manifestCount": 262,
-      "georefCount": 96,
-      "singleCanvasGeorefCount": 10,
-      "multiCanvasGeorefCount": 86,
+      "georefCount": 108,
+      "singleCanvasGeorefCount": 13,
+      "multiCanvasGeorefCount": 95,
       "hidden": false
     },
     {
@@ -53,8 +53,8 @@
       "renderLayerKey": "verzamelblad",
       "compiledCollectionPath": "collections/00617abd57335483.json",
       "manifestCount": 65,
-      "georefCount": 16,
-      "singleCanvasGeorefCount": 15,
+      "georefCount": 17,
+      "singleCanvasGeorefCount": 16,
       "multiCanvasGeorefCount": 1,
       "hidden": false
     }
@@ -83,11 +83,9 @@
       ],
       "appliedFixes": [
         "allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[0]:gcp=4",
-        "allmaps/manifests/7d8b2f5bdd3bac39.json:clamped-mask-points:item[1]:1",
         "allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[7]:gcp=4",
         "allmaps/canvases/1ffb399b63fe220e.json:downgraded-tps:item[0]:gcp=4",
-        "allmaps/canvases/2caa88886676ca07.json:downgraded-tps:item[0]:gcp=4",
-        "allmaps/canvases/1611abcbd904ed55.json:clamped-mask-points:item[0]:1"
+        "allmaps/canvases/2caa88886676ca07.json:downgraded-tps:item[0]:gcp=4"
       ]
     },
     {
@@ -134,12 +132,28 @@
         "allmaps/canvases/8986afffbf30a685.json"
       ],
       "issuesBefore": [
-        "self-intersecting-mask: item[1] mask polygon is self-intersecting",
+        "self-intersecting-mask: item[2] mask polygon is self-intersecting",
         "self-intersecting-mask: item[0] mask polygon is self-intersecting"
       ],
       "appliedFixes": [
-        "allmaps/manifests/949c44555577f899.json:repaired-self-intersection:item[1]:convex-hull:72->11",
+        "allmaps/manifests/949c44555577f899.json:repaired-self-intersection:item[2]:convex-hull:72->11",
         "allmaps/canvases/288989d3549b6c68.json:repaired-self-intersection:item[0]:convex-hull:72->11"
+      ]
+    },
+    {
+      "manifestAllmapsId": "4b9cb35de31999dd",
+      "label": "WALEM - Sectie A",
+      "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000",
+      "annotationPaths": [
+        "allmaps/manifests/4b9cb35de31999dd.json",
+        "allmaps/canvases/fa323ef72bfcb63b.json"
+      ],
+      "issuesBefore": [
+        "tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs"
+      ],
+      "appliedFixes": [
+        "allmaps/manifests/4b9cb35de31999dd.json:downgraded-tps:item[0]:gcp=3",
+        "allmaps/canvases/fa323ef72bfcb63b.json:downgraded-tps:item[0]:gcp=3"
       ]
     },
     {
@@ -156,10 +170,7 @@
         "mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/da45aea5bd763705.json:clamped-mask-points:item[1]:2",
-        "allmaps/canvases/732561f756574389.json:clamped-mask-points:item[0]:2"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "8f62f46e09c55a74",
@@ -176,10 +187,8 @@
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
       "appliedFixes": [
-        "allmaps/manifests/8f62f46e09c55a74.json:clamped-mask-points:item[0]:2",
         "allmaps/manifests/8f62f46e09c55a74.json:downgraded-tps:item[1]:gcp=4",
-        "allmaps/canvases/83b7d526aafeae0b.json:downgraded-tps:item[0]:gcp=4",
-        "allmaps/canvases/bda8b7392a80f62b.json:clamped-mask-points:item[0]:2"
+        "allmaps/canvases/83b7d526aafeae0b.json:downgraded-tps:item[0]:gcp=4"
       ]
     },
     {
@@ -196,12 +205,7 @@
         "mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/af67bb62f0ede330.json:clamped-mask-points:item[0]:1",
-        "allmaps/manifests/af67bb62f0ede330.json:clamped-mask-points:item[1]:2",
-        "allmaps/canvases/7bc3c417c9155ddb.json:clamped-mask-points:item[0]:1",
-        "allmaps/canvases/0ae1c44d9386296c.json:clamped-mask-points:item[0]:2"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "4217a284ec05d38f",
@@ -215,10 +219,7 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/4217a284ec05d38f.json:clamped-mask-points:item[0]:1",
-        "allmaps/canvases/05910d780fd00a03.json:clamped-mask-points:item[0]:1"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "8a86f46ba908c161",
@@ -232,10 +233,7 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/8a86f46ba908c161.json:clamped-mask-points:item[0]:1",
-        "allmaps/canvases/e6684c17d1cb8b20.json:clamped-mask-points:item[0]:1"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "5b387ce6ccc7844a",
@@ -250,9 +248,7 @@
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
       "appliedFixes": [
-        "allmaps/manifests/5b387ce6ccc7844a.json:clamped-mask-points:item[0]:1",
         "allmaps/manifests/5b387ce6ccc7844a.json:downgraded-tps:item[0]:gcp=4",
-        "allmaps/canvases/b68b5cfe7d18ef28.json:clamped-mask-points:item[0]:1",
         "allmaps/canvases/b68b5cfe7d18ef28.json:downgraded-tps:item[0]:gcp=4"
       ]
     },
@@ -271,11 +267,9 @@
         "tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs"
       ],
       "appliedFixes": [
-        "allmaps/manifests/49cfa0dd767cac73.json:clamped-mask-points:item[0]:4",
         "allmaps/manifests/49cfa0dd767cac73.json:downgraded-tps:item[0]:gcp=4",
         "allmaps/manifests/49cfa0dd767cac73.json:downgraded-tps:item[1]:gcp=4",
         "allmaps/canvases/817bc532e4ed50b1.json:downgraded-tps:item[0]:gcp=4",
-        "allmaps/canvases/b7a2a368d128872e.json:clamped-mask-points:item[0]:4",
         "allmaps/canvases/b7a2a368d128872e.json:downgraded-tps:item[0]:gcp=4"
       ]
     },
@@ -290,10 +284,7 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/808c6d2744018271.json:clamped-mask-points:item[0]:1",
-        "allmaps/canvases/3c6ce0bee9d63669.json:clamped-mask-points:item[0]:1"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "8a0d9395a79a08d2",
@@ -306,10 +297,7 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/8a0d9395a79a08d2.json:clamped-mask-points:item[0]:1",
-        "allmaps/canvases/33cf8c20d249c8b4.json:clamped-mask-points:item[0]:1"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "557a8b6047b744fe",
@@ -325,10 +313,7 @@
         "mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/557a8b6047b744fe.json:clamped-mask-points:item[1]:1",
-        "allmaps/canvases/8441965ed4c1fba2.json:clamped-mask-points:item[0]:1"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "5122e64494db51c3",
@@ -341,12 +326,13 @@
         "allmaps/canvases/98b6dd5d2a678707.json"
       ],
       "issuesBefore": [
-        "tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs",
-        "tps-low-gcp: item[1] uses thinPlateSpline with only 3 GCPs"
+        "tps-low-gcp: item[1] uses thinPlateSpline with only 3 GCPs",
+        "tps-low-gcp: item[2] uses thinPlateSpline with only 3 GCPs",
+        "tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs"
       ],
       "appliedFixes": [
-        "allmaps/manifests/5122e64494db51c3.json:downgraded-tps:item[0]:gcp=3",
         "allmaps/manifests/5122e64494db51c3.json:downgraded-tps:item[1]:gcp=3",
+        "allmaps/manifests/5122e64494db51c3.json:downgraded-tps:item[2]:gcp=3",
         "allmaps/canvases/63ded1aba2651ec2.json:downgraded-tps:item[0]:gcp=3",
         "allmaps/canvases/af5287bba6dd17c4.json:downgraded-tps:item[0]:gcp=3"
       ]
@@ -362,10 +348,7 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/4fcaaa3e4554068f.json:clamped-mask-points:item[0]:4",
-        "allmaps/canvases/ea070f0060d77342.json:clamped-mask-points:item[0]:4"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "064a3ae0ac0d19f7",
@@ -378,11 +361,11 @@
         "allmaps/canvases/575fcb1227b8f6d9.json"
       ],
       "issuesBefore": [
-        "tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs",
+        "tps-low-gcp: item[2] uses thinPlateSpline with only 4 GCPs",
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
       "appliedFixes": [
-        "allmaps/manifests/064a3ae0ac0d19f7.json:downgraded-tps:item[1]:gcp=4",
+        "allmaps/manifests/064a3ae0ac0d19f7.json:downgraded-tps:item[2]:gcp=4",
         "allmaps/canvases/02a966aac83e4039.json:downgraded-tps:item[0]:gcp=4"
       ]
     },
@@ -440,12 +423,7 @@
         "mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/6c078ea636fd0b3d.json:clamped-mask-points:item[1]:2",
-        "allmaps/manifests/6c078ea636fd0b3d.json:clamped-mask-points:item[2]:4",
-        "allmaps/canvases/61215bdef518415e.json:clamped-mask-points:item[0]:4",
-        "allmaps/canvases/8b67e5e1964cb32f.json:clamped-mask-points:item[0]:2"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "6982d065bda5b025",
@@ -498,10 +476,7 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/831566b63f7f8d0c.json:clamped-mask-points:item[0]:1",
-        "allmaps/canvases/793b3462c55649cc.json:clamped-mask-points:item[0]:1"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "81ebe1a7e47670eb",
@@ -516,10 +491,7 @@
         "mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/81ebe1a7e47670eb.json:clamped-mask-points:item[1]:2",
-        "allmaps/canvases/3122e00e7a77661b.json:clamped-mask-points:item[0]:2"
-      ]
+      "appliedFixes": []
     },
     {
       "manifestAllmapsId": "588997c6103d6706",
@@ -535,10 +507,7 @@
         "mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": [
-        "allmaps/manifests/588997c6103d6706.json:clamped-mask-points:item[1]:1",
-        "allmaps/canvases/e633e95ae729cac8.json:clamped-mask-points:item[0]:1"
-      ]
+      "appliedFixes": []
     }
   ],
   "problematicManifests": [],
@@ -9083,24 +9052,26 @@
       "label": "MARIEKERKE - Sectie A",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02692_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 4.195670062067649,
+      "centerLat": 51.06757188058083,
       "compiledManifestPath": "manifests/b22189d54ef125ac.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/b22189d54ef125ac.json",
       "canvasCount": 1,
       "manifestAllmapsId": "b22189d54ef125ac",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/b22189d54ef125ac",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02692_000/canvas/550_0001_000_02692_000_0_0001",
           "canvasAllmapsId": "1cd3ae7095acee0c",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/1cd3ae7095acee0c",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/1cd3ae7095acee0c.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02692_000/canvas/550_0001_000_02692_000_0_0001"
       ]
@@ -9109,24 +9080,26 @@
       "label": "MARIEKERKE - Sectie B",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02693_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 4.207939680567478,
+      "centerLat": 51.064952251546856,
       "compiledManifestPath": "manifests/fe2afd5111110afa.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/fe2afd5111110afa.json",
       "canvasCount": 1,
       "manifestAllmapsId": "fe2afd5111110afa",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/fe2afd5111110afa",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02693_000/canvas/550_0001_000_02693_000_0_0001",
           "canvasAllmapsId": "7ddf019af3c3865f",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/7ddf019af3c3865f",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/7ddf019af3c3865f.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_02693_000/canvas/550_0001_000_02693_000_0_0001"
       ]
@@ -10039,19 +10012,21 @@
       "label": "WALEM - Sectie A",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 4.429901782481053,
+      "centerLat": 51.07073585667948,
       "compiledManifestPath": "manifests/4b9cb35de31999dd.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/4b9cb35de31999dd.json",
       "canvasCount": 2,
       "manifestAllmapsId": "4b9cb35de31999dd",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/4b9cb35de31999dd",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0001",
           "canvasAllmapsId": "fa323ef72bfcb63b",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/fa323ef72bfcb63b",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/fa323ef72bfcb63b.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0002",
@@ -10061,9 +10036,9 @@
           "mirroredAllmapsAnnotationPath": ""
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03017_000/canvas/550_0001_000_03017_000_0_0002"
@@ -10851,12 +10826,14 @@
       "label": "Sint-Amands - Sectie A",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03188_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 4.2194447438235585,
+      "centerLat": 51.04307273744652,
       "compiledManifestPath": "manifests/d6d2ed4820bf18ac.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/d6d2ed4820bf18ac.json",
       "canvasCount": 3,
       "manifestAllmapsId": "d6d2ed4820bf18ac",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/d6d2ed4820bf18ac",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03188_000/canvas/550_0001_000_03188_000_0_0001",
@@ -10876,13 +10853,13 @@
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03188_000/canvas/550_0001_000_03188_000_0_0003",
           "canvasAllmapsId": "a90944af718eba1e",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/a90944af718eba1e",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/a90944af718eba1e.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03188_000/canvas/550_0001_000_03188_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03188_000/canvas/550_0001_000_03188_000_0_0002",
@@ -10893,45 +10870,47 @@
       "label": "Sint-Amands - Sectie B",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03189_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 4.205070101567813,
+      "centerLat": 51.04483671184927,
       "compiledManifestPath": "manifests/e3f95b2cd864cd94.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/e3f95b2cd864cd94.json",
       "canvasCount": 4,
       "manifestAllmapsId": "e3f95b2cd864cd94",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/e3f95b2cd864cd94",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03189_000/canvas/550_0001_000_03189_000_0_0001",
           "canvasAllmapsId": "f9d371391daf2867",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/f9d371391daf2867",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/f9d371391daf2867.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03189_000/canvas/550_0001_000_03189_000_0_0002",
           "canvasAllmapsId": "8d7cb168daad9053",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/8d7cb168daad9053",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/8d7cb168daad9053.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03189_000/canvas/550_0001_000_03189_000_0_0003",
           "canvasAllmapsId": "90ff9501640dafbc",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/90ff9501640dafbc",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/90ff9501640dafbc.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03189_000/canvas/550_0001_000_03189_000_0_0004",
           "canvasAllmapsId": "ec045b354b99bf82",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/ec045b354b99bf82",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/ec045b354b99bf82.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03189_000/canvas/550_0001_000_03189_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_03189_000/canvas/550_0001_000_03189_000_0_0002",
@@ -12045,7 +12024,7 @@
       "label": "Berlare - Sectie D",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05921_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "centerLon": 3.9999704738257122,
+      "centerLon": 3.99294552147407,
       "centerLat": 51.014892528564204,
       "compiledManifestPath": "manifests/2bece542b2e9e957.json",
       "mirroredAllmapsAnnotationPath": "allmaps/manifests/2bece542b2e9e957.json",
@@ -12065,8 +12044,8 @@
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_05921_000/canvas/550_0001_000_05921_000_0_0002",
           "canvasAllmapsId": "9cf8a5d41d3ca127",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/9cf8a5d41d3ca127",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/9cf8a5d41d3ca127.json"
         }
       ],
       "georefDetectedBy": "canvas",
@@ -13481,8 +13460,8 @@
       "label": "Destelbergen - Sectie B",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06085_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "centerLon": 3.8078583154946557,
-      "centerLat": 51.06400259903819,
+      "centerLon": 3.808201125532733,
+      "centerLat": 51.05839707377385,
       "compiledManifestPath": "manifests/64aa6981b106c05a.json",
       "mirroredAllmapsAnnotationPath": "allmaps/manifests/64aa6981b106c05a.json",
       "canvasCount": 3,
@@ -13508,8 +13487,8 @@
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06085_000/canvas/550_0001_000_06085_000_0_0003",
           "canvasAllmapsId": "72417d700dcb858a",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/72417d700dcb858a",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/72417d700dcb858a.json"
         }
       ],
       "georefDetectedBy": "canvas",
@@ -13561,24 +13540,26 @@
       "label": "Destelbergen - Sectie F",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06087_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 3.83209580130206,
+      "centerLat": 51.076288625878874,
       "compiledManifestPath": "manifests/7ad70f8af5aebea1.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/7ad70f8af5aebea1.json",
       "canvasCount": 1,
       "manifestAllmapsId": "7ad70f8af5aebea1",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/7ad70f8af5aebea1",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06087_000/canvas/550_0001_000_06087_000_0_0001",
           "canvasAllmapsId": "62fb7299877ed082",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/62fb7299877ed082",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/62fb7299877ed082.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06087_000/canvas/550_0001_000_06087_000_0_0001"
       ]
@@ -14185,40 +14166,42 @@
       "label": "Ghent - Sectie B",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 3.7297582250031667,
+      "centerLat": 51.05647542387749,
       "compiledManifestPath": "manifests/c23f3f70f500be5c.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/c23f3f70f500be5c.json",
       "canvasCount": 6,
       "manifestAllmapsId": "c23f3f70f500be5c",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/c23f3f70f500be5c",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0001",
           "canvasAllmapsId": "eb1149e1e2156729",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/eb1149e1e2156729",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/eb1149e1e2156729.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0002",
           "canvasAllmapsId": "bf46ebca98dd3296",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/bf46ebca98dd3296",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/bf46ebca98dd3296.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0003",
           "canvasAllmapsId": "cb696f0f2d0c72a5",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/cb696f0f2d0c72a5",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/cb696f0f2d0c72a5.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0004",
           "canvasAllmapsId": "f8e666b3a90683fa",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/f8e666b3a90683fa",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/f8e666b3a90683fa.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0005",
@@ -14231,13 +14214,13 @@
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0006",
           "canvasAllmapsId": "0d5b82de4ed2be93",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/0d5b82de4ed2be93",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/0d5b82de4ed2be93.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06164_000/canvas/550_0001_000_06164_000_0_0002",
@@ -14251,59 +14234,61 @@
       "label": "Ghent - Sectie C",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 3.7248347137732765,
+      "centerLat": 51.05296088345952,
       "compiledManifestPath": "manifests/8f4d128301c07213.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/8f4d128301c07213.json",
       "canvasCount": 6,
       "manifestAllmapsId": "8f4d128301c07213",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/8f4d128301c07213",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0001",
           "canvasAllmapsId": "5d0f63518a9b79ed",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/5d0f63518a9b79ed",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/5d0f63518a9b79ed.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0002",
           "canvasAllmapsId": "f7288be89397f0ad",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/f7288be89397f0ad",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/f7288be89397f0ad.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0003",
           "canvasAllmapsId": "0b43ee23ef276811",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/0b43ee23ef276811",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/0b43ee23ef276811.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0004",
           "canvasAllmapsId": "f38c625886b30a10",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/f38c625886b30a10",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/f38c625886b30a10.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0005",
           "canvasAllmapsId": "738689bd8590c5cb",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/738689bd8590c5cb",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/738689bd8590c5cb.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0006",
           "canvasAllmapsId": "f51c5d5c888af277",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/f51c5d5c888af277",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/f51c5d5c888af277.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06165_000/canvas/550_0001_000_06165_000_0_0002",
@@ -14317,12 +14302,14 @@
       "label": "Ghent - Sectie D",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06166_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 3.7356616456268767,
+      "centerLat": 51.055734128629,
       "compiledManifestPath": "manifests/d90b438d9a7f8371.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/d90b438d9a7f8371.json",
       "canvasCount": 28,
       "manifestAllmapsId": "d90b438d9a7f8371",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/d90b438d9a7f8371",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06166_000/canvas/550_0001_000_06166_000_0_0001",
@@ -14363,15 +14350,15 @@
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06166_000/canvas/550_0001_000_06166_000_0_0006",
           "canvasAllmapsId": "cee35096e01a7c4f",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/cee35096e01a7c4f",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/cee35096e01a7c4f.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06166_000/canvas/550_0001_000_06166_000_0_0007",
           "canvasAllmapsId": "d15e744fe206726d",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/d15e744fe206726d",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/d15e744fe206726d.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06166_000/canvas/550_0001_000_06166_000_0_0008",
@@ -14521,9 +14508,9 @@
           "mirroredAllmapsAnnotationPath": ""
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06166_000/canvas/550_0001_000_06166_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06166_000/canvas/550_0001_000_06166_000_0_0002",
@@ -15769,31 +15756,33 @@
       "label": "Sint-Amandsberg - Sectie A",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06201_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 3.74892698871868,
+      "centerLat": 51.063650896056515,
       "compiledManifestPath": "manifests/d783da0fee2fa126.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/d783da0fee2fa126.json",
       "canvasCount": 2,
       "manifestAllmapsId": "d783da0fee2fa126",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/d783da0fee2fa126",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06201_000/canvas/550_0001_000_06201_000_0_0001",
           "canvasAllmapsId": "c4c237da588acc18",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/c4c237da588acc18",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/c4c237da588acc18.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06201_000/canvas/550_0001_000_06201_000_0_0002",
           "canvasAllmapsId": "5913c6389bc4fb00",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/5913c6389bc4fb00",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/5913c6389bc4fb00.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06201_000/canvas/550_0001_000_06201_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06201_000/canvas/550_0001_000_06201_000_0_0002"
@@ -18811,24 +18800,26 @@
       "label": "Melle - Verzamelplan",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06504_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 3.7981710534159276,
+      "centerLat": 51.009798916081195,
       "compiledManifestPath": "manifests/cb758d4d453f21d4.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/cb758d4d453f21d4.json",
       "canvasCount": 1,
       "manifestAllmapsId": "cb758d4d453f21d4",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/cb758d4d453f21d4",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06504_000/canvas/550_0001_000_06504_000_0_0001",
           "canvasAllmapsId": "1543be6b997b839c",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/1543be6b997b839c",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/1543be6b997b839c.json"
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": true,
-      "annotSource": "none",
+      "annotSource": "single",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06504_000/canvas/550_0001_000_06504_000_0_0001"
       ]
@@ -18917,8 +18908,8 @@
       "label": "Melle - Sectie D",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
-      "centerLon": 3.812347093618229,
-      "centerLat": 50.98987137348321,
+      "centerLon": 3.8204334777479687,
+      "centerLat": 50.988587699288075,
       "compiledManifestPath": "manifests/0e71ea4ce0e8a56b.json",
       "mirroredAllmapsAnnotationPath": "allmaps/manifests/0e71ea4ce0e8a56b.json",
       "canvasCount": 2,
@@ -18937,8 +18928,8 @@
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06507_000/canvas/550_0001_000_06507_000_0_0002",
           "canvasAllmapsId": "adc39c336fa90af5",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/adc39c336fa90af5",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/adc39c336fa90af5.json"
         }
       ],
       "georefDetectedBy": "canvas",
@@ -19249,19 +19240,21 @@
       "label": "Temse - Sectie A",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06747_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 4.202399862628269,
+      "centerLat": 51.16275359910057,
       "compiledManifestPath": "manifests/5771111e530b4572.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/5771111e530b4572.json",
       "canvasCount": 3,
       "manifestAllmapsId": "5771111e530b4572",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/5771111e530b4572",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06747_000/canvas/550_0001_000_06747_000_0_0001",
           "canvasAllmapsId": "35d6a5ac0a348ec6",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/35d6a5ac0a348ec6",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/35d6a5ac0a348ec6.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06747_000/canvas/550_0001_000_06747_000_0_0002",
@@ -19278,9 +19271,9 @@
           "mirroredAllmapsAnnotationPath": ""
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06747_000/canvas/550_0001_000_06747_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06747_000/canvas/550_0001_000_06747_000_0_0002",
@@ -19723,26 +19716,28 @@
       "label": "Waasmunster - Sectie A",
       "sourceManifestUrl": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06765_000",
       "sourceCollectionUrl": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster",
+      "centerLon": 4.036757938205838,
+      "centerLat": 51.13151512128799,
       "compiledManifestPath": "manifests/02877123103059d3.json",
-      "mirroredAllmapsAnnotationPath": "",
+      "mirroredAllmapsAnnotationPath": "allmaps/manifests/02877123103059d3.json",
       "canvasCount": 6,
       "manifestAllmapsId": "02877123103059d3",
       "manifestAllmapsUrl": "https://annotations.allmaps.org/manifests/02877123103059d3",
-      "manifestAllmapsStatus": 404,
+      "manifestAllmapsStatus": 200,
       "canvasAllmapsHits": [
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06765_000/canvas/550_0001_000_06765_000_0_0001",
           "canvasAllmapsId": "38518f82c16150d5",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/38518f82c16150d5",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/38518f82c16150d5.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06765_000/canvas/550_0001_000_06765_000_0_0002",
           "canvasAllmapsId": "90b7b52b8cf7abae",
           "canvasAllmapsUrl": "https://annotations.allmaps.org/canvases/90b7b52b8cf7abae",
-          "canvasAllmapsStatus": 404,
-          "mirroredAllmapsAnnotationPath": ""
+          "canvasAllmapsStatus": 200,
+          "mirroredAllmapsAnnotationPath": "allmaps/canvases/90b7b52b8cf7abae.json"
         },
         {
           "canvasId": "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06765_000/canvas/550_0001_000_06765_000_0_0003",
@@ -19773,9 +19768,9 @@
           "mirroredAllmapsAnnotationPath": ""
         }
       ],
-      "georefDetectedBy": "none",
+      "georefDetectedBy": "canvas",
       "isVerzamelblad": false,
-      "annotSource": "none",
+      "annotSource": "multi",
       "canvasIds": [
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06765_000/canvas/550_0001_000_06765_000_0_0001",
         "https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06765_000/canvas/550_0001_000_06765_000_0_0002",

@@ -31,6 +31,10 @@
     {
       "label": "Periode",
       "value": "[1830-1833]"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing (manifest- and canvas-level)"
     }
   ],
   "thumbnail": {
@@ -73,6 +77,13 @@
                   "profile": "http://iiif.io/api/image/2/level1.json"
                 }
               }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/canvases/1543be6b997b839c.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
             }
           ]
         }

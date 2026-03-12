@@ -35,6 +35,10 @@
     {
       "label": "Opmerkingen",
       "value": "Naam landmeter = Vreven"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing (manifest- and canvas-level)"
     }
   ],
   "thumbnail": {
@@ -78,6 +82,13 @@
                 }
               }
             }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/d6d2ed4820bf18ac.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
           ]
         },
         {
@@ -106,6 +117,13 @@
                 }
               }
             }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/d6d2ed4820bf18ac.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
           ]
         },
         {
@@ -133,6 +151,13 @@
                   "profile": "http://iiif.io/api/image/2/level1.json"
                 }
               }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/canvases/a90944af718eba1e.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
             }
           ]
         }

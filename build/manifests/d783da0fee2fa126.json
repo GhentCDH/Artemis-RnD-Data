@@ -35,6 +35,10 @@
     {
       "label": "Opmerkingen",
       "value": "Naam landmeter = Vandevelde"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing (manifest- and canvas-level)"
     }
   ],
   "thumbnail": {
@@ -78,6 +82,13 @@
                 }
               }
             }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/canvases/c4c237da588acc18.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
           ]
         },
         {
@@ -105,6 +116,13 @@
                   "profile": "http://iiif.io/api/image/2/level1.json"
                 }
               }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/canvases/5913c6389bc4fb00.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
             }
           ]
         }

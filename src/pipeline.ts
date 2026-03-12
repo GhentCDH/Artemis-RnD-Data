@@ -367,17 +367,22 @@ function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string
     if (typeof selector?.value === "string" && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
       const points = parseSvgPolygonPoints(selector.value);
       if (points.length > 0) {
-        let clampedCount = 0;
-        const clamped = points.map(([x, y]) => {
-          const nx = Math.max(0, Math.min(width, x));
-          const ny = Math.max(0, Math.min(height, y));
-          if (nx !== x || ny !== y) clampedCount++;
-          return [nx, ny] as [number, number];
-        });
-        if (clampedCount > 0) {
-          selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(clamped)}"`);
-          appliedFixes.push(`clamped-mask-points:item[${idx}]:${clampedCount}`);
-        }
+        // [TEST: mask-out-of-bounds passthrough] Clamping intentionally disabled to let
+        // out-of-bounds mask points reach the viewer unchanged. This allows confirming
+        // whether mask-out-of-bounds is the root cause of viewer rendering failures.
+        // TO REVERT: uncomment the clamping block below and remove this comment.
+        //
+        // let clampedCount = 0;
+        // const clamped = points.map(([x, y]) => {
+        //   const nx = Math.max(0, Math.min(width, x));
+        //   const ny = Math.max(0, Math.min(height, y));
+        //   if (nx !== x || ny !== y) clampedCount++;
+        //   return [nx, ny] as [number, number];
+        // });
+        // if (clampedCount > 0) {
+        //   selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(clamped)}"`);
+        //   appliedFixes.push(`clamped-mask-points:item[${idx}]:${clampedCount}`);
+        // }
 
         const normalized = normalizePolygon(parseSvgPolygonPoints(selector.value));
         if (hasSelfIntersections(normalized)) {
@@ -699,9 +704,14 @@ async function processManifestRef(
     appliedFixes = uniqueStrings(appliedFixes);
   }
   const issuesAfterFix = await collectAnnotationIssues(annotationPathsToCheck);
-  if (issuesAfterFix.length > 0) {
-    const issueCodes = uniqueStrings(issuesAfterFix.map((x) => x.code)) as AnnotationIssue["code"][];
-    const issueMessages = summarizeIssues(issuesAfterFix);
+  // [TEST: mask-out-of-bounds passthrough] mask-out-of-bounds is excluded from the blocking
+  // QA gate so manifests with this issue are compiled and included in the build unchanged.
+  // This lets the viewer receive the raw OOB annotation data for root-cause testing.
+  // TO REVERT: remove the filter line below so all issues block the build again.
+  const blockingIssuesAfterFix = issuesAfterFix.filter((x) => x.code !== "mask-out-of-bounds");
+  if (blockingIssuesAfterFix.length > 0) {
+    const issueCodes = uniqueStrings(blockingIssuesAfterFix.map((x) => x.code)) as AnnotationIssue["code"][];
+    const issueMessages = summarizeIssues(blockingIssuesAfterFix);
     console.warn(`[SKIP] Annotation QA failed: ${url} (${manifestAllmapsId}) -> ${issueCodes.join(", ")}`);
     return {
       kind: "problematic",

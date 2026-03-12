@@ -247,3 +247,23 @@ src/
 ### Manifest Coordinates in Main Index
 - `build/index.json` `index[]` entries can include `centerLon` / `centerLat`, derived from mirrored annotation geo points.
 - This supports manifest search click-to-location in viewer without introducing extra files or fetches.
+
+---
+
+## TEMPORARY TEST — mask-out-of-bounds passthrough (added 2026-03-12)
+
+**Purpose**: Confirm that `mask-out-of-bounds` annotation errors are the root cause of viewer rendering failures (flickering/partial renders on Primitief single-canvas manifests). Requested by Allmaps maintainers for root-cause isolation.
+
+**What was changed in `src/pipeline.ts`**:
+
+1. **Clamping disabled** (`sanitizeMirroredAnnotation`, inside the mask-point loop):
+   - The block that clamped out-of-bounds SVG polygon points to `[0..width, 0..height]` is commented out.
+   - OOB points now remain in the annotation JSON written to `build/allmaps/`.
+
+2. **QA gate relaxed** (after `issuesAfterFix` is collected):
+   - `mask-out-of-bounds` is filtered out of the blocking issue list via `blockingIssuesAfterFix`.
+   - Manifests that only fail on `mask-out-of-bounds` are compiled and included in the build instead of being returned as `"problematic"`.
+
+**To revert** (once root cause is confirmed or ruled out):
+1. In `sanitizeMirroredAnnotation`: uncomment the clamping block (search for `[TEST: mask-out-of-bounds passthrough]`).
+2. In the QA gate: remove the `blockingIssuesAfterFix` filter line and change `blockingIssuesAfterFix` back to `issuesAfterFix` in the `if` condition and `issueCodes`/`issueMessages` derivations.

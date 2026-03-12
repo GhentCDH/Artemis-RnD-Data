@@ -35,6 +35,10 @@
     {
       "label": "Opmerkingen",
       "value": "Naam landmeter = Franssen"
+    },
+    {
+      "label": "Artemis pipeline",
+      "value": "Compiled manifest with mirrored Allmaps georeferencing (manifest- and canvas-level)"
     }
   ],
   "thumbnail": {
@@ -78,6 +82,13 @@
                 }
               }
             }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/canvases/fa323ef72bfcb63b.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
+            }
           ]
         },
         {
@@ -105,6 +116,13 @@
                   "profile": "http://iiif.io/api/image/2/level1.json"
                 }
               }
+            }
+          ],
+          "otherContent": [
+            {
+              "@id": "allmaps/manifests/4b9cb35de31999dd.json",
+              "@type": "sc:AnnotationList",
+              "label": "Georeferencing (Allmaps, mirrored by Artemis)"
             }
           ]
         }

@@ -500,7 +500,10 @@
       "body": {
         "type": "FeatureCollection",
         "transformation": {
-          "type": "thinPlateSpline"
+          "type": "polynomial",
+          "options": {
+            "order": 1
+          }
         },
         "features": [
           {

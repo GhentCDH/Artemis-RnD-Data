@@ -356,12 +356,75 @@ function analyzeMirroredAnnotation(raw: any, annotationPath: string): Annotation
 }
 
 function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string[] } {
-  // [TEST: full passthrough] ALL fixes disabled — raw annotation data reaches the viewer
-  // unchanged. This lets us isolate which annotation issue type causes viewer breakage.
-  // Previously tested individually: mask-out-of-bounds (ruled out), self-intersecting-mask (ruled out).
-  // Now testing all remaining types together: tps-low-gcp, duplicate-geo-gcp, mask-out-of-bounds, self-intersecting-mask.
-  // TO REVERT: restore the full implementation from git history (commit before f8a0bc4).
-  return { json: JSON.parse(JSON.stringify(raw)), appliedFixes: [] };
+  const out = JSON.parse(JSON.stringify(raw));
+  const appliedFixes: string[] = [];
+  const items = Array.isArray(out?.items) ? out.items : [];
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
+    const width = Number(item?.target?.source?.width);
+    const height = Number(item?.target?.source?.height);
+    const selector = item?.target?.selector;
+    if (typeof selector?.value === "string" && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      const points = parseSvgPolygonPoints(selector.value);
+      if (points.length > 0) {
+        let clampedCount = 0;
+        const clamped = points.map(([x, y]) => {
+          const nx = Math.max(0, Math.min(width, x));
+          const ny = Math.max(0, Math.min(height, y));
+          if (nx !== x || ny !== y) clampedCount++;
+          return [nx, ny] as [number, number];
+        });
+        if (clampedCount > 0) {
+          selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(clamped)}"`);
+          appliedFixes.push(`clamped-mask-points:item[${idx}]:${clampedCount}`);
+        }
+
+        const normalized = normalizePolygon(parseSvgPolygonPoints(selector.value));
+        if (hasSelfIntersections(normalized)) {
+          const hull = convexHull(normalized);
+          if (hull.length >= 3 && !hasSelfIntersections(hull)) {
+            selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(hull)}"`);
+            appliedFixes.push(`repaired-self-intersection:item[${idx}]:convex-hull:${normalized.length}->${hull.length}`);
+          }
+        }
+      }
+    }
+
+    const body = item?.body;
+
+    // [TEST: duplicate-geo-gcp passthrough] Duplicate GCP removal intentionally disabled
+    // to let duplicate geographic GCPs reach the viewer unchanged. This confirms whether
+    // duplicate-geo-gcp is the root cause of viewer rendering failures.
+    // TO REVERT: uncomment the deduplication block below and remove this comment.
+    //
+    // const features = Array.isArray(body?.features) ? body.features : [];
+    // if (features.length > 0) {
+    //   const seenGeo = new Set<string>();
+    //   let removed = 0;
+    //   const deduped: any[] = [];
+    //   for (const f of features) {
+    //     if (f?.geometry?.type !== "Point") { deduped.push(f); continue; }
+    //     const c = f?.geometry?.coordinates;
+    //     if (!Array.isArray(c) || c.length < 2) { deduped.push(f); continue; }
+    //     const key = `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`;
+    //     if (seenGeo.has(key)) { removed++; continue; }
+    //     seenGeo.add(key);
+    //     deduped.push(f);
+    //   }
+    //   if (removed > 0) {
+    //     body.features = deduped;
+    //     appliedFixes.push(`removed-duplicate-geo-gcp:item[${idx}]:${removed}`);
+    //   }
+    // }
+
+    const pointFeatures = (Array.isArray(body?.features) ? body.features : []).filter((f: any) => f?.geometry?.type === "Point");
+    const gcpCount = pointFeatures.length;
+    if (body?.transformation?.type === "thinPlateSpline" && gcpCount < 5) {
+      body.transformation = { type: "polynomial", options: { order: 1 } };
+      appliedFixes.push(`downgraded-tps:item[${idx}]:gcp=${gcpCount}`);
+    }
+  }
+  return { json: out, appliedFixes: uniqueStrings(appliedFixes) };
 }
 
 async function collectAnnotationIssues(annotationPaths: string[]): Promise<AnnotationIssue[]> {
@@ -633,13 +696,14 @@ async function processManifestRef(
     appliedFixes = uniqueStrings(appliedFixes);
   }
   const issuesAfterFix = await collectAnnotationIssues(annotationPathsToCheck);
-  // [TEST: full passthrough] QA gate completely bypassed — no issue type blocks the build.
-  // All manifests with annotation issues are compiled and included so the viewer receives
-  // raw problematic data for root-cause isolation.
-  // TO REVERT: restore the blocking check from git history (commit before f8a0bc4).
-  if (false) {
-    const issueCodes = uniqueStrings(issuesAfterFix.map((x) => x.code)) as AnnotationIssue["code"][];
-    const issueMessages = summarizeIssues(issuesAfterFix);
+  // [TEST: duplicate-geo-gcp passthrough] duplicate-geo-gcp excluded from the blocking QA
+  // gate so manifests with this issue compile and reach the viewer with raw duplicate GCPs.
+  // All other issue types still block the build as normal.
+  // TO REVERT: remove the filter line and rename blockingIssuesAfterFix back to issuesAfterFix.
+  const blockingIssuesAfterFix = issuesAfterFix.filter((x) => x.code !== "duplicate-geo-gcp");
+  if (blockingIssuesAfterFix.length > 0) {
+    const issueCodes = uniqueStrings(blockingIssuesAfterFix.map((x) => x.code)) as AnnotationIssue["code"][];
+    const issueMessages = summarizeIssues(blockingIssuesAfterFix);
     console.warn(`[SKIP] Annotation QA failed: ${url} (${manifestAllmapsId}) -> ${issueCodes.join(", ")}`);
     return {
       kind: "problematic",
@@ -649,7 +713,7 @@ async function processManifestRef(
         sourceManifestUrl: url,
         reason: issueMessages.join(" | "),
         issueTypes: issueCodes,
-        annotationPaths: uniqueStrings(issuesAfterFix.map((x) => x.annotationPath)),
+        annotationPaths: uniqueStrings(blockingIssuesAfterFix.map((x) => x.annotationPath)),
         potentialSolutions: issueSolutionsFor(issueCodes)
           .concat(appliedFixes.length > 0 ? ["Review applied local auto-fixes and re-validate in viewer."] : []),
         fixAttempted: issuesBeforeFix.length > 0,

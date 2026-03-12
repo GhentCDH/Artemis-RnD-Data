@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-12T15:39:54.693Z",
+  "generatedAt": "2026-03-12T15:45:53.880Z",
   "totalManifests": 575,
   "georefManifests": 228,
   "mirroredOk": 228,
@@ -81,7 +81,14 @@
         "tps-low-gcp: item[7] uses thinPlateSpline with only 4 GCPs",
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/manifests/7d8b2f5bdd3bac39.json:clamped-mask-points:item[1]:1",
+        "allmaps/manifests/7d8b2f5bdd3bac39.json:downgraded-tps:item[7]:gcp=4",
+        "allmaps/canvases/1ffb399b63fe220e.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/canvases/2caa88886676ca07.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/canvases/1611abcbd904ed55.json:clamped-mask-points:item[0]:1"
+      ]
     },
     {
       "manifestAllmapsId": "787106327b287f41",
@@ -108,7 +115,12 @@
         "self-intersecting-mask: item[4] mask polygon is self-intersecting",
         "self-intersecting-mask: item[0] mask polygon is self-intersecting"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/787106327b287f41.json:repaired-self-intersection:item[2]:convex-hull:126->14",
+        "allmaps/manifests/787106327b287f41.json:repaired-self-intersection:item[4]:convex-hull:90->16",
+        "allmaps/canvases/7ad4854d7249b46f.json:repaired-self-intersection:item[0]:convex-hull:90->16",
+        "allmaps/canvases/4f2317cae53c87c9.json:repaired-self-intersection:item[0]:convex-hull:126->14"
+      ]
     },
     {
       "manifestAllmapsId": "949c44555577f899",
@@ -125,7 +137,10 @@
         "self-intersecting-mask: item[2] mask polygon is self-intersecting",
         "self-intersecting-mask: item[0] mask polygon is self-intersecting"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/949c44555577f899.json:repaired-self-intersection:item[2]:convex-hull:72->11",
+        "allmaps/canvases/288989d3549b6c68.json:repaired-self-intersection:item[0]:convex-hull:72->11"
+      ]
     },
     {
       "manifestAllmapsId": "4b9cb35de31999dd",
@@ -138,7 +153,10 @@
       "issuesBefore": [
         "tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/4b9cb35de31999dd.json:downgraded-tps:item[0]:gcp=3",
+        "allmaps/canvases/fa323ef72bfcb63b.json:downgraded-tps:item[0]:gcp=3"
+      ]
     },
     {
       "manifestAllmapsId": "da45aea5bd763705",
@@ -154,7 +172,10 @@
         "mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/da45aea5bd763705.json:clamped-mask-points:item[1]:2",
+        "allmaps/canvases/732561f756574389.json:clamped-mask-points:item[0]:2"
+      ]
     },
     {
       "manifestAllmapsId": "8f62f46e09c55a74",
@@ -170,7 +191,12 @@
         "tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs",
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/8f62f46e09c55a74.json:clamped-mask-points:item[0]:2",
+        "allmaps/manifests/8f62f46e09c55a74.json:downgraded-tps:item[1]:gcp=4",
+        "allmaps/canvases/83b7d526aafeae0b.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/canvases/bda8b7392a80f62b.json:clamped-mask-points:item[0]:2"
+      ]
     },
     {
       "manifestAllmapsId": "af67bb62f0ede330",
@@ -186,7 +212,12 @@
         "mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/af67bb62f0ede330.json:clamped-mask-points:item[0]:1",
+        "allmaps/manifests/af67bb62f0ede330.json:clamped-mask-points:item[1]:2",
+        "allmaps/canvases/7bc3c417c9155ddb.json:clamped-mask-points:item[0]:1",
+        "allmaps/canvases/0ae1c44d9386296c.json:clamped-mask-points:item[0]:2"
+      ]
     },
     {
       "manifestAllmapsId": "4217a284ec05d38f",
@@ -200,7 +231,10 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/4217a284ec05d38f.json:clamped-mask-points:item[0]:1",
+        "allmaps/canvases/05910d780fd00a03.json:clamped-mask-points:item[0]:1"
+      ]
     },
     {
       "manifestAllmapsId": "8a86f46ba908c161",
@@ -214,7 +248,10 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/8a86f46ba908c161.json:clamped-mask-points:item[0]:1",
+        "allmaps/canvases/e6684c17d1cb8b20.json:clamped-mask-points:item[0]:1"
+      ]
     },
     {
       "manifestAllmapsId": "5b387ce6ccc7844a",
@@ -228,7 +265,12 @@
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds",
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/5b387ce6ccc7844a.json:clamped-mask-points:item[0]:1",
+        "allmaps/manifests/5b387ce6ccc7844a.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/canvases/b68b5cfe7d18ef28.json:clamped-mask-points:item[0]:1",
+        "allmaps/canvases/b68b5cfe7d18ef28.json:downgraded-tps:item[0]:gcp=4"
+      ]
     },
     {
       "manifestAllmapsId": "49cfa0dd767cac73",
@@ -244,7 +286,14 @@
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs",
         "tps-low-gcp: item[1] uses thinPlateSpline with only 4 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/49cfa0dd767cac73.json:clamped-mask-points:item[0]:4",
+        "allmaps/manifests/49cfa0dd767cac73.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/manifests/49cfa0dd767cac73.json:downgraded-tps:item[1]:gcp=4",
+        "allmaps/canvases/817bc532e4ed50b1.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/canvases/b7a2a368d128872e.json:clamped-mask-points:item[0]:4",
+        "allmaps/canvases/b7a2a368d128872e.json:downgraded-tps:item[0]:gcp=4"
+      ]
     },
     {
       "manifestAllmapsId": "808c6d2744018271",
@@ -257,7 +306,10 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/808c6d2744018271.json:clamped-mask-points:item[0]:1",
+        "allmaps/canvases/3c6ce0bee9d63669.json:clamped-mask-points:item[0]:1"
+      ]
     },
     {
       "manifestAllmapsId": "8a0d9395a79a08d2",
@@ -270,7 +322,10 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/8a0d9395a79a08d2.json:clamped-mask-points:item[0]:1",
+        "allmaps/canvases/33cf8c20d249c8b4.json:clamped-mask-points:item[0]:1"
+      ]
     },
     {
       "manifestAllmapsId": "557a8b6047b744fe",
@@ -286,7 +341,10 @@
         "mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/557a8b6047b744fe.json:clamped-mask-points:item[1]:1",
+        "allmaps/canvases/8441965ed4c1fba2.json:clamped-mask-points:item[0]:1"
+      ]
     },
     {
       "manifestAllmapsId": "5122e64494db51c3",
@@ -303,7 +361,12 @@
         "tps-low-gcp: item[2] uses thinPlateSpline with only 3 GCPs",
         "tps-low-gcp: item[0] uses thinPlateSpline with only 3 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/5122e64494db51c3.json:downgraded-tps:item[1]:gcp=3",
+        "allmaps/manifests/5122e64494db51c3.json:downgraded-tps:item[2]:gcp=3",
+        "allmaps/canvases/63ded1aba2651ec2.json:downgraded-tps:item[0]:gcp=3",
+        "allmaps/canvases/af5287bba6dd17c4.json:downgraded-tps:item[0]:gcp=3"
+      ]
     },
     {
       "manifestAllmapsId": "4fcaaa3e4554068f",
@@ -316,7 +379,10 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/4fcaaa3e4554068f.json:clamped-mask-points:item[0]:4",
+        "allmaps/canvases/ea070f0060d77342.json:clamped-mask-points:item[0]:4"
+      ]
     },
     {
       "manifestAllmapsId": "064a3ae0ac0d19f7",
@@ -332,7 +398,10 @@
         "tps-low-gcp: item[2] uses thinPlateSpline with only 4 GCPs",
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/064a3ae0ac0d19f7.json:downgraded-tps:item[2]:gcp=4",
+        "allmaps/canvases/02a966aac83e4039.json:downgraded-tps:item[0]:gcp=4"
+      ]
     },
     {
       "manifestAllmapsId": "5916031e1780cb72",
@@ -347,7 +416,10 @@
       "issuesBefore": [
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/5916031e1780cb72.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/canvases/78fbf2b8f676ae33.json:downgraded-tps:item[0]:gcp=4"
+      ]
     },
     {
       "manifestAllmapsId": "a7e9237ceaf8e635",
@@ -362,7 +434,10 @@
       "issuesBefore": [
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/a7e9237ceaf8e635.json:downgraded-tps:item[0]:gcp=4",
+        "allmaps/canvases/676af43eba945066.json:downgraded-tps:item[0]:gcp=4"
+      ]
     },
     {
       "manifestAllmapsId": "6c078ea636fd0b3d",
@@ -382,7 +457,12 @@
         "mask-out-of-bounds: item[0] has 4 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/6c078ea636fd0b3d.json:clamped-mask-points:item[1]:2",
+        "allmaps/manifests/6c078ea636fd0b3d.json:clamped-mask-points:item[2]:4",
+        "allmaps/canvases/61215bdef518415e.json:clamped-mask-points:item[0]:4",
+        "allmaps/canvases/8b67e5e1964cb32f.json:clamped-mask-points:item[0]:2"
+      ]
     },
     {
       "manifestAllmapsId": "6982d065bda5b025",
@@ -415,7 +495,10 @@
         "tps-low-gcp: item[4] uses thinPlateSpline with only 4 GCPs",
         "tps-low-gcp: item[0] uses thinPlateSpline with only 4 GCPs"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/40ab3add66c5f9b8.json:downgraded-tps:item[4]:gcp=4",
+        "allmaps/canvases/5d2b470374cd5d8c.json:downgraded-tps:item[0]:gcp=4"
+      ]
     },
     {
       "manifestAllmapsId": "831566b63f7f8d0c",
@@ -429,7 +512,10 @@
       "issuesBefore": [
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/831566b63f7f8d0c.json:clamped-mask-points:item[0]:1",
+        "allmaps/canvases/793b3462c55649cc.json:clamped-mask-points:item[0]:1"
+      ]
     },
     {
       "manifestAllmapsId": "81ebe1a7e47670eb",
@@ -444,7 +530,10 @@
         "mask-out-of-bounds: item[1] has 2 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 2 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/81ebe1a7e47670eb.json:clamped-mask-points:item[1]:2",
+        "allmaps/canvases/3122e00e7a77661b.json:clamped-mask-points:item[0]:2"
+      ]
     },
     {
       "manifestAllmapsId": "588997c6103d6706",
@@ -460,7 +549,10 @@
         "mask-out-of-bounds: item[1] has 1 resource mask points outside image bounds",
         "mask-out-of-bounds: item[0] has 1 resource mask points outside image bounds"
       ],
-      "appliedFixes": []
+      "appliedFixes": [
+        "allmaps/manifests/588997c6103d6706.json:clamped-mask-points:item[1]:1",
+        "allmaps/canvases/e633e95ae729cac8.json:clamped-mask-points:item[0]:1"
+      ]
     }
   ],
   "problematicManifests": [],

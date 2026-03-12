@@ -250,17 +250,20 @@ src/
 
 ---
 
-## TEMPORARY TEST — full annotation passthrough (updated 2026-03-12)
+## TEMPORARY TEST — duplicate-geo-gcp passthrough (updated 2026-03-12)
 
-**Ruled out so far**: `mask-out-of-bounds` (tested alone, no viewer breakage), `self-intersecting-mask` (tested alone, no viewer breakage).
+**Ruled out so far**: `mask-out-of-bounds` (alone), `self-intersecting-mask` (alone), all types combined (viewer broke — root cause narrowed down).
 
-**Current test**: All fixes disabled and QA gate fully bypassed — every annotation issue type (`mask-out-of-bounds`, `self-intersecting-mask`, `tps-low-gcp`, `duplicate-geo-gcp`) passes through raw to the viewer simultaneously, with no previously-fixed manifests diluting the test set.
+**Current test**: Only `duplicate-geo-gcp` passes through unfixed. All other fixes (clamping, hull repair, tps downgrade) are restored and active. Only the duplicate GCP deduplication is disabled, and `duplicate-geo-gcp` is excluded from the QA blocking gate.
+
+**Affected manifest**: `Kalken - Sectie C-D` (`550_0001_000_06385_000`) — item[0] has 1 duplicate geographic GCP.
 
 **What was changed in `src/pipeline.ts`**:
 
-1. **`sanitizeMirroredAnnotation` gutted** — returns a deep copy of raw input with no modifications. All fixes (clamping, hull repair, tps downgrade, duplicate GCP removal) are disabled.
+1. **Duplicate GCP removal disabled** (`sanitizeMirroredAnnotation`) — the deduplication block is commented out. All other fixes are active.
 
-2. **QA gate fully bypassed** — replaced with `if (false)` so no manifest is ever returned as `"problematic"`. All manifests compile and reach the viewer unchanged.
+2. **QA gate relaxed for `duplicate-geo-gcp` only** — `blockingIssuesAfterFix` filters out `duplicate-geo-gcp`; all other issue types still block the build.
 
-**To revert** (once root cause is confirmed or ruled out):
-- Restore `sanitizeMirroredAnnotation` and the QA gate from git history: `git show f8a0bc4:src/pipeline.ts` (the commit just before the full passthrough was applied). The commit to restore to is the one before the current HEAD.
+**To revert** (once confirmed or ruled out):
+1. In `sanitizeMirroredAnnotation`: uncomment the deduplication block (search for `[TEST: duplicate-geo-gcp passthrough]`).
+2. In the QA gate: remove the `blockingIssuesAfterFix` filter line and rename it back to `issuesAfterFix` in the `if` condition and inside the `problematic` return block.

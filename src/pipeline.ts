@@ -491,6 +491,28 @@ function extractCanvasIdsFromV2Manifest(man: V2Manifest): string[] {
     .filter((id: string) => id.length > 0);
 }
 
+/**
+ * Returns a map of canvasId → IIIF image service "@id" for all canvases that have one.
+ */
+function extractCanvasImageServices(man: V2Manifest): Record<string, string> {
+  const result: Record<string, string> = {};
+  const canvases = man?.sequences?.[0]?.canvases ?? [];
+  for (const canvas of Array.isArray(canvases) ? canvases : []) {
+    const canvasId = (canvas?.["@id"] ?? "").toString();
+    if (!canvasId) continue;
+    const images = Array.isArray(canvas?.images) ? canvas.images : [];
+    for (const image of images) {
+      const svc = image?.resource?.service;
+      const serviceId = svc?.["@id"] ?? (Array.isArray(svc) ? svc[0]?.["@id"] : null);
+      if (serviceId) {
+        result[canvasId] = serviceId.toString();
+        break;
+      }
+    }
+  }
+  return result;
+}
+
 async function getStatus(url: string): Promise<number> {
   const res = await fetch(url, { method: "GET", redirect: "follow" });
   return res.status;
@@ -619,9 +641,10 @@ async function processManifestRef(
   sourceCollectionUrl: string,
   buildBaseUrl: string | null,
   i: number,
-  total: number
+  total: number,
+  existingCanvasInfoIds: Set<string>
 ): Promise<
-  | { kind: "ok"; entry: IndexEntry; georef: boolean; mirrored: boolean; compiled: boolean; fixed?: SuccessfulFixManifest }
+  | { kind: "ok"; entry: IndexEntry; georef: boolean; mirrored: boolean; compiled: boolean; fixed?: SuccessfulFixManifest; canvasInfoEntries: Record<string, any> }
   | { kind: "problematic"; problematic: ProblematicManifest }
 > {
   console.log(`  - [${i + 1}/${total}] ${label || "(no label)"} :: ${url}`);
@@ -747,6 +770,23 @@ async function processManifestRef(
         }
       : undefined;
 
+  // Fetch info.json for georeffed canvases only, skipping already-cached entries.
+  const canvasInfoEntries: Record<string, any> = {};
+  const canvasServices = extractCanvasImageServices(man);
+  for (const hit of canvasAllmapsHits) {
+    if (hit.canvasAllmapsStatus !== 200) continue;
+    if (existingCanvasInfoIds.has(hit.canvasId)) continue;
+    const serviceUrl = canvasServices[hit.canvasId];
+    if (!serviceUrl) continue;
+    try {
+      const infoUrl = `${serviceUrl.replace(/\/+$/, "")}/info.json`;
+      const infoJson = await fetchJson(infoUrl);
+      canvasInfoEntries[hit.canvasId] = infoJson;
+    } catch (err: any) {
+      console.warn(`[WARN] Could not fetch info.json for canvas ${hit.canvasId}: ${err?.message ?? err}`);
+    }
+  }
+
   const center = await deriveAnnotationCenter(
     mirroredManifestRel,
     Object.values(mirroredCanvasRelByCanvasId)
@@ -774,7 +814,8 @@ async function processManifestRef(
     georef: georefDetected,
     mirrored: mirroredManifestRel.length > 0 || hasCanvasGeoref,
     compiled: didCompile,
-    fixed: fixedManifest
+    fixed: fixedManifest,
+    canvasInfoEntries
   };
 }
 
@@ -795,6 +836,18 @@ async function main() {
   await mkdir("build", { recursive: true });
   await mkdir("build/manifests", { recursive: true });
   await mkdir("build/collections", { recursive: true });
+  await mkdir("build/iiif/info", { recursive: true });
+
+  // Persistent canvas info.json index — keyed by canvasId (IIIF canvas URL).
+  // Not wiped between runs: load existing entries and skip already-fetched canvases.
+  const canvasInfoIndexPath = "build/iiif/info/index.json";
+  let canvasInfoIndex: Record<string, any> = {};
+  try {
+    canvasInfoIndex = JSON.parse(await readFile(canvasInfoIndexPath, "utf-8"));
+  } catch {
+    // First run or file missing — start empty.
+  }
+  const existingCanvasInfoIds = new Set(Object.keys(canvasInfoIndex));
 
   const sourcesTxt = await readFile("data/sources/collections.txt", "utf-8");
   const collectionUrls = parseLines(sourcesTxt);
@@ -826,6 +879,7 @@ async function main() {
   let georefManifests = 0;
   let mirroredOk = 0;
   let compiledOk = 0;
+  let newCanvasInfoCount = 0;
 
   for (const group of sourceGroups) {
     console.log(`  Source: ${group.sourceCollectionUrl}`);
@@ -845,7 +899,8 @@ async function main() {
         group.sourceCollectionUrl,
         buildBaseUrl,
         i,
-        slice.length
+        slice.length,
+        existingCanvasInfoIds
       );
       if (result.kind === "problematic") {
         problematicManifests.push(result.problematic);
@@ -856,6 +911,11 @@ async function main() {
       if (result.georef) georefManifests++;
       if (result.mirrored) mirroredOk++;
       if (result.compiled) compiledOk++;
+      for (const [canvasId, info] of Object.entries(result.canvasInfoEntries)) {
+        canvasInfoIndex[canvasId] = info;
+        existingCanvasInfoIds.add(canvasId);
+        newCanvasInfoCount++;
+      }
     }
   }
 
@@ -968,6 +1028,8 @@ async function main() {
     index
   };
   await writeFile("build/index.json", JSON.stringify(indexOut, null, 2), "utf-8");
+  await writeFile(canvasInfoIndexPath, JSON.stringify(canvasInfoIndex, null, 2), "utf-8");
+  console.log(`  Canvas info.json index: ${Object.keys(canvasInfoIndex).length} entries (${newCanvasInfoCount} new this run)`);
 
   const problematicLog = problematicManifests.map((m) =>
     [

@@ -70,7 +70,7 @@ index.json            ← fetch once to enumerate layers (small)
 - **Annotation loading strategy in viewer** (`getMirroredAnnotationRequests`):
   - Always prefer the manifest annotation (`mirroredAllmapsAnnotationPath`) for all entries — it is the canonical source and ensures a single `addGeoreferenceAnnotation` call regardless of canvas count.
   - Canvas paths (from `canvasAllmapsHits`) are only used as fallback when no manifest annotation was mirrored.
-- Build output dirs (`build/manifests/`, `build/collections/`, `build/allmaps/`) are wiped at the start of each pipeline run. Only `cache/` persists.
+- Build output dirs (`build/manifests/`, `build/collections/`, `build/allmaps/`) are wiped at the start of each pipeline run. Only `cache/` and `build/iiif/info/` persist across runs.
 
 ## Directory Layout
 
@@ -87,6 +87,7 @@ build/
   manifests/<slug>.json           # compiled manifests with Allmaps otherContent injected
   allmaps/manifests/<id>.json     # mirrored Allmaps annotation JSONs
   allmaps/canvases/<id>.json      # mirrored Allmaps canvas annotation JSONs
+  iiif/info/index.json            # consolidated IIIF image info.json cache — keyed by canvasId (IIIF canvas URL) → info.json content; georeffed canvases only; NOT wiped between runs
 src/
   pipeline.ts                     # main pipeline
   toponyms.ts                     # toponym search index builder
@@ -247,6 +248,27 @@ src/
 ### Manifest Coordinates in Main Index
 - `build/index.json` `index[]` entries can include `centerLon` / `centerLat`, derived from mirrored annotation geo points.
 - This supports manifest search click-to-location in viewer without introducing extra files or fetches.
+
+---
+
+## Session Update — 2026-03-13 (Canvas info.json Cache)
+
+### What Changed
+- Added `extractCanvasImageServices(man: V2Manifest): Record<string, string>` helper — maps canvas `@id` → IIIF image service `@id` from `sequences[0].canvases[n].images[0].resource.service`.
+- `processManifestRef` now accepts `existingCanvasInfoIds: Set<string>` and returns `canvasInfoEntries: Record<string, any>` (canvasId → full info.json content) for any newly fetched canvases.
+- `main()` loads `build/iiif/info/index.json` at startup (empty object if absent), builds `existingCanvasInfoIds` from its keys, and merges new entries after each manifest. Writes the consolidated file after step 4.
+- `build/iiif/info/` is created at startup but explicitly excluded from the build-clean wipe list.
+
+### Fetch Scope (intentional constraints)
+- Only fetched for canvases where `canvasAllmapsStatus === 200` — i.e. canvases with a confirmed Allmaps georeferencing annotation.
+- Fetch happens **after** the QA gate — manifests that fail annotation QA and return `kind: "problematic"` never contribute info.json entries.
+- Already-cached canvas IDs are skipped each run (incremental, no redundant network fetches).
+
+### Output: `build/iiif/info/index.json`
+- Single JSON object: `{ [canvasId (IIIF canvas URL)]: infoJson }`
+- Keyed by full IIIF canvas URL — the viewer has this directly from the manifest, no Allmaps ID derivation needed.
+- Persists across pipeline runs (like `cache/`), committed to the repo alongside other build artifacts for GitHub hosting.
+- Performance intent: viewer fetches this once instead of making N individual `info.json` requests per image service at render time.
 
 ---
 

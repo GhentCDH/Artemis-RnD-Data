@@ -771,17 +771,19 @@ async function processManifestRef(
       : undefined;
 
   // Fetch info.json for georeffed canvases only, skipping already-cached entries.
+  // Keyed by image service URL (the base URL used to fetch {serviceUrl}/info.json)
+  // so the viewer can do a direct lookup without any URL-bridge logic.
   const canvasInfoEntries: Record<string, any> = {};
   const canvasServices = extractCanvasImageServices(man);
   for (const hit of canvasAllmapsHits) {
     if (hit.canvasAllmapsStatus !== 200) continue;
-    if (existingCanvasInfoIds.has(hit.canvasId)) continue;
     const serviceUrl = canvasServices[hit.canvasId];
     if (!serviceUrl) continue;
+    const serviceKey = serviceUrl.replace(/\/+$/, "");
+    if (existingCanvasInfoIds.has(serviceKey)) continue;
     try {
-      const infoUrl = `${serviceUrl.replace(/\/+$/, "")}/info.json`;
-      const infoJson = await fetchJson(infoUrl);
-      canvasInfoEntries[hit.canvasId] = infoJson;
+      const infoJson = await fetchJson(`${serviceKey}/info.json`);
+      canvasInfoEntries[serviceKey] = infoJson;
     } catch (err: any) {
       console.warn(`[WARN] Could not fetch info.json for canvas ${hit.canvasId}: ${err?.message ?? err}`);
     }

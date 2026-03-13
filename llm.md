@@ -265,8 +265,8 @@ src/
 - Already-cached canvas IDs are skipped each run (incremental, no redundant network fetches).
 
 ### Output: `build/iiif/info/index.json`
-- Single JSON object: `{ [canvasId (IIIF canvas URL)]: infoJson }`
-- Keyed by full IIIF canvas URL — the viewer has this directly from the manifest, no Allmaps ID derivation needed.
+- Single JSON object: `{ [imageServiceUrl]: infoJson }`
+- Keyed by image service base URL (the exact string used to fetch `{serviceUrl}/info.json`, trailing slash stripped) — this is what `wm.georeferencedMap?.resource?.id` resolves to in the viewer, enabling a direct lookup with no bridge.
 - Persists across pipeline runs (like `cache/`), committed to the repo alongside other build artifacts for GitHub hosting.
 - Performance intent: viewer fetches this once instead of making N individual `info.json` requests per image service at render time.
 

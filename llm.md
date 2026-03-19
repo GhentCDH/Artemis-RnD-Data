@@ -73,10 +73,10 @@ index.json            ← fetch once to enumerate layers (small)
 ## Directory Layout
 
 ```
-data/sources/collections.txt      # input: one IIIF collection URL per line
+data/sources/collections.txt      # input: IIIF collection URLs + ugent:// special schemes
 data/sources/Toponyms/README.txt  # note about local-only toponym source files
-cache/collections/                # disk cache for fetched collections
-cache/manifests/                  # disk cache for fetched manifests
+cache/collections/                # disk cache for fetched IIIF collections
+cache/manifests/                  # disk cache for fetched IIIF manifests
 logs/
   report.log                      # QA report (fixed + excluded manifests) — git-ignored
 build/
@@ -84,17 +84,19 @@ build/
   collections/<sha1>.json         # compiled IIIF v2 Collections (source-level + render-layer splits)
   index.json                      # { layers, renderLayers, index, stats } — layer lists + per-manifest metadata
   Toponyms/index.json             # toponym search index for viewer/GitHub Pages
+  Massart/index.json              # Jean Massart photograph metadata index (see below)
   Parcels/                        # historical parcel polygon data
   manifests/<slug>.json           # compiled manifests with Allmaps otherContent injected
   allmaps/canvases/<id>.json      # mirrored Allmaps canvas annotation JSONs (canvas-level only)
   iiif/info/index.json            # IIIF image info.json cache — keyed by image service URL; NOT wiped between runs
 src/
-  pipeline.ts                     # main pipeline
+  pipeline.ts                     # main pipeline (includes ugent:// source resolution)
   toponyms.ts                     # toponym search index builder
   index.ts                        # placeholder
 scripts/
   canvas-report.mjs               # analysis: canvas pixel dimensions
   tile-report.mjs                 # analysis: IIIF tile config + estimated tile counts
+  scrape-ugent-massart.ts         # standalone debug utility: queries Primo API, previews Massart data
 ```
 
 **Deprecated / removed**: `build/allmaps/manifests/` — manifest-level annotation mirroring is gone; annotations are canvas-level only.
@@ -130,9 +132,27 @@ scripts/
 
 ## Current Data Sources
 
-`data/sources/collections.txt` currently points to two collections:
-- `https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json` (Gereduceerd Kadaster)
-- `https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster` (Primitief Kadaster)
+`data/sources/collections.txt` currently has three sources:
+
+| Entry | Type | Description |
+|---|---|---|
+| `https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json` | IIIF Collection URL | Gereduceerd Kadaster |
+| `https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster` | IIIF Collection URL | Primitief Kadaster |
+| `ugent://massart` | Special scheme → Primo API | Jean Massart photographs, UGent library |
+
+### `ugent://` source scheme
+
+URLs starting with `ugent://` are resolved at crawl time by querying the UGent Primo catalog API directly — no pre-generated file needed. The `ugent://massart` source:
+- Queries `https://libcatalog.ugent.be/primaws/rest/pub/pnxs` (GET) with `q=creator,contains,Massart, Jean` + `facet_rtype,include,images`
+- Fetches rep IDs per record via `https://libcatalog.ugent.be/primaws/rest/pub/directLink/{almaId}` (POST — requires browser-like `Origin`/`Referer` headers)
+- Constructs IIIF v2 manifest URLs: `https://libcatalog.ugent.be/view/iiif/presentation/32RUG_INST/{repId}/manifest?iiifVersion=2&updateStatistics=false`
+- Extracts DMS coordinates from manifest titles: `51°10'11" NB 04°11'51" OL` → `{ lat, lon }`
+- Extracts year from `pnx.display.creationdate`, location from `pnx.display.subject` (strips `"België "` prefix)
+- Writes `build/Massart/index.json` — metadata index for viewer use
+
+**Currently**: Massart photographs have no Allmaps georeferencing annotations yet, so they produce no render layers and don't appear in the live viewer. They are compiled but `compiledManifestPath` is `""` and they are excluded from collections.
+
+**API discovery**: The Primo API endpoint (`/primaws/rest/pub/`) was discovered via a throwaway Docker container running Playwright to intercept live network requests. The `edelivery` endpoint is POST-only and blocked; `directLink` (POST) is used instead.
 
 ## Notes
 
@@ -168,6 +188,34 @@ scripts/
 - Kalken - Sectie C-D — canvas `b6fb234749565370`
 
 **Next debugging step**: Test these manifests directly in the Allmaps viewer (`viewer.allmaps.org`) to see if the same flickering/partial rendering occurs outside our pipeline. If it does, the root cause is in the annotation data itself (GCP quality, mask shape, or transformation parameters) rather than our rendering code.
+
+---
+
+## `build/Massart/index.json` — Jean Massart Photograph Index
+
+Generated during `bun run crawl` from the UGent Primo API (not from Allmaps). Wiped and regenerated each run.
+
+```ts
+{
+  generatedAt: string;
+  totalItems: number;
+  coordsAvailable: number;       // items where lat/lon were successfully parsed
+  items: Array<{
+    title: string;               // full Primo display title (includes coordinates in DMS)
+    year?: string;               // e.g. "1911"
+    location?: string;           // municipality name, e.g. "Sint-Niklaas"
+    lat?: number;                // decimal degrees, from DMS in title
+    lon?: number;                // decimal degrees, from DMS in title
+    manifestUrl: string;         // IIIF v2 manifest URL (iiifVersion=2)
+    mmsId: string;               // Alma bibliographic MMS ID, e.g. "alma990013637480409161"
+    repId: string;               // Alma digital representation ID, e.g. "12291851120009161"
+  }>;
+}
+```
+
+**Coordinate source**: DMS coordinates are embedded in the Primo title field, format `51°10'11" NB 04°11'51" OL`. Parsed at crawl time. `NB` = North latitude, `ZB` = South (not seen in practice for Belgium), `OL` = East longitude, `WL` = West longitude.
+
+**Viewer use**: Intended for displaying location pins on the map for each photograph, ahead of Allmaps georeferencing. The `manifestUrl` links to the IIIF viewer for the photograph.
 
 ---
 

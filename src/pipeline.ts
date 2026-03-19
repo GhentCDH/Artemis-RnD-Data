@@ -23,6 +23,118 @@ type SourceGroup = {
   refs: Array<{ url: string; label: string }>;
 };
 
+// ---------------------------------------------------------------------------
+// UGent Primo source — resolved at crawl time via API (no data/sources file)
+// ---------------------------------------------------------------------------
+
+const UGENT_PRIMO_BASE = "https://libcatalog.ugent.be/primaws/rest/pub";
+const UGENT_IIIF_BASE = "https://libcatalog.ugent.be";
+const UGENT_VID = "32RUG_INST:32RUG_INST";
+const UGENT_INST = "32RUG_INST";
+
+type UgentMassartItem = {
+  title: string;
+  year?: string;
+  location?: string;
+  lat?: number;
+  lon?: number;
+  manifestUrl: string;
+  mmsId: string;
+  repId: string;
+};
+
+async function fetchUgentJson(url: string, method: "GET" | "POST" = "GET"): Promise<any> {
+  const res = await fetch(url, {
+    method,
+    headers: {
+      Accept: "application/json",
+      Origin: "https://libcatalog.ugent.be",
+      Referer: "https://libcatalog.ugent.be/nde/search",
+      ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
+    },
+    ...(method === "POST" ? { body: "{}" } : {}),
+  });
+  if (!res.ok) throw new Error(`UGent API ${res.status} ${method} ${url}`);
+  return res.json();
+}
+
+function buildPrimoParams(offset: number): string {
+  return new URLSearchParams({
+    citationTrailFilterByAvailability: "true", limit: "10", newspapersActive: "false",
+    newspapersSearch: "false", offset: String(offset), pcAvailability: "false",
+    scope: "MyInst_and_CI", searchInFulltextUserSelection: "false", disableCache: "false",
+    skipDelivery: "Y", sort: "rank", tab: "Everything", inst: UGENT_INST,
+    rapido: "true", refEntryActive: "true", rtaLinks: "true", qInclude: "", qExclude: "",
+    multiFacets: "facet_rtype,include,images", mode: "advanced",
+    q: "creator,contains,Massart, Jean", isCDSearch: "false",
+    featuredNewspapersIssnList: "", lang: "en", explain: "", otbRanking: "",
+    isRelatedItems: "false", vid: UGENT_VID,
+  }).toString();
+}
+
+// Parse DMS coordinates embedded in Primo titles.
+// Format: "51°10'11" NB 04°11'51" OL" (NB=lat N, ZB=lat S, OL=lon E, WL=lon W)
+function parseDmsFromTitle(title: string): { lat: number; lon: number } | null {
+  const m = title.match(/(\d+)°(\d+)'(\d+)[""″]\s*(NB|ZB)\s+(\d+)°(\d+)'(\d+)[""″]\s*(OL|WL)/);
+  if (!m) return null;
+  const lat = parseInt(m[1]) + parseInt(m[2]) / 60 + parseInt(m[3]) / 3600;
+  const lon = parseInt(m[5]) + parseInt(m[6]) / 60 + parseInt(m[7]) / 3600;
+  return { lat: m[4] === "ZB" ? -lat : lat, lon: m[8] === "WL" ? -lon : lon };
+}
+
+async function resolveUgentMassartSource(limit?: number): Promise<{ group: SourceGroup; items: UgentMassartItem[] }> {
+  const first = await fetchUgentJson(`${UGENT_PRIMO_BASE}/pnxs?${buildPrimoParams(0)}`);
+  const total = first.info?.total ?? 0;
+  console.log(`    ${total} records found in Primo`);
+
+  const offsets = Array.from({ length: Math.ceil(total / 10) }, (_, i) => i * 10);
+  const allDocs: any[] = [...(first.docs ?? [])];
+  for (const offset of offsets.slice(1)) {
+    const page = await fetchUgentJson(`${UGENT_PRIMO_BASE}/pnxs?${buildPrimoParams(offset)}`);
+    allDocs.push(...(page.docs ?? []));
+  }
+
+  const docsToProcess = typeof limit === "number" ? allDocs.slice(0, limit) : allDocs;
+  const items: UgentMassartItem[] = [];
+  const refs: Array<{ url: string; label: string }> = [];
+
+  // Fetch rep IDs in small parallel batches (directLink is POST-only)
+  const BATCH = 5;
+  for (let i = 0; i < docsToProcess.length; i += BATCH) {
+    const batch = docsToProcess.slice(i, i + BATCH);
+    const results = await Promise.all(batch.map(async (doc) => {
+      const display = doc.pnx?.display ?? {};
+      const recordId: string = doc.pnx?.control?.recordid?.[0];
+      if (!recordId) return null;
+      const rawTitle: string = display.title?.[0] ?? "";
+      const year = display.creationdate?.[0]?.match(/\b(\d{4})\b/)?.[1];
+      const geo = (display.subject as string[] | undefined)?.find((s) => s.startsWith("België "));
+      const location = geo?.replace("België ", "").trim();
+      const coords = parseDmsFromTitle(rawTitle);
+      const link = await fetchUgentJson(
+        `${UGENT_PRIMO_BASE}/directLink/${recordId}?lang=en&vid=${UGENT_VID}`, "POST"
+      ).catch(() => null);
+      if (!link?.full_text_do_redirect || !link?.redirect_to) return null;
+      const repId = (link.redirect_to as string).match(/\/(\d+)$/)?.[1];
+      if (!repId) return null;
+      const manifestUrl = `${UGENT_IIIF_BASE}/view/iiif/presentation/${UGENT_INST}/${repId}/manifest?iiifVersion=2&updateStatistics=false`;
+      return { title: rawTitle, year, location, lat: coords?.lat, lon: coords?.lon, manifestUrl, mmsId: recordId, repId };
+    }));
+    for (const r of results) {
+      if (!r) continue;
+      items.push(r);
+      refs.push({ url: r.manifestUrl, label: r.title });
+    }
+    if (i + BATCH < docsToProcess.length) await new Promise((res) => setTimeout(res, 100));
+  }
+
+  console.log(`    ${items.length} digitized manifests resolved`);
+  return {
+    group: { sourceCollectionUrl: "ugent://massart", sourceCollectionLabel: "Jean Massart photographs — Universiteit Gent", refs },
+    items,
+  };
+}
+
 type CanvasAnnotationHit = {
   canvasId: string;
   canvasAllmapsId: string;
@@ -385,6 +497,11 @@ async function exists(path: string): Promise<boolean> {
 }
 
 async function fetchJson(url: string): Promise<any> {
+  // Support local file paths (relative or file://) in addition to HTTP URLs
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    const localPath = url.startsWith("file://") ? url.slice(7) : url;
+    return JSON.parse(await readFile(localPath, "utf-8"));
+  }
   const res = await fetch(url, { redirect: "follow" });
   if (!res.ok) throw new Error(`Fetch failed (${res.status}) for ${url}`);
   return await res.json();
@@ -740,7 +857,7 @@ async function main() {
   await mkdir("logs", { recursive: true });
 
   console.log("[0/5] Cleaning build output directories...");
-  for (const dir of ["build/manifests", "build/collections", "build/allmaps/canvases"]) {
+  for (const dir of ["build/manifests", "build/collections", "build/allmaps/canvases", "build/Massart"]) {
     await rm(dir, { recursive: true, force: true });
   }
   // Remove legacy allmaps/manifests/ directory — annotations are now canvas-level only.
@@ -776,17 +893,24 @@ async function main() {
 
   const buildBaseUrl = process.env.BUILD_BASE_URL ?? null;
   const base = (path: string) => buildBaseUrl ? `${buildBaseUrl.replace(/\/+$/, "")}/${path}` : path;
+  const limit = process.env.LIMIT ? Number(process.env.LIMIT) : undefined;
 
   console.log(`[1/5] Resolving manifests from ${collectionUrls.length} source(s)...`);
   const sourceGroups: SourceGroup[] = [];
+  const ugentMassartItems: UgentMassartItem[] = [];
   for (const collectionUrl of collectionUrls) {
     console.log(`  - ${collectionUrl}`);
-    const group = await resolveSourceGroup(collectionUrl);
-    console.log(`    label: "${group.sourceCollectionLabel}" -> ${group.refs.length} manifest(s)`);
-    sourceGroups.push(group);
+    if (collectionUrl === "ugent://massart") {
+      const { group, items } = await resolveUgentMassartSource(limit);
+      sourceGroups.push(group);
+      ugentMassartItems.push(...items);
+    } else {
+      const group = await resolveSourceGroup(collectionUrl);
+      sourceGroups.push(group);
+    }
+    console.log(`    label: "${sourceGroups.at(-1)!.sourceCollectionLabel}" -> ${sourceGroups.at(-1)!.refs.length} manifest(s)`);
   }
 
-  const limit = process.env.LIMIT ? Number(process.env.LIMIT) : undefined;
   const totalRefs = sourceGroups.reduce((n, g) => n + g.refs.length, 0);
   console.log(`[2/5] Total manifests: ${totalRefs}${limit ? ` (LIMIT=${limit} applied per source)` : ""}${INCLUDE_NON_GEOREF ? " (INCLUDE_NON_GEOREF=1)" : ""}`);
 
@@ -922,6 +1046,17 @@ async function main() {
   await writeFile("build/index.json", JSON.stringify(indexOut, null, 2), "utf-8");
   await writeFile(canvasInfoIndexPath, JSON.stringify(canvasInfoIndex, null, 2), "utf-8");
   console.log(`  Canvas info.json index: ${Object.keys(canvasInfoIndex).length} entries (${newCanvasInfoCount} new this run)`);
+
+  if (ugentMassartItems.length > 0) {
+    await mkdir("build/Massart", { recursive: true });
+    await writeFile("build/Massart/index.json", JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      totalItems: ugentMassartItems.length,
+      coordsAvailable: ugentMassartItems.filter((i) => i.lat !== undefined).length,
+      items: ugentMassartItems,
+    }, null, 2), "utf-8");
+    console.log(`  Massart index: ${ugentMassartItems.length} items → build/Massart/index.json`);
+  }
 
   // QA report written to logs/ (git-ignored), not build/.
   const problematicLog = problematicManifests.map((m) =>

@@ -19,6 +19,7 @@ Crawls source IIIF collections, mirrors Allmaps georeferencing annotations (canv
 - `build/allmaps/canvases/*.json`: mirrored Allmaps canvas-level annotations
 - `build/iiif/info/index.json`: IIIF image info.json cache (keyed by image service URL)
 - `build/Toponyms/index.json`: toponym search index
+- `build/Massart/index.json`: Jean Massart photograph metadata (title, year, location, lat/lon, manifest URL)
 - `build/Parcels/`: historical parcel polygon data
 
 ## Quick Start
@@ -46,8 +47,10 @@ bun run buildSearch   # alias: bun run toponyms
 
 ## Inputs
 
-- `data/sources/collections.txt`: source IIIF collection URLs (one per line)
+- `data/sources/collections.txt`: source IIIF collection URLs + `ugent://` special schemes (one per line)
 - `data/sources/Toponyms/`: local raw toponym source files (not committed — keep only `README.txt` in git)
+
+`ugent://massart` is resolved at crawl time by querying the UGent Primo catalog API directly — no pre-generated file required.
 
 ## Notes
 

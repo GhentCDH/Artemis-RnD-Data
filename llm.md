@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A data pipeline that crawls IIIF v2 collections, mirrors Allmaps georeferencing annotations (manifest + canvas level), and produces a compiled build suitable for hosting on GitHub Pages (or similar static hosting).
+A data pipeline that crawls IIIF v2 collections, mirrors Allmaps georeferencing annotations (canvas-level), and produces a compiled build suitable for hosting on GitHub Pages (or similar static hosting).
 
 ## Stack
 
@@ -18,6 +18,7 @@ A data pipeline that crawls IIIF v2 collections, mirrors Allmaps georeferencing 
 | `bun run crawl` | `src/pipeline.ts` | full pipeline run |
 | `bun run crawl10` | `src/pipeline.ts` | pipeline with LIMIT=10 |
 | `bun run crawl1` | `src/pipeline.ts` | pipeline with LIMIT=1 |
+| `bun run crawl:all` | `src/pipeline.ts` | pipeline with INCLUDE_NON_GEOREF=1 |
 | `bun run buildSearch` | `src/toponyms.ts` | builds toponym search index only (`build/Toponyms/index.json`) |
 | `bun run toponyms` | `src/toponyms.ts` | alias of `buildSearch` |
 
@@ -31,25 +32,25 @@ Each source collection URL is treated as a distinct logical source. Build output
 2. Resolves each URL into a `SourceGroup` (fetches IIIF v2 Collection, cached to `cache/collections/`); deduplication happens within each source independently
 3. For each source group, processes its manifests (cached to `cache/manifests/`):
    - Generates an Allmaps ID via `@allmaps/id` from the manifest URL
-   - Checks `https://annotations.allmaps.org/manifests/<id>` for georeferencing annotations (HTTP status)
    - Extracts canvas IDs from the IIIF v2 manifest and checks **each canvas** at `https://annotations.allmaps.org/canvases/<canvas-id-hash>`
-   - Mirrors available annotation JSONs:
-     - manifest endpoint → `build/allmaps/manifests/<id>.json`
-     - canvas endpoint → `build/allmaps/canvases/<id>.json`
-   - **Annotation source priority**: canvas endpoints are checked first. If any canvas returns 200 → `georefDetectedBy = "canvas"`. Only if no canvas hits but manifest returns 200 → `georefDetectedBy = "manifest"`. This correctly handles multi-canvas manifests where the Allmaps manifest endpoint is an aggregation of per-canvas annotations.
-   - Compiles the manifest:
-     - injects `otherContent` on every canvas
-     - prefers canvas-specific mirrored annotation when available
-     - otherwise falls back to the mirrored manifest annotation
-     - adds provenance metadata
+   - Mirrors available annotation JSONs to `build/allmaps/canvases/<id>.json` (canvas-level only — manifest-level mirroring is deprecated)
+   - **Annotation source priority**: canvas endpoints are the sole source. `georefDetectedBy` is set to `"canvas"`, `"manifest"`, or `"both"` when georeferencing is detected.
+   - **QA gate**: Analyzes mirrored annotations for issues; applies auto-fixes; skips manifest if issues persist after fixing:
+     - `mask-out-of-bounds` — resource mask points outside image bounds (clamp fix)
+     - `self-intersecting-mask` — polygon has self-intersections (convex hull fallback)
+     - `duplicate-geo-gcp` — duplicate geographic control points (deduplication fix, confirmed root cause of viewer rendering failures)
+     - `tps-low-gcp` — thinPlateSpline with <5 GCPs (downgrade to polynomial)
+   - Compiles the manifest: injects `otherContent` on every georeffed canvas pointing to its mirrored annotation
+   - **All manifests are compiled** (georef or not). Non-georef manifests are compiled unmodified. Collections only include entries with a compiled manifest path.
    - Writes compiled manifest to `build/manifests/<sha1-slug>.json`
-4. Writes one `build/collections/<sha1(sourceUrl)>.json` per source — a IIIF v2 Collection listing only that source's compiled manifests
+4. Writes one `build/collections/<sha1(sourceUrl)>.json` per source — a IIIF v2 Collection listing only that source's compiled (georef) manifests
 5. Writes per-source render-layer collections (up to 2 per source):
    - `default` — all non-`verzamelblad` entries
    - `verzamelblad` — entries identified as verzamelblad
    - Empty layers are skipped
 6. Writes `build/index.json` — stats + `layers` + `renderLayers` + full flat `index` array for tooling
-7. Writes `build/collection.json` — top-level IIIF v2 Collection referencing render-layer sub-collections (not source-level collections)
+7. Writes `build/collection.json` — top-level IIIF v2 Collection referencing render-layer sub-collections
+8. Writes `logs/report.log` — QA report (fixed + excluded manifests); git-ignored
 
 ### Viewer loading pattern
 ```
@@ -62,15 +63,12 @@ index.json            ← fetch once to enumerate layers (small)
 
 ### Viewer notes
 - Use `renderLayers` for layer toggles; keep `layers` for source-level stats/debug only.
-- For georef readiness: use `georefDetectedBy !== "none"`. Do not rely solely on `manifestAllmapsStatus === 200` — the manifest endpoint is an aggregation and always returns 200 if any canvas is georeferenced.
+- For georef readiness: use `georefDetectedBy` being present/truthy. Do not rely solely on `manifestAllmapsStatus` — that field no longer exists on `IndexEntry`.
 - `isVerzamelblad === true` → entry belongs to the `verzamelblad` visible render layer.
 - `renderLayers` contains only visible UI layers (`default`, `verzamelblad`).
-- Per-entry `annotSource` (`"single"` / `"multi"` / `"none"`) and `singleCanvasGeorefCount`/`multiCanvasGeorefCount` on each layer carry all canvas-count information — no separate sub-layer collection files are needed.
+- Per-entry `annotSource` (`"single"` / `"multi"`) and counts on each layer carry canvas-count information — no separate sub-layer collection files are needed.
 - The compiled manifest already has `otherContent` on every canvas pointing to the correct mirrored annotation — the viewer does not need `annotSource` for rendering, it just follows `otherContent`.
-- **Annotation loading strategy in viewer** (`getMirroredAnnotationRequests`):
-  - Always prefer the manifest annotation (`mirroredAllmapsAnnotationPath`) for all entries — it is the canonical source and ensures a single `addGeoreferenceAnnotation` call regardless of canvas count.
-  - Canvas paths (from `canvasAllmapsHits`) are only used as fallback when no manifest annotation was mirrored.
-- Build output dirs (`build/manifests/`, `build/collections/`, `build/allmaps/`) are wiped at the start of each pipeline run. Only `cache/` and `build/iiif/info/` persist across runs.
+- Build output dirs (`build/manifests/`, `build/collections/`, `build/allmaps/canvases/`) are wiped at the start of each pipeline run. Only `cache/` and `build/iiif/info/` persist across runs.
 
 ## Directory Layout
 
@@ -79,46 +77,55 @@ data/sources/collections.txt      # input: one IIIF collection URL per line
 data/sources/Toponyms/README.txt  # note about local-only toponym source files
 cache/collections/                # disk cache for fetched collections
 cache/manifests/                  # disk cache for fetched manifests
+logs/
+  report.log                      # QA report (fixed + excluded manifests) — git-ignored
 build/
   collection.json                 # top-level IIIF v2 Collection of sub-collections
   collections/<sha1>.json         # compiled IIIF v2 Collections (source-level + render-layer splits)
   index.json                      # { layers, renderLayers, index, stats } — layer lists + per-manifest metadata
   Toponyms/index.json             # toponym search index for viewer/GitHub Pages
+  Parcels/                        # historical parcel polygon data
   manifests/<slug>.json           # compiled manifests with Allmaps otherContent injected
-  allmaps/manifests/<id>.json     # mirrored Allmaps annotation JSONs
-  allmaps/canvases/<id>.json      # mirrored Allmaps canvas annotation JSONs
-  iiif/info/index.json            # consolidated IIIF image info.json cache — keyed by canvasId (IIIF canvas URL) → info.json content; georeffed canvases only; NOT wiped between runs
+  allmaps/canvases/<id>.json      # mirrored Allmaps canvas annotation JSONs (canvas-level only)
+  iiif/info/index.json            # IIIF image info.json cache — keyed by image service URL; NOT wiped between runs
 src/
   pipeline.ts                     # main pipeline
   toponyms.ts                     # toponym search index builder
   index.ts                        # placeholder
+scripts/
+  canvas-report.mjs               # analysis: canvas pixel dimensions
+  tile-report.mjs                 # analysis: IIIF tile config + estimated tile counts
 ```
+
+**Deprecated / removed**: `build/allmaps/manifests/` — manifest-level annotation mirroring is gone; annotations are canvas-level only.
 
 ## Key Environment Variables
 
 | Variable | Effect |
 |---|---|
 | `LIMIT=N` | Process only the first N manifests **per source** |
+| `INCLUDE_NON_GEOREF=1` | Also compile and include non-georeferenced manifests in collections |
 | `BUILD_BASE_URL` | Prefix for absolute URLs in compiled manifests/collections (e.g. GitHub Pages root) |
 
 ## Data Types
 
 - **SourceGroup**: `{ sourceCollectionUrl, sourceCollectionLabel, refs[] }` — one per source URL
+- **CanvasAnnotationHit**: `{ canvasId, canvasAllmapsId, mirroredAllmapsAnnotationPath }` — one entry per georeffed canvas
 - **IndexEntry**: per-manifest record including:
-  - `label`, `sourceManifestUrl`, `sourceCollectionUrl`, `compiledManifestPath`
-  - `centerLon?`, `centerLat?` — optional map center derived from mirrored annotation geo points
-  - `manifestAllmapsId`, `manifestAllmapsUrl`, `manifestAllmapsStatus`, `mirroredAllmapsAnnotationPath`
-  - `canvasAllmapsHits[]`: `{ canvasId, canvasAllmapsId, canvasAllmapsUrl, canvasAllmapsStatus, mirroredAllmapsAnnotationPath }` — one entry per canvas
-  - `georefDetectedBy`: `"none" | "manifest" | "canvas"` — canvas hits take priority over manifest
-  - `annotSource`: `"single" | "multi" | "none"` — derived from `canvasCount`: georeffed single-canvas → `"single"`, georeffed multi-canvas → `"multi"`, not georeffed → `"none"`
-  - `isVerzamelblad`: boolean
-  - `canvasCount`, `canvasIds`
+  - `label`, `sourceManifestUrl`, `sourceCollectionUrl`
+  - `compiledManifestPath` — `build/manifests/<slug>.json` (relative to build/); empty string when non-georef and not included
+  - `canvasCount`, `isVerzamelblad`
+  - Present only for georef manifests:
+    - `centerLon?`, `centerLat?` — optional map center derived from mirrored canvas annotation geo points
+    - `manifestAllmapsId?` — Allmaps ID for the manifest
+    - `canvasAllmapsHits?`: `CanvasAnnotationHit[]` — per-canvas georef hits
+    - `georefDetectedBy?`: `"canvas" | "manifest" | "both"` — how georef was detected
+    - `annotSource?`: `"single" | "multi"` — single-canvas or multi-canvas georeffed manifest
 - **renderLayerMeta entry** fields:
-  - `renderLayerKey`: `"default" | "verzamelblad" | "single-canvas" | "multi-canvas"`
-  - `parentRenderLayerKey?`: `"default"` — set on hidden sub-layers
-  - `hidden`: boolean — `true` for `single-canvas`/`multi-canvas` debug sub-layers
+  - `renderLayerKey`: `"default" | "verzamelblad"`
   - `manifestCount`, `georefCount`, `singleCanvasGeorefCount`, `multiCanvasGeorefCount`
-  - Hidden sub-layers exist only for the `default` layer of each source; they split entries by `annotSource` for isolated render testing
+- **index.json top-level** fields: `generatedAt`, `totalManifests`, `georefManifests`, `compiledOk`, `layers`, `renderLayers`, `index`
+  - Note: `mirroredOk`, `fixedManifests`, `problematicManifests` are **not** in `index.json` — QA data goes to `logs/report.log` only
 - **V2Collection / V2Manifest**: typed IIIF v2 shapes (permissive `Record<string, any>` for manifests)
 
 ## Current Data Sources
@@ -126,6 +133,14 @@ src/
 `data/sources/collections.txt` currently points to two collections:
 - `https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json` (Gereduceerd Kadaster)
 - `https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster` (Primitief Kadaster)
+
+## Notes
+
+- Cache is never invalidated automatically — delete `cache/` to force re-fetch
+- Manifests without detected georeferencing are compiled but not included in collections by default (use `INCLUDE_NON_GEOREF=1` to include them)
+- `verzamelblad` detection is string-based against URL/label/identifier/metadata in the source manifest; if present, it is split into a dedicated render layer
+- `build/` is committed to the repo (acts as the published artifact); `logs/` is git-ignored
+- `build/iiif/info/index.json` is keyed by image service base URL (trailing slash stripped) — this matches `wm.georeferencedMap?.resource?.id` in the viewer for a direct lookup. On startup the pipeline migrates any legacy entries that were keyed by canvas URL (containing `/canvas/`).
 
 ## Known rendering bug — Primitief single-canvas
 
@@ -154,124 +169,62 @@ src/
 
 **Next debugging step**: Test these manifests directly in the Allmaps viewer (`viewer.allmaps.org`) to see if the same flickering/partial rendering occurs outside our pipeline. If it does, the root cause is in the annotation data itself (GCP quality, mask shape, or transformation parameters) rather than our rendering code.
 
-## Notes
+---
 
-- Cache is never invalidated automatically — delete `cache/` to force re-fetch
-- Manifests without detected georeferencing are still compiled and included (unmodified) to keep the collection complete
-- `verzamelblad` detection is string-based against URL/label/identifier/metadata in the source manifest; if present, it is split into a dedicated render layer.
-- `build/` is committed to the repo (acts as the published artifact)
+## Toponym Search Build (`src/toponyms.ts`)
+
+Builds `build/Toponyms/index.json` from local GeoJSON/JSON source files under `data/sources/Toponyms/`. Run with `bun run buildSearch` (alias: `bun run toponyms`). Independent from `crawl`.
+
+**Source policy**: Raw toponym source files are local-only and must not be committed. Only `data/sources/Toponyms/README.txt` is in git.
+
+**`build/Toponyms/index.json` contract**:
+- Top-level metadata: `generatedAt`, `sourceRoot`, `sourceFileCount`, `itemCount`, `sourceGroups`
+- Each `items[]` entry: `id`, `text` (place-prefixed when available, e.g. `Aalst - Cappel`), `textNormalized`, `rawText`, `placeName?`, `sourceGroup`, `sourceFile`, `mapId`, `mapName`, `featureIndex`, `lon`, `lat`
 
 ---
 
-## Session Update — 2026-03-06 (Manifest Center Coordinates)
+## Parcel Dataset (`build/Parcels/`)
 
-### What Changed
-- `src/pipeline.ts` now derives optional per-manifest center coordinates from mirrored annotation geo GCP points.
-- `build/index.json` `index[]` entries can now include:
-  - `centerLon`
-  - `centerLat`
-
-### Why
-- Viewer manifest search requires click-to-location behavior for each manifest result.
-- Coordinates are embedded in existing `build/index.json` to avoid extra files/fetches.
-
-### Derivation Strategy
-- Prefer center computed from mirrored manifest annotation when available.
-- Fall back to merged canvas-level mirrored annotations.
-- Center is bbox-center over available geo point features.
-
----
-
-## Session Update — 2026-03-06 (Toponyms Search Build)
-
-### What Changed
-- Added a separate search build script: `bun run buildSearch` (alias: `bun run toponyms`).
-- Implemented `src/toponyms.ts` to compile source toponym GeoJSON/JSON files into a single search artifact:
-  - `build/Toponyms/index.json`
-- Toponym search build is independent from `crawl` and can be run without touching IIIF/Allmaps outputs.
-
-### Toponym Source Policy
-- Raw toponym source files are local input only and should not be committed.
-- Keep only `data/sources/Toponyms/README.txt` in git; source files are ignored via `.gitignore`.
-- Expected local source layout:
-  - `data/sources/Toponyms/<SourceGroup>/*.geojson`
-  - `data/sources/Toponyms/<SourceGroup>/*.json`
-
-### `build/Toponyms/index.json` Contract
-- Top-level metadata includes `generatedAt`, `sourceRoot`, `sourceFileCount`, `itemCount`, and `sourceGroups`.
-- Each `items[]` entry contains:
-  - `id`, `text`, `textNormalized`
-  - `sourceGroup`, `sourceFile`
-  - `mapId`, `mapName` where both represent the containing source folder (e.g. `ferarris` / `Ferarris`)
-  - `featureIndex`, `lon`, `lat` (centroid from geometry bounds)
-- Non-essential source properties (e.g. `pixel_geometry`, bbox-like payloads) are excluded from the index.
-
----
-
-## Session Update — 2026-03-06 (Parcels Dataset Cleanup)
-
-### What Changed
-- Parcel artifacts in `build/Parcels/Primitive/*.geojson` were cleaned to remove OCR text bounding polygons.
-- Only actual parcel polygons are now retained (`properties.type === "parcel"`).
-
-### Current Primitive Parcel Dataset State
-- Unified file: `build/Parcels/Primitive/index.geojson`
-- Feature count is now `8538` (all `parcel`).
-- Previously removed from unified file: `19669` `text` features.
-- `index.geojson` metadata updated accordingly:
-  - `sourceCount: 8538`
-  - `featureCount: 8538`
-
-### Notes
-- This cleanup was applied directly to built artifacts (not yet wired through a dedicated generator in `src/`).
-- Viewer-side parcel rendering can now assume the Primitive parcel dataset is parcel-only.
-
----
-
-## Session Update — 2026-03-06 (Search Index Hardening + Place Prefix)
-
-### Toponyms Search Build (`src/toponyms.ts`)
-- Builder now fails fast if:
-  - no source files are found under `data/sources/Toponyms`
-  - source files are found but produce zero indexed items
-- `build/Toponyms/index.json` is written pretty-printed (readable diff/debug), not minified one-line JSON.
-
-### Toponym Entry Shape Changes
-- Added place-aware display/search text for disambiguation:
-  - `text` now uses place prefix when available (e.g. `Aalst - Cappel`)
-- Preserved original OCR token in:
-  - `rawText`
-- Added optional:
-  - `placeName`
-- `mapName` / `mapId` remain source-folder level (`Ferarris`, `Gereduceerd`) to identify dataset origin.
-
-### Manifest Coordinates in Main Index
-- `build/index.json` `index[]` entries can include `centerLon` / `centerLat`, derived from mirrored annotation geo points.
-- This supports manifest search click-to-location in viewer without introducing extra files or fetches.
-
----
-
-## Session Update — 2026-03-13 (Canvas info.json Cache)
-
-### What Changed
-- Added `extractCanvasImageServices(man: V2Manifest): Record<string, string>` helper — maps canvas `@id` → IIIF image service `@id` from `sequences[0].canvases[n].images[0].resource.service`.
-- `processManifestRef` now accepts `existingCanvasInfoIds: Set<string>` and returns `canvasInfoEntries: Record<string, any>` (canvasId → full info.json content) for any newly fetched canvases.
-- `main()` loads `build/iiif/info/index.json` at startup (empty object if absent), builds `existingCanvasInfoIds` from its keys, and merges new entries after each manifest. Writes the consolidated file after step 4.
-- `build/iiif/info/` is created at startup but explicitly excluded from the build-clean wipe list.
-
-### Fetch Scope (intentional constraints)
-- Only fetched for canvases where `canvasAllmapsStatus === 200` — i.e. canvases with a confirmed Allmaps georeferencing annotation.
-- Fetch happens **after** the QA gate — manifests that fail annotation QA and return `kind: "problematic"` never contribute info.json entries.
-- Already-cached canvas IDs are skipped each run (incremental, no redundant network fetches).
-
-### Output: `build/iiif/info/index.json`
-- Single JSON object: `{ [imageServiceUrl]: infoJson }`
-- Keyed by image service base URL (the exact string used to fetch `{serviceUrl}/info.json`, trailing slash stripped) — this is what `wm.georeferencedMap?.resource?.id` resolves to in the viewer, enabling a direct lookup with no bridge.
-- Persists across pipeline runs (like `cache/`), committed to the repo alongside other build artifacts for GitHub hosting.
-- Performance intent: viewer fetches this once instead of making N individual `info.json` requests per image service at render time.
+- `build/Parcels/Primitive/index.geojson` — unified parcel dataset, parcel polygons only (`properties.type === "parcel"`)
+- Feature count: 8538 (text bounding polygons removed in cleanup)
+- Viewer-side parcel rendering can assume Primitive parcel dataset is parcel-only
+- No dedicated generator in `src/` yet — this was a one-time cleanup on build artifacts
 
 ---
 
 ## Root Cause Finding — duplicate-geo-gcp (confirmed 2026-03-12)
 
 Testing across all annotation issue types identified `duplicate-geo-gcp` as the root cause of viewer rendering failures. The pipeline's deduplication fix (removing GCPs with identical geographic coordinates) resolves the issue. All fixes and the QA gate are fully restored.
+
+---
+
+## Session Update — 2026-03-19 (IndexEntry Refactor + Pipeline Simplification)
+
+### What Changed
+
+**`IndexEntry` type simplified**:
+- Removed fields: `canvasIds`, `manifestAllmapsUrl`, `manifestAllmapsStatus`, `mirroredAllmapsAnnotationPath` (manifest-level path)
+- Extracted `CanvasAnnotationHit` as a separate type: `{ canvasId, canvasAllmapsId, mirroredAllmapsAnnotationPath }` (no longer includes `canvasAllmapsUrl` or `canvasAllmapsStatus`)
+- Georef-specific fields (`manifestAllmapsId`, `canvasAllmapsHits`, `georefDetectedBy`, `annotSource`, `centerLon`, `centerLat`) are now **optional** — only present on georef manifests
+- `georefDetectedBy` type changed from `"none" | "manifest" | "canvas"` to `"canvas" | "manifest" | "both"` (absence means not georef)
+- `annotSource` type changed from `"single" | "multi" | "none"` to `"single" | "multi"` (absence means not georef)
+- `compiledManifestPath` is empty string `""` when non-georef and not included
+
+**Manifest mirroring simplified — canvas-level only**:
+- `build/allmaps/manifests/` is fully removed (wiped each run); manifest-level annotation mirroring is deprecated
+- `compileV2ManifestAttachOtherContent` no longer takes a manifest annotation path
+- All manifests are compiled regardless of georef status; collections only reference entries with a compiled path
+
+**`deriveAnnotationCenter` simplified**:
+- No longer prefers manifest annotation over canvas annotations
+- Now merges all canvas annotation paths directly
+
+**QA report moved out of build/**:
+- Report written to `logs/report.log` (git-ignored) instead of `build/report.log`
+- `fixedManifests` and `problematicManifests` arrays removed from `index.json`
+- `mirroredOk` stat removed from `index.json`
+
+**info.json cache key correction**:
+- `build/iiif/info/index.json` is now consistently keyed by image service URL (not canvas URL)
+- `existingCanvasInfoIds` set tracks service keys (not canvas IDs) to avoid redundant fetches
+- Migration logic on startup removes legacy entries keyed by canvas URL (containing `/canvas/`)

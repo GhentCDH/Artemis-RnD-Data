@@ -18,6 +18,7 @@
     "crawl": "bun run src/pipeline.ts",
     "crawl10": "LIMIT=10 bun run src/pipeline.ts",
     "crawl1": "LIMIT=1 bun run src/pipeline.ts",
+    "crawl:all": "INCLUDE_NON_GEOREF=1 bun run src/pipeline.ts",
     "toponyms": "bun run src/toponyms.ts",
     "buildSearch": "bun run src/toponyms.ts"
   }

@@ -953,6 +953,7 @@ async function main() {
   console.log(`[4/5] Writing per-source compiled collections and build/index.json`);
 
   const layerMeta: Array<{
+    layerId: string;
     sourceCollectionUrl: string;
     sourceCollectionLabel: string;
     compiledCollectionPath: string;
@@ -962,6 +963,7 @@ async function main() {
     multiCanvasGeorefCount: number;
   }> = [];
   const renderLayerMeta: Array<{
+    layerId: string;
     sourceCollectionUrl: string;
     sourceCollectionLabel: string;
     renderLayerKey: "default" | "verzamelblad";
@@ -990,6 +992,7 @@ async function main() {
     await writeFile(`build/${colRelPath}`, JSON.stringify(col, null, 2), "utf-8");
 
     layerMeta.push({
+      layerId: colSlug,
       sourceCollectionUrl: group.sourceCollectionUrl,
       sourceCollectionLabel: group.sourceCollectionLabel,
       compiledCollectionPath: colRelPath,
@@ -1021,6 +1024,7 @@ async function main() {
       };
       await writeFile(`build/${renderLayerRelPath}`, JSON.stringify(renderLayerCol, null, 2), "utf-8");
       renderLayerMeta.push({
+        layerId: renderLayerSlug,
         sourceCollectionUrl: group.sourceCollectionUrl,
         sourceCollectionLabel: group.sourceCollectionLabel,
         renderLayerKey,

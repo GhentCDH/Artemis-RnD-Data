@@ -49,6 +49,7 @@ bun run buildSearch   # alias: bun run toponyms
 
 - `data/sources/collections.txt`: source IIIF collection URLs + `ugent://` special schemes (one per line)
 - `data/sources/Toponyms/`: local raw toponym source files (not committed — keep only `README.txt` in git)
+- `static/`: hand-edited runtime assets and metadata for the viewer; not written by the pipeline
 
 `ugent://massart` is resolved at crawl time by querying the UGent Primo catalog API directly — no pre-generated file required.
 
@@ -58,6 +59,14 @@ bun run buildSearch   # alias: bun run toponyms
 - By default only georeferenced manifests are included in collections; use `INCLUDE_NON_GEOREF=1` to include all
 - Set `BUILD_BASE_URL` to your GitHub Pages root to get absolute URLs in build outputs
 - QA report (fixed + excluded manifests) is written to `logs/report.log` (git-ignored)
+- `build/index.json` now exposes stable `layerId` values on both `layers` and `renderLayers`; the viewer can use those ids to join runtime content from `static/` without rerunning preprocessing
+
+## Static Runtime Content
+
+- Keep manually maintained viewer content in `static/`, not in `build/`
+- The pipeline must not write to `static/`
+- The viewer should load files from `static/` directly at runtime and remain resilient when a `layerId` has no matching metadata yet
+- Missing `static` metadata should produce a warning in development and fall back to generated labels/default copy, not a runtime error
 
 ## Related Repo
 

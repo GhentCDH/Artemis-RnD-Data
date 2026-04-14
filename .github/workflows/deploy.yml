@@ -1,8 +1,8 @@
-name: Deploy Data to GitHub Pages
+name: Deploy to Live
 
 on:
   push:
-    branches: [live]
+    branches: [main]
 
 permissions:
   contents: write
@@ -13,16 +13,36 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create deployment directory with separate paths
-        run: |
-          mkdir -p deploy
-          cp -r build deploy/ 2>/dev/null || true
-          cp -r static deploy/ 2>/dev/null || true
-
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: deploy
-          force_orphan: true
+          fetch-depth: 0
+          ref: main
+
+      - name: Deploy build and static to live branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Get current commit info
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+
+          # Switch to live branch, create if doesn't exist
+          if git rev-parse --verify origin/live > /dev/null 2>&1; then
+            git checkout -b live origin/live
+          else
+            git checkout -b live
+          fi
+
+          # Remove all files from live
+          git ls-tree -r --name-only HEAD | xargs rm -f 2>/dev/null || true
+
+          # Copy only build and static from main
+          git checkout main -- build static 2>/dev/null || true
+
+          # Commit if there are changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git add build static
+            git commit -m "deploy: update data from main ($COMMIT_SHA)"
+            git push origin live
+          else
+            echo "No changes to deploy"
+          fi

@@ -20,7 +20,8 @@ jobs:
       - name: Get current version
         id: version
         run: |
-          VERSION=$(jq -r '.version // "0.0.0"' package.json)
+          VERSION=$(jq -r '.version' package.json 2>/dev/null)
+          if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then VERSION="0.0.0"; fi
           echo "current=$VERSION" >> $GITHUB_OUTPUT
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           MAJOR=${MAJOR:-0}

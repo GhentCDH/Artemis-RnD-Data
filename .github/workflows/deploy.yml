@@ -1,0 +1,27 @@
+name: Deploy Data to GitHub Pages
+
+on:
+  push:
+    branches: [live]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create deployment directory
+        run: |
+          mkdir -p deploy
+          cp -r build/* deploy/ 2>/dev/null || true
+          cp -r static/* deploy/ 2>/dev/null || true
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: deploy

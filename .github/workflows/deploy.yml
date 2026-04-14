@@ -14,11 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create deployment directory
+      - name: Create deployment directory with separate paths
         run: |
           mkdir -p deploy
-          cp -r build/* deploy/ 2>/dev/null || true
-          cp -r static/* deploy/ 2>/dev/null || true
+          cp -r build deploy/ 2>/dev/null || true
+          cp -r static deploy/ 2>/dev/null || true
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4

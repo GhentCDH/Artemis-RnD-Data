@@ -1,8 +1,8 @@
-name: Deploy Data to GitHub Pages
+name: Deploy to Live
 
 on:
   push:
-    branches: [live]
+    branches: [main]
 
 permissions:
   contents: write
@@ -13,16 +13,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create deployment directory with separate paths
-        run: |
-          mkdir -p deploy
-          cp -r build deploy/ 2>/dev/null || true
-          cp -r static deploy/ 2>/dev/null || true
-
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: deploy
-          force_orphan: true
+          fetch-depth: 0
+
+      - name: Deploy to live branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout live
+          git merge main --no-edit
+          git push origin live

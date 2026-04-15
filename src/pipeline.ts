@@ -1,6 +1,8 @@
-import { mkdir, readFile, writeFile, stat, rm } from "node:fs/promises";
+import { mkdir, readFile, writeFile, stat, rm, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { basename, join } from "node:path";
 import { generateId } from "@allmaps/id";
+import { iiifSourceUrls, readSourceRegistry } from "./registry";
 
 // FLAG: set INCLUDE_NON_GEOREF=1 to also compile and include non-georeferenced manifests.
 // By default only georeferenced manifests are compiled and listed in collections.
@@ -135,16 +137,11 @@ async function resolveUgentMassartSource(limit?: number): Promise<{ group: Sourc
   };
 }
 
-type CanvasAnnotationHit = {
-  canvasId: string;
-  canvasAllmapsId: string;
-  mirroredAllmapsAnnotationPath: string; // always allmaps/canvases/<id>.json
-};
-
 type IndexEntry = {
   label: string;
   sourceManifestUrl: string;
   sourceCollectionUrl: string;
+  sourceCollectionLabel: string;  // [Phase B] Map label for quick lookup
   canvasCount: number;
   isVerzamelblad: boolean;
   compiledManifestPath: string; // "" when non-georef and INCLUDE_NON_GEOREF=false
@@ -152,7 +149,6 @@ type IndexEntry = {
   centerLon?: number;
   centerLat?: number;
   manifestAllmapsId?: string;
-  canvasAllmapsHits?: CanvasAnnotationHit[];
   georefDetectedBy?: "canvas" | "manifest" | "both";
   annotSource?: "single" | "multi";
 };
@@ -193,13 +189,6 @@ const PROBLEMATIC_MANIFEST_IDS = new Set([
   "949c44555577f899", // ANTWERPEN - Sectie C
   "e621fad69cecfcb5", // Kalken - Sectie B
 ]);
-
-function parseLines(txt: string): string[] {
-  return txt
-    .split(/\r?\n/g)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith("#"));
-}
 
 function sha1(s: string): string {
   return createHash("sha1").update(s).digest("hex");
@@ -483,10 +472,10 @@ async function collectAnnotationIssues(annotationPaths: string[]): Promise<Annot
   const annotationIssues: AnnotationIssue[] = [];
   for (const relPath of annotationPaths) {
     try {
-      const raw = JSON.parse(await readFile(`build/${relPath}`, "utf-8"));
+      const raw = JSON.parse(await readFile(`.build-cache/${relPath}`, "utf-8"));
       annotationIssues.push(...analyzeMirroredAnnotation(raw, relPath));
     } catch (err: any) {
-      console.warn(`[WARN] Could not parse mirrored annotation for QA: build/${relPath} (${err?.message ?? err})`);
+      console.warn(`[WARN] Could not parse mirrored annotation for QA: .build-cache/${relPath} (${err?.message ?? err})`);
     }
   }
   return annotationIssues;
@@ -547,7 +536,7 @@ function extractCanvasImageServices(man: V2Manifest): Record<string, string> {
  * Combines the status check and fetch into one request (no separate HEAD/GET).
  */
 async function mirrorCanvasAnnotation(canvasAllmapsId: string): Promise<{ status: number; relPath: string }> {
-  const outAbs = `build/allmaps/canvases/${canvasAllmapsId}.json`;
+  const outAbs = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
   const outRel = `allmaps/canvases/${canvasAllmapsId}.json`;
   if (await exists(outAbs)) return { status: 200, relPath: outRel };
 
@@ -576,7 +565,7 @@ async function fillUncoveredCanvasAnnotations(
   const needExtract: typeof uncovered = [];
 
   for (const c of uncovered) {
-    const outAbs = `build/allmaps/canvases/${c.canvasAllmapsId}.json`;
+    const outAbs = `.build-cache/allmaps/canvases/${c.canvasAllmapsId}.json`;
     if (await exists(outAbs)) {
       result[c.canvasId] = `allmaps/canvases/${c.canvasAllmapsId}.json`;
     } else {
@@ -607,7 +596,7 @@ async function fillUncoveredCanvasAnnotations(
       "@context": "http://www.w3.org/ns/anno.jsonld",
       items: matching
     };
-    await writeFile(`build/allmaps/canvases/${canvasAllmapsId}.json`, JSON.stringify(synthetic, null, 2), "utf-8");
+    await writeFile(`.build-cache/allmaps/canvases/${canvasAllmapsId}.json`, JSON.stringify(synthetic, null, 2), "utf-8");
     result[canvasId] = `allmaps/canvases/${canvasAllmapsId}.json`;
   }
 
@@ -615,46 +604,13 @@ async function fillUncoveredCanvasAnnotations(
 }
 
 /**
- * Attach canvas-level otherContent references to each canvas that has a mirrored annotation.
- * Canvases without an annotation path are left untouched.
+ * Prepare manifest for compilation: add pipeline metadata.
+ * Georeferencing data is accessed client-side from consolidated georef/<map>.json files.
  */
-function compileV2ManifestAttachOtherContent(
-  source: V2Manifest,
-  mirroredCanvasAnnotationRelPaths: Record<string, string>,
-  buildBaseUrl: string | null
-): V2Manifest {
+function compileV2Manifest(source: V2Manifest): V2Manifest {
   const out: V2Manifest = JSON.parse(JSON.stringify(source));
-  const canvases = out?.sequences?.[0]?.canvases;
-  if (!Array.isArray(canvases)) return out;
-
-  const absOrRel = (path: string): string =>
-    buildBaseUrl ? `${buildBaseUrl.replace(/\/+$/, "")}/${path}` : path;
-
-  for (const canvas of canvases) {
-    if (!canvas || typeof canvas !== "object") continue;
-    const canvasId = (canvas["@id"] ?? "").toString();
-    const relPath = mirroredCanvasAnnotationRelPaths[canvasId];
-    if (!relPath) continue;
-
-    const entry = {
-      "@id": absOrRel(relPath),
-      "@type": "sc:AnnotationList",
-      "label": "Georeferencing (Allmaps, mirrored by Artemis)"
-    };
-    const oc = canvas.otherContent;
-    if (Array.isArray(oc)) {
-      if (!oc.some((x: any) => x?.["@id"] === entry["@id"])) oc.push(entry);
-    } else if (oc) {
-      const arr = [oc];
-      if (!arr.some((x: any) => x?.["@id"] === entry["@id"])) arr.push(entry);
-      canvas.otherContent = arr;
-    } else {
-      canvas.otherContent = [entry];
-    }
-  }
-
   out.metadata = Array.isArray(out.metadata) ? out.metadata : [];
-  out.metadata.push({ label: "Artemis pipeline", value: "Compiled manifest with mirrored Allmaps georeferencing" });
+  out.metadata.push({ label: "Artemis pipeline", value: "Compiled manifest with consolidated Allmaps georeferencing" });
   return out;
 }
 
@@ -666,6 +622,38 @@ function hasVerzamelbladIdentifier(man: V2Manifest, url: string, label: string):
 
 function normalizeSourceCollectionLabel(label: string): string {
   return label.replace(/^\s*artemis\s*[-–—:]\s*/i, "").trim();
+}
+
+/**
+ * Map a source collection URL to a PascalCase map ID from registry.
+ * Uses the registry.json mainLayers and imageCollections structure to find the correct ID.
+ * Returns null if no mapping found (e.g., service-backed WMTS/WMS sources).
+ */
+function deriveMapId(sourceCollectionUrl: string, sourceCollectionLabel: string, registry: any): string | null {
+  // Check mainLayers for IIIF sublayers with matching source URL
+  for (const mainLayer of registry.mainLayers || []) {
+    for (const sublayer of mainLayer.sublayers || []) {
+      if (sublayer.kind === "iiif" && sublayer.source?.url === sourceCollectionUrl) {
+        return mainLayer.id;  // e.g., "PrimitiefKadaster", "GereduceerdeKadaster"
+      }
+    }
+  }
+
+  // Check imageCollections for IIIF collections with matching source URL
+  for (const imgCollection of registry.imageCollections || []) {
+    if (imgCollection.kind === "iiif" && imgCollection.source?.url === sourceCollectionUrl) {
+      return imgCollection.id;  // e.g., "Massart"
+    }
+  }
+
+  // Handle Hand Drawn Collection (has no explicit IIIF source URL in registry)
+  if (sourceCollectionLabel.toLowerCase().includes("hand") ||
+      sourceCollectionUrl.toLowerCase().includes("hand") ||
+      sourceCollectionLabel.toLowerCase().includes("drawn")) {
+    return "HanddrawnCollection";
+  }
+
+  return null;  // No mapping found — this is a service-backed (WMTS/WMS) source
 }
 
 async function resolveSourceGroup(collectionUrl: string): Promise<SourceGroup> {
@@ -681,6 +669,7 @@ async function resolveSourceGroup(collectionUrl: string): Promise<SourceGroup> {
 async function processManifestRef(
   { url, label }: { url: string; label: string },
   sourceCollectionUrl: string,
+  sourceCollectionLabel: string,
   buildBaseUrl: string | null,
   i: number,
   total: number,
@@ -749,7 +738,7 @@ async function processManifestRef(
     }
     return {
       kind: "ok",
-      entry: { label: (man.label ?? label ?? "").toString(), sourceManifestUrl: url, sourceCollectionUrl, canvasCount: canvasIds.length, isVerzamelblad, compiledManifestPath },
+      entry: { label: (man.label ?? label ?? "").toString(), sourceManifestUrl: url, sourceCollectionUrl, sourceCollectionLabel, canvasCount: canvasIds.length, isVerzamelblad, compiledManifestPath },
       georef: false,
       compiled: INCLUDE_NON_GEOREF,
       canvasInfoEntries: {}
@@ -763,14 +752,14 @@ async function processManifestRef(
   if (issuesBeforeFix.length > 0) {
     for (const relPath of annotationPathsToCheck) {
       try {
-        const raw = JSON.parse(await readFile(`build/${relPath}`, "utf-8"));
+        const raw = JSON.parse(await readFile(`.build-cache/${relPath}`, "utf-8"));
         const sanitized = sanitizeMirroredAnnotation(raw);
         if (sanitized.appliedFixes.length > 0) {
           appliedFixes.push(...sanitized.appliedFixes.map((f) => `${relPath}:${f}`));
-          await writeFile(`build/${relPath}`, JSON.stringify(sanitized.json, null, 2), "utf-8");
+          await writeFile(`.build-cache/${relPath}`, JSON.stringify(sanitized.json, null, 2), "utf-8");
         }
       } catch (err: any) {
-        console.warn(`[WARN] Could not sanitize mirrored annotation: build/${relPath} (${err?.message ?? err})`);
+        console.warn(`[WARN] Could not sanitize mirrored annotation: .build-cache/${relPath} (${err?.message ?? err})`);
       }
     }
     appliedFixes = uniqueStrings(appliedFixes);
@@ -800,8 +789,8 @@ async function processManifestRef(
   }
 
   const compiledManifestPath = `manifests/${sha1(url).slice(0, 16)}.json`;
-  const compiled = compileV2ManifestAttachOtherContent(man, mirroredCanvasRelByCanvasId, buildBaseUrl);
-  await writeFile(`build/${compiledManifestPath}`, JSON.stringify(compiled, null, 2), "utf-8");
+  const compiled = compileV2Manifest(man);
+  await writeFile(`.build-cache/${compiledManifestPath}`, JSON.stringify(compiled, null, 2), "utf-8");
 
   const fixedManifest: SuccessfulFixManifest | undefined = issuesBeforeFix.length > 0
     ? { manifestAllmapsId, label: (man.label ?? label ?? "").toString(), sourceManifestUrl: url, annotationPaths: annotationPathsToCheck, issuesBefore: summarizeIssues(issuesBeforeFix), appliedFixes }
@@ -823,11 +812,6 @@ async function processManifestRef(
   }
 
   const center = await deriveAnnotationCenter(annotationPathsToCheck);
-  const canvasAllmapsHits: CanvasAnnotationHit[] = Object.entries(mirroredCanvasRelByCanvasId).map(([canvasId, relPath]) => ({
-    canvasId,
-    canvasAllmapsId: canvasAllmapsIdByCanvasId[canvasId],
-    mirroredAllmapsAnnotationPath: relPath
-  }));
 
   return {
     kind: "ok",
@@ -835,12 +819,12 @@ async function processManifestRef(
       label: (man.label ?? label ?? "").toString(),
       sourceManifestUrl: url,
       sourceCollectionUrl,
+      sourceCollectionLabel,
       ...(center ? { centerLon: center[0], centerLat: center[1] } : {}),
       compiledManifestPath,
       canvasCount: canvasIds.length,
       isVerzamelblad,
       manifestAllmapsId,
-      canvasAllmapsHits,
       georefDetectedBy,
       annotSource: canvasIds.length === 1 ? "single" : "multi"
     },
@@ -851,29 +835,274 @@ async function processManifestRef(
   };
 }
 
+// ============================================================================
+// Phase C: Toponyms and Parcels Generation
+// ============================================================================
+
+/**
+ * Generate per-map Toponyms files from data/sources/Toponyms/
+ */
+async function generateToponyms(registry: any): Promise<void> {
+  const sourceRoot = "data/sources/Toponyms";
+  const outDir = "build/Toponyms";
+
+  // Map source directory names to PascalCase IDs
+  const mapIdMapping: Record<string, { id: string; label: string }> = {
+    Ferraris: { id: "Ferraris", label: "Ferraris" },
+    Primitief: { id: "PrimitiefKadaster", label: "Primitief Kadaster" },
+    Gereduceerd: { id: "GereduceerdeKadaster", label: "Gereduceerde Kadaster" },
+  };
+
+  try {
+    const sourceDirs = await readdir(sourceRoot, { withFileTypes: true });
+    const topLevelDirs = sourceDirs
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort();
+
+    if (topLevelDirs.length === 0) {
+      console.log(`  Toponyms: no source directories found`);
+      return;
+    }
+
+    // Group items by map
+    const itemsByMap = new Map<string, any[]>();
+
+    for (const dir of topLevelDirs) {
+      const dirPath = join(sourceRoot, dir);
+      const mapInfo = mapIdMapping[dir];
+      if (!mapInfo) {
+        console.warn(`  [Toponyms] Warning: Unknown source directory "${dir}"`);
+        continue;
+      }
+
+      const mapId = mapInfo.id;
+      if (!itemsByMap.has(mapId)) {
+        itemsByMap.set(mapId, []);
+      }
+
+      // Read all GeoJSON files in this directory
+      const entries = await readdir(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isFile() || !/\.(geojson|json)$/i.test(entry.name)) continue;
+
+        try {
+          let content = await readFile(join(dirPath, entry.name), "utf-8");
+          // Fix invalid JSON: replace NaN with null
+          content = content.replace(/:\s*NaN(?=[,}\]])/g, ": null");
+          const geojson = JSON.parse(content);
+          const features = Array.isArray(geojson.features) ? geojson.features : [];
+          let processedCount = 0;
+
+          for (const feature of features) {
+            if (feature.type !== "Feature" || !feature.geometry) continue;
+            if (feature.geometry.type !== "Polygon" && feature.geometry.type !== "MultiPolygon") continue;
+
+            let text = String(feature.properties?.text ?? "").trim();
+            if (!text) continue;
+
+            // Filter out entries that don't make sense for toponyms
+            // - Single letters (likely OCR errors)
+            // - Entries that are purely numeric
+            // - Entries shorter than 2 characters
+            // - Entries that are mostly special characters
+            // - Entries with unusual patterns (starting/ending with special chars, too many special chars)
+            // - OCR patterns (###, repeated special chars)
+            if (text.length < 2) continue;
+            if (/^\d+$/.test(text)) continue; // Pure numbers
+            if (/^[^a-zA-Z0-9\s]+$/.test(text)) continue; // Only special chars
+            if (/^[-_:,;.!?'"]+|[-_:,;.!?'"]+$/.test(text)) continue; // Starts/ends with special chars
+            if (/^#+|#+$/.test(text)) continue; // Starts/ends with ###
+            if (/#/.test(text)) continue; // Contains # character (OCR artifact)
+            if (/(.)\1{3,}/.test(text)) continue; // 4+ repeated characters (OCR artifact)
+
+            // Count special characters - skip if more than 20% are special
+            const specialCharCount = (text.match(/[^a-zA-Z0-9\s]/g) || []).length;
+            if (specialCharCount > text.length * 0.2) continue;
+
+            // Normalize text: remove extra whitespace
+            text = text.replace(/\s+/g, " ").trim();
+
+            processedCount++;
+
+            // Compute centroid from geometry
+            const positions = feature.geometry.type === "Polygon"
+              ? feature.geometry.coordinates.flat()
+              : feature.geometry.coordinates.flat(2);
+
+            if (positions.length === 0) continue;
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const [x, y] of positions) {
+              if (Number.isFinite(x) && Number.isFinite(y)) {
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+              }
+            }
+
+            if (!Number.isFinite(minX)) continue;
+
+            const [lon, lat] = [(minX + maxX) / 2, (minY + maxY) / 2];
+            const idSeed = `${entry.name}:${text}`;
+            const id = createHash("sha1").update(idSeed).digest("hex").slice(0, 16);
+
+            const sheet = entry.name.split("_")[1] || undefined;
+
+            itemsByMap.get(mapId)!.push({
+              id,
+              text,
+              lon,
+              lat,
+              map: mapId,
+              ...(sheet ? { sheet } : {}),
+            });
+          }
+        } catch (error: any) {
+          console.warn(`  [Toponyms] Warning: Failed to parse ${join(dir, entry.name)}: ${error?.message ?? error}`);
+        }
+      }
+    }
+
+    // Write per-map files
+    for (const [mapId, items] of itemsByMap) {
+      if (items.length === 0) continue;
+
+      items.sort((a, b) => a.text.localeCompare(b.text));
+      const mapInfo = Object.values(mapIdMapping).find((m) => m.id === mapId);
+      if (!mapInfo) continue;
+
+      const mapDir = join(outDir, mapId);
+      await mkdir(mapDir, { recursive: true });
+
+      const output = {
+        generatedAt: new Date().toISOString(),
+        map: mapId,
+        mapLabel: mapInfo.label,
+        itemCount: items.length,
+        items,
+      };
+
+      const mapIndexPath = join(mapDir, `${mapId}Toponyms.json`);
+      await writeFile(mapIndexPath, JSON.stringify(output, null, 2), "utf-8");
+    }
+
+    const totalItems = Array.from(itemsByMap.values()).reduce((sum, items) => sum + items.length, 0);
+    console.log(`  Toponyms: ${totalItems} items across ${itemsByMap.size} maps`);
+  } catch (error: any) {
+    console.warn(`  [Toponyms] Error: ${error?.message ?? error}`);
+  }
+}
+
+/**
+ * Generate per-map Parcels files from data/sources/Parcels/
+ */
+async function generateParcels(): Promise<void> {
+  const sourceRoot = "data/sources/Parcels";
+  const outDir = "build/Parcels";
+  const mapIdMapping: Record<string, string> = {
+    Primitive: "PrimitiefKadaster",
+    Primitief: "PrimitiefKadaster",
+  };
+
+  try {
+    const entries = await readdir(sourceRoot, { withFileTypes: true });
+    const sourceDirs = entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+      .map((e) => e.name);
+
+    if (sourceDirs.length === 0) {
+      console.log(`  Parcels: no source parcel directories found`);
+      return;
+    }
+
+    let totalPolygons = 0;
+
+    for (const sourceDir of sourceDirs) {
+      const mapId = mapIdMapping[sourceDir] || sourceDir;
+      const mapSourcePath = join(sourceRoot, sourceDir);
+
+      const consolidatedFeatures: any[] = [];
+
+      try {
+        const parcelEntries = await readdir(mapSourcePath, { withFileTypes: true });
+        for (const entry of parcelEntries) {
+          if (!entry.isFile() || !entry.name.endsWith(".geojson") || entry.name === "index.geojson") continue;
+
+          try {
+            const content = await readFile(join(mapSourcePath, entry.name), "utf-8");
+            const geojson = JSON.parse(content);
+
+            if (geojson.type === "FeatureCollection" && Array.isArray(geojson.features)) {
+              for (const feature of geojson.features) {
+                if (feature.type === "Feature" && feature.geometry?.type === "Polygon") {
+                  consolidatedFeatures.push({
+                    type: "Feature",
+                    properties: {},
+                    geometry: {
+                      type: "Polygon",
+                      coordinates: feature.geometry.coordinates,
+                    },
+                  });
+                }
+              }
+            }
+          } catch {
+            // Skip invalid files
+          }
+        }
+      } catch (error) {
+        console.warn(`  [Parcels] Warning: Failed to read ${mapSourcePath}`);
+      }
+
+      if (consolidatedFeatures.length > 0) {
+        const mapDir = join(outDir, mapId);
+        await mkdir(mapDir, { recursive: true });
+
+        const consolidatedGeoJSON = {
+          type: "FeatureCollection",
+          features: consolidatedFeatures,
+        };
+
+        const indexPath = join(mapDir, `${mapId}Parcels.geojson`);
+        await writeFile(indexPath, JSON.stringify(consolidatedGeoJSON), "utf-8");
+        totalPolygons += consolidatedFeatures.length;
+      }
+    }
+
+    console.log(`  Parcels: ${totalPolygons} polygons consolidated`);
+  } catch (error: any) {
+    console.warn(`  [Parcels] Error: ${error?.message ?? error}`);
+  }
+}
+
 async function main() {
   await mkdir("cache/collections", { recursive: true });
   await mkdir("cache/manifests", { recursive: true });
   await mkdir("logs", { recursive: true });
 
   console.log("[0/5] Cleaning build output directories...");
-  for (const dir of ["build/manifests", "build/collections", "build/allmaps/canvases", "build/Massart"]) {
+  // Remove old deprecated paths
+  for (const dir of ["build/manifests", "build/collections", "build/allmaps", "build/Massart", "build/iiif"]) {
     await rm(dir, { recursive: true, force: true });
   }
-  // Remove legacy allmaps/manifests/ directory — annotations are now canvas-level only.
-  await rm("build/allmaps/manifests", { recursive: true, force: true });
-  await rm("build/allmaps", { recursive: true, force: true });
-  for (const file of ["build/fixed-manifests.log", "build/problematic-manifests.log", "build/report.log"]) {
+  for (const file of ["build/collection.json", "build/fixed-manifests.log", "build/problematic-manifests.log", "build/report.log"]) {
     await rm(file, { force: true });
   }
-  await mkdir("build/manifests", { recursive: true });
-  await mkdir("build/collections", { recursive: true });
-  await mkdir("build/allmaps/canvases", { recursive: true });
-  await mkdir("build/iiif/info", { recursive: true });
+  // Create public output directories
+  await mkdir("build/IIIF/georef", { recursive: true });
+  await mkdir("build/Toponyms", { recursive: true });
+  await mkdir("build/Parcels", { recursive: true });
+  await mkdir("build/Image collections", { recursive: true });
+  // Create internal cache directories (hidden)
+  await mkdir(".build-cache/manifests", { recursive: true });
+  await mkdir(".build-cache/iiif/info", { recursive: true });
+  await mkdir(".build-cache/allmaps/canvases", { recursive: true });
 
   // Persistent canvas info.json index — keyed by image service URL.
   // Migrate legacy entries that were keyed by canvas URL (containing /canvas/).
-  const canvasInfoIndexPath = "build/iiif/info/index.json";
+  const canvasInfoIndexPath = ".build-cache/iiif/info/index.json";
   let canvasInfoIndex: Record<string, any> = {};
   try {
     canvasInfoIndex = JSON.parse(await readFile(canvasInfoIndexPath, "utf-8"));
@@ -887,9 +1116,9 @@ async function main() {
   }
   const existingCanvasInfoIds = new Set(Object.keys(canvasInfoIndex));
 
-  const sourcesTxt = await readFile("data/sources/collections.txt", "utf-8");
-  const collectionUrls = parseLines(sourcesTxt);
-  if (collectionUrls.length < 1) throw new Error("No collection URLs found in data/sources/collections.txt");
+  const registry = await readSourceRegistry();
+  const collectionUrls = iiifSourceUrls(registry);
+  if (collectionUrls.length < 1) throw new Error("No IIIF sources found in data/sources/registry.json");
 
   const buildBaseUrl = process.env.BUILD_BASE_URL ?? null;
   const base = (path: string) => buildBaseUrl ? `${buildBaseUrl.replace(/\/+$/, "")}/${path}` : path;
@@ -933,7 +1162,7 @@ async function main() {
         console.warn(`[WARN] Known problematic manifest entering auto-fix path: ${ref.url} (${checkId})`);
       }
 
-      const result = await processManifestRef(ref, group.sourceCollectionUrl, buildBaseUrl, i, slice.length, existingCanvasInfoIds);
+      const result = await processManifestRef(ref, group.sourceCollectionUrl, group.sourceCollectionLabel, buildBaseUrl, i, slice.length, existingCanvasInfoIds);
       if (result.kind === "problematic") {
         problematicManifests.push(result.problematic);
         continue;
@@ -982,14 +1211,7 @@ async function main() {
 
     const colSlug = sha1(group.sourceCollectionUrl).slice(0, 16);
     const colRelPath = `collections/${colSlug}.json`;
-    const col: V2Collection = {
-      "@context": "http://iiif.io/api/presentation/2/context.json",
-      "@id": base(colRelPath),
-      "@type": "sc:Collection",
-      label: group.sourceCollectionLabel || group.sourceCollectionUrl,
-      manifests: compiledEntries.map((e) => ({ "@id": base(e.compiledManifestPath), "@type": "sc:Manifest", label: e.label }))
-    };
-    await writeFile(`build/${colRelPath}`, JSON.stringify(col, null, 2), "utf-8");
+    // Note: Collection files no longer written separately; per-map IIIF bundles are the canonical source
 
     layerMeta.push({
       layerId: colSlug,
@@ -1015,14 +1237,7 @@ async function main() {
       const renderLayerLabel = renderLayerKey === "verzamelblad"
         ? `${group.sourceCollectionLabel || group.sourceCollectionUrl} - Verzamelblad`
         : group.sourceCollectionLabel || group.sourceCollectionUrl;
-      const renderLayerCol: V2Collection = {
-        "@context": "http://iiif.io/api/presentation/2/context.json",
-        "@id": base(renderLayerRelPath),
-        "@type": "sc:Collection",
-        label: renderLayerLabel,
-        manifests: renderEntries.map((e) => ({ "@id": base(e.compiledManifestPath), "@type": "sc:Manifest", label: e.label }))
-      };
-      await writeFile(`build/${renderLayerRelPath}`, JSON.stringify(renderLayerCol, null, 2), "utf-8");
+      // Note: Render layer collection files no longer written separately
       renderLayerMeta.push({
         layerId: renderLayerSlug,
         sourceCollectionUrl: group.sourceCollectionUrl,
@@ -1038,11 +1253,136 @@ async function main() {
     }
   }
 
+  // [Phase B] Generate per-map IIIF bundles
+  console.log(`[4b/5] Generating per-map IIIF bundles...`);
+  await mkdir("build/IIIF", { recursive: true });
+
+  // Group entries by map ID
+  const manifestsByMapId = new Map<string, typeof index>();
+  const imageServicesByMapId = new Map<string, Record<string, string>>();
+
+  for (const entry of index) {
+    const mapId = deriveMapId(entry.sourceCollectionUrl, entry.sourceCollectionLabel, registry);
+    if (!mapId) continue;  // Skip non-IIIF sources
+
+    if (!manifestsByMapId.has(mapId)) {
+      manifestsByMapId.set(mapId, []);
+      imageServicesByMapId.set(mapId, {});
+    }
+
+    manifestsByMapId.get(mapId)!.push(entry);
+
+    // Collect image services from manifests
+    const services = extractCanvasImageServices((await cachedJson(entry.sourceManifestUrl, "cache/manifests")) as V2Manifest);
+    Object.assign(imageServicesByMapId.get(mapId)!, services);
+  }
+
+  // Generate per-map IIIF files (only for mainLayers, not image collections like Massart)
+  for (const [mapId, mapEntries] of manifestsByMapId) {
+    // Skip image collections — they only belong under Image collections/, not IIIF/
+    const isImageCollection = registry.imageCollections?.some((ic: any) => ic.id === mapId);
+    if (isImageCollection) continue;
+
+    // Generate <mapId>_manifests.json — actual manifest content for this map
+    const manifestsByLabel: Record<string, any> = {};
+    const manifestsList: any[] = [];
+    for (const entry of mapEntries) {
+      if (!entry.compiledManifestPath) continue;
+      try {
+        const manifestData = JSON.parse(await readFile(`.build-cache/${entry.compiledManifestPath}`, "utf-8"));
+        manifestsByLabel[entry.label] = manifestData;
+        manifestsList.push({ label: entry.label, manifest: manifestData });
+      } catch {
+        // Skip if manifest not found
+      }
+    }
+    const manifestsBundle = {
+      generatedAt: new Date().toISOString(),
+      mapId,
+      manifestCount: manifestsList.length,
+      manifests: manifestsByLabel
+    };
+    await writeFile(`build/IIIF/${mapId}_manifests.json`, JSON.stringify(manifestsBundle, null, 2), "utf-8");
+
+    // Generate <mapId>_info.json — actual canvas info.json responses for this map
+    const infoByService: Record<string, any> = {};
+    for (const entry of mapEntries) {
+      if (!entry.compiledManifestPath) continue;
+      try {
+        const manifestData = JSON.parse(await readFile(`.build-cache/${entry.compiledManifestPath}`, "utf-8"));
+        // Extract image services from manifest canvases
+        if (manifestData.sequences && Array.isArray(manifestData.sequences)) {
+          for (const sequence of manifestData.sequences) {
+            if (Array.isArray(sequence.canvases)) {
+              for (const canvas of sequence.canvases) {
+                if (canvas.images && Array.isArray(canvas.images)) {
+                  for (const image of canvas.images) {
+                    const resource = image.resource;
+                    if (resource && resource.service && typeof resource.service === 'object') {
+                      const serviceId = resource.service['@id'] || resource.service.id;
+                      if (serviceId && canvasInfoIndex[serviceId]) {
+                        infoByService[serviceId] = canvasInfoIndex[serviceId];
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // Skip if manifest processing fails
+      }
+    }
+    const infoBundle = {
+      generatedAt: new Date().toISOString(),
+      mapId,
+      services: infoByService
+    };
+    await writeFile(`build/IIIF/${mapId}_info.json`, JSON.stringify(infoBundle, null, 2), "utf-8");
+
+    // Generate georef/<mapId>.json — georeference annotations by canvas
+    const georefByCanvas: Record<string, any> = {};
+    for (const entry of mapEntries) {
+      if (!entry.manifestAllmapsId) continue;
+      try {
+        const manifest = (await cachedJson(entry.sourceManifestUrl, "cache/manifests")) as V2Manifest;
+        const canvasIds = extractCanvasIdsFromV2Manifest(manifest);
+        for (const canvasId of canvasIds) {
+          const canvasAllmapsId = await generateId(canvasId);
+          const annotPath = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
+          try {
+            const annotData = JSON.parse(await readFile(annotPath, "utf-8"));
+            georefByCanvas[canvasId] = annotData;
+          } catch {
+            // Canvas has no annotation, skip
+          }
+        }
+      } catch {
+        // Skip if manifest not found
+      }
+    }
+    const georefIndex = {
+      generatedAt: new Date().toISOString(),
+      mapId,
+      georefByCanvas
+    };
+    await writeFile(`build/IIIF/georef/${mapId}.json`, JSON.stringify(georefIndex, null, 2), "utf-8");
+
+    console.log(`  Generated IIIF bundles for ${mapId}: ${mapEntries.length} manifests`);
+  }
+
   const indexOut = {
     generatedAt: new Date().toISOString(),
     totalManifests: index.length,
     georefManifests,
     compiledOk,
+    // Only include mainLayers in domains, not image collections
+    domains: Array.from(manifestsByMapId.keys()).filter((mapId) => !registry.imageCollections?.some((ic: any) => ic.id === mapId)),
+    imageServices: Array.from(imageServicesByMapId.entries()).reduce((acc, [mapId, services]) => {
+      acc[mapId] = services;
+      return acc;
+    }, {} as Record<string, Record<string, string>>),
     layers: layerMeta,
     renderLayers: renderLayerMeta,
     index
@@ -1052,14 +1392,14 @@ async function main() {
   console.log(`  Canvas info.json index: ${Object.keys(canvasInfoIndex).length} entries (${newCanvasInfoCount} new this run)`);
 
   if (ugentMassartItems.length > 0) {
-    await mkdir("build/Massart", { recursive: true });
-    await writeFile("build/Massart/index.json", JSON.stringify({
+    await mkdir("build/Image collections/Massart", { recursive: true });
+    await writeFile("build/Image collections/Massart/index.json", JSON.stringify({
       generatedAt: new Date().toISOString(),
       totalItems: ugentMassartItems.length,
       coordsAvailable: ugentMassartItems.filter((i) => i.lat !== undefined).length,
       items: ugentMassartItems,
     }, null, 2), "utf-8");
-    console.log(`  Massart index: ${ugentMassartItems.length} items → build/Massart/index.json`);
+    console.log(`  Massart index: ${ugentMassartItems.length} items → build/Image collections/Massart/index.json`);
   }
 
   // QA report written to logs/ (git-ignored), not build/.
@@ -1083,22 +1423,12 @@ async function main() {
     "utf-8"
   );
 
-  console.log(`[5/5] Writing build/collection.json (top-level IIIF collection)`);
-  const topCollection = {
-    "@context": "http://iiif.io/api/presentation/2/context.json",
-    "@id": base("collection.json"),
-    "@type": "sc:Collection",
-    label: "Artemis compiled collection",
-    collections: renderLayerMeta.map((l) => ({
-      "@id": base(l.compiledCollectionPath),
-      "@type": "sc:Collection",
-      label: l.renderLayerKey === "verzamelblad"
-        ? `${l.sourceCollectionLabel || l.sourceCollectionUrl} - Verzamelblad`
-        : l.sourceCollectionLabel || l.sourceCollectionUrl
-    }))
-  };
-  await writeFile("build/collection.json", JSON.stringify(topCollection, null, 2), "utf-8");
+  // [Phase C] Generate Toponyms and Parcels
+  console.log(`[4c/5] Generating Toponyms and Parcels...`);
+  await generateToponyms(registry);
+  await generateParcels();
 
+  console.log(`[5/5] Done.`);
   console.log(`Done. sources=${sourceGroups.length}, manifests=${index.length}, georef=${georefManifests}, compiled=${compiledOk}`);
 }
 

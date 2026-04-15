@@ -28,7 +28,7 @@ Each source collection URL is treated as a distinct logical source. Build output
 - source-level layers (`layers`) — one per source, for stats/debug
 - viewer render layers (`renderLayers`) — one entry per rendered layer (`default`, `verzamelblad`)
 
-1. Reads collection URLs from `data/sources/collections.txt` (one URL per line, `#` = comment)
+1. Reads IIIF-capable source entries from `data/sources/registry.json`
 2. Resolves each URL into a `SourceGroup` (fetches IIIF v2 Collection, cached to `cache/collections/`); deduplication happens within each source independently
 3. For each source group, processes its manifests (cached to `cache/manifests/`):
    - Generates an Allmaps ID via `@allmaps/id` from the manifest URL
@@ -73,7 +73,7 @@ index.json            ← fetch once to enumerate layers (small)
 ## Directory Layout
 
 ```
-data/sources/collections.txt      # input: IIIF collection URLs + ugent:// special schemes
+data/sources/registry.json        # input: source registry for IIIF + service-backed layers + timeframes
 data/sources/Toponyms/README.txt  # note about local-only toponym source files
 cache/collections/                # disk cache for fetched IIIF collections
 cache/manifests/                  # disk cache for fetched IIIF manifests
@@ -132,13 +132,15 @@ scripts/
 
 ## Current Data Sources
 
-`data/sources/collections.txt` currently has three sources:
+`data/sources/registry.json` currently includes IIIF sources plus service-backed layer definitions. The IIIF-capable sources are:
 
 | Entry | Type | Description |
 |---|---|---|
 | `https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json` | IIIF Collection URL | Gereduceerd Kadaster |
 | `https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster` | IIIF Collection URL | Primitief Kadaster |
 | `ugent://massart` | Special scheme → Primo API | Jean Massart photographs, UGent library |
+
+The same registry also carries non-IIIF service-backed layers from the viewer, currently WMTS and WMS entries, plus timeframe metadata used to place layers on the timeline.
 
 ### `ugent://` source scheme
 

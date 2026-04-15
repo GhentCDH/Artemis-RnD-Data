@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { iiifSourceUrls, readSourceRegistry } from "./registry";
 
 type IIIFv2Collection = {
   "@context"?: string;
@@ -7,13 +7,6 @@ type IIIFv2Collection = {
   label?: string;
   manifests?: Array<{ "@id": string; label?: string }>;
 };
-
-function parseLines(txt: string): string[] {
-  return txt
-    .split(/\r?\n/g)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith("#"));
-}
 
 async function fetchJson(url: string): Promise<any> {
   const res = await fetch(url, { redirect: "follow" });
@@ -27,10 +20,10 @@ function listManifestUrlsFromV2Collection(col: IIIFv2Collection): string[] {
 }
 
 async function main() {
-  const sourcesTxt = await readFile("data/sources/collections.txt", "utf-8");
-  const collectionUrls = parseLines(sourcesTxt);
+  const registry = await readSourceRegistry();
+  const collectionUrls = iiifSourceUrls(registry);
 
-  console.log(`Collections: ${collectionUrls.length}`);
+  console.log(`IIIF sources: ${collectionUrls.length}`);
 
   for (const url of collectionUrls) {
     console.log(`\n[Collection] ${url}`);

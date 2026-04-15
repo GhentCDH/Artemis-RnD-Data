@@ -2,7 +2,7 @@
 
 Compiled IIIF + Allmaps data pipeline for Artemis.
 
-Crawls source IIIF collections, mirrors Allmaps georeferencing annotations (canvas-level), compiles manifests and collections for static hosting, and builds search artifacts used by the viewer.
+Crawls source IIIF collections, mirrors Allmaps georeferencing annotations, bundles published artifacts per map, and builds search artifacts used by the viewer.
 
 ## Stack
 
@@ -89,6 +89,7 @@ bun run buildSearch   # alias: bun run toponyms
 
 ### Persistence
 - `cache/`: kept across runs for efficiency
+- `.build-cache/`: internal cache and QA artifacts, kept out of git
 - `build/`: wiped and regenerated each full pipeline run
 - QA report written to `logs/report.log` (git-ignored)
 

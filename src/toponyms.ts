@@ -241,7 +241,7 @@ async function main() {
       items,
     };
 
-    const mapIndexPath = join(mapDir, "index.json");
+    const mapIndexPath = join(mapDir, `${mapId}Toponyms.json`);
     await writeFile(mapIndexPath, JSON.stringify(output, null, 2), "utf-8");
     console.log(`  Wrote ${mapIndexPath} (${items.length} items)`);
   }

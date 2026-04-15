@@ -146,49 +146,33 @@ Internal caching (.build-cache/, not in build/):
 
 ## 7. Viewer Integration
 
-### Changed Contract from Previous Refactor
+The current viewer-facing contract in this repo is:
 
-The refactor on 2026-04-15 changed the following paths:
+- `build/index.json`: public entrypoint
+- `build/IIIF/<map>_manifests.json`: manifest objects grouped per map
+- `build/IIIF/<map>_info.json`: IIIF Image API info responses grouped per map
+- `build/IIIF/georef/<map>.json`: canvas georeferencing grouped per map
+- `build/Toponyms/<map>/<map>Toponyms.json`: per-map toponym search data
+- `build/Parcels/<map>/<map>Parcels.geojson`: per-map parcel polygons
+- `build/Image collections/Massart/index.json`: Massart photo metadata
+- `static/site.json`, `static/layers.json`: runtime metadata, maintained by hand
 
-| Previous | Current | Notes |
-|----------|---------|-------|
-| `build/collection.json` | removed | Not used by viewer |
-| `build/collections/*.json` | `build/IIIF/<map>_manifests.json` | Consolidated per-map |
-| `build/manifests/*.json` | removed | Manifests now in consolidated bundles |
-| `build/allmaps/canvases/*.json` | `build/IIIF/georef/<map>.json` | Canvas annotations consolidated per-map |
-| `build/iiif/info/index.json` | `build/IIIF/<map>_info.json` | Split per-map |
-| `build/Toponyms/index.json` | `build/Toponyms/<map>/<map>Toponyms.json` | Split per-map |
-| `build/Parcels/Primitive/index.geojson` | `build/Parcels/PrimitiefKadaster/PrimitiefKadasterParcels.geojson` | PascalCase naming |
-| `build/Massart/index.json` | `build/Image collections/Massart/index.json` | Moved out of root |
+Current constraints:
 
-### Current Viewer Consumption
-
-The viewer still uses:
-- `build/index.json`: entrypoint (required)
-- `build/IIIF/<map>_manifests.json`: manifest objects per map (computed via hardcoded map label matching)
-- `build/IIIF/georef/<map>.json`: canvas-level georeferencing (client-side lookup via canvas ID)
-- `build/Toponyms/<map>/<map>Toponyms.json`: toponym search (if implemented)
-- `build/Parcels/Primitive/PrimitiefParcels.geojson`: parcel display (hardcoded path — not yet updated)
-- `build/Image collections/Massart/index.json`: Massart photos
-- `static/site.json`, `static/layers.json`: runtime metadata (hand-edited, not written by pipeline)
-
-### Known Limitations
-
-- **Hardcoded Paths**: Viewer still uses hardcoded path `build/Parcels/Primitive/` instead of `PrimitiefKadaster/`
-- **Layer Matching**: Viewer matches maps by hardcoded label matching (e.g., "Primitief Kadaster") rather than explicit layer IDs
-- **Service-Backed Layers**: Ferraris, Villaret, Popp, etc. still hardcoded in viewer (not data-driven)
-- **Massart Rendering**: Massart items have no Allmaps annotations, so they don't produce render layers
+- **Layer Matching**: Viewer integration still depends on map-level IDs and metadata staying aligned
+- **Service-Backed Layers**: Ferraris, Villaret, Popp, etc. still rely on viewer-side service definitions
+- **Massart Rendering**: Massart items have no Allmaps annotations, so they do not produce render layers
 
 ## 8. Known Issues
 
 - **Primitief Single-Canvas Rendering**: Intermittent flicker for a small set of single-canvas manifests
 - **Cache Staleness**: No automatic cache invalidation for upstream collections/manifests
-- **Hardcoded Viewer Paths**: Some paths are still hardcoded in viewer and need manual updates
+- **Viewer Coupling**: Some viewer behavior still depends on conventions rather than a fully data-driven layer contract
 
 ## 9. Future Work
 
 - **Sprite Generation**: Add sprite-generation step for per-map raster layers
-- **Viewer Updates**: Update viewer to use new path structure (especially Parcels)
+- **Viewer Updates**: Reduce remaining viewer coupling to map-specific conventions
 - **Service-Backed Layers**: Move WMTS/WMS layer definitions from viewer hardcode to registry
 - **Timeline Integration**: Add timeframe metadata to enable viewer timeline features
 - **Parcel Sublayers**: Implement Gereduceerd and Hand drawn parcels

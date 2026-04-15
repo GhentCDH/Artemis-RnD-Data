@@ -532,7 +532,7 @@ function extractCanvasImageServices(man: V2Manifest): Record<string, string> {
 }
 
 /**
- * Mirror a canvas-level Allmaps annotation to build/allmaps/canvases/<id>.json.
+ * Mirror a canvas-level Allmaps annotation to .build-cache/allmaps/canvases/<id>.json.
  * Combines the status check and fetch into one request (no separate HEAD/GET).
  */
 async function mirrorCanvasAnnotation(canvasAllmapsId: string): Promise<{ status: number; relPath: string }> {
@@ -551,7 +551,7 @@ async function mirrorCanvasAnnotation(canvasAllmapsId: string): Promise<{ status
 /**
  * For canvases that have no standalone canvas annotation in Allmaps (canvas endpoint → 404),
  * fetch the manifest-level annotation once and extract each canvas's items into a synthetic
- * canvas file. This eliminates the need for a separate allmaps/manifests/ directory.
+ * canvas file in .build-cache/. This eliminates the need for a separate manifest mirror.
  *
  * Returns a map of canvasId → relPath for all canvases that were successfully covered.
  */
@@ -1083,7 +1083,7 @@ async function main() {
   await mkdir("logs", { recursive: true });
 
   console.log("[0/5] Cleaning build output directories...");
-  // Remove old deprecated paths
+  // Remove deprecated public-layout directories from earlier refactors.
   for (const dir of ["build/manifests", "build/collections", "build/allmaps", "build/Massart", "build/iiif"]) {
     await rm(dir, { recursive: true, force: true });
   }

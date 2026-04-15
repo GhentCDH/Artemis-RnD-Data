@@ -25,7 +25,6 @@
         {
           "id": "NGI1904-wmts",
           "name": "Map",
-          "label": "Map",
           "kind": "wmts",
           "source": {
             "url": "https://wmts.ngi.be/arcgis/rest/services/seamless_carto__default__3857__450/MapServer/tile/{z}/{y}/{x}"
@@ -45,7 +44,6 @@
         {
           "id": "NGI1873-wmts",
           "name": "Map",
-          "label": "Map",
           "kind": "wmts",
           "source": {
             "url": "https://wmts.ngi.be/arcgis/rest/services/seamless_carto__default__3857__140/MapServer/tile/{z}/{y}/{x}"
@@ -65,7 +63,6 @@
         {
           "id": "Popp-wmts",
           "name": "Map",
-          "label": "Map",
           "kind": "wmts",
           "source": {
             "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=popp&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
@@ -85,7 +82,6 @@
         {
           "id": "Ferraris-wmts",
           "name": "WMTS",
-          "label": "WMTS",
           "kind": "wmts",
           "source": {
             "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ferraris&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
@@ -94,13 +90,11 @@
         {
           "id": "Ferraris-landusage",
           "name": "Land usage",
-          "label": "Land usage",
           "kind": "wms"
         },
         {
           "id": "Ferraris-toponyms",
           "name": "Toponyms",
-          "label": "Toponyms",
           "kind": "searchable"
         }
       ]
@@ -117,7 +111,6 @@
         {
           "id": "Villaret-wmts",
           "name": "Map",
-          "label": "Map",
           "kind": "wms",
           "source": {
             "url": "https://geo.api.vlaanderen.be/HISTCART/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=Villaret&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=TRUE&CRS=EPSG%3A3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256"
@@ -137,7 +130,6 @@
         {
           "id": "Frickx-wmts",
           "name": "Map",
-          "label": "Map",
           "kind": "wmts",
           "source": {
             "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=frickx&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
@@ -157,7 +149,6 @@
         {
           "id": "Vandermaelen-wmts",
           "name": "WMTS",
-          "label": "WMTS",
           "kind": "wmts",
           "source": {
             "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vandermaelen&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
@@ -166,13 +157,11 @@
         {
           "id": "Vandermaelen-landusage",
           "name": "Land usage",
-          "label": "Land usage",
           "kind": "wms"
         },
         {
           "id": "Vandermaelen-toponyms",
           "name": "Toponyms",
-          "label": "Toponyms",
           "kind": "searchable"
         }
       ]
@@ -189,7 +178,6 @@
         {
           "id": "PrimitiefKadaster-iiif",
           "name": "IIIF collection",
-          "label": "IIIF collection",
           "kind": "iiif",
           "source": {
             "url": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster"
@@ -198,13 +186,11 @@
         {
           "id": "PrimitiefKadaster-parcels",
           "name": "Parcels",
-          "label": "Parcels",
           "kind": "geojson"
         },
         {
           "id": "PrimitiefKadaster-landusage",
           "name": "Land usage",
-          "label": "Land usage",
           "kind": "geojson"
         }
       ]
@@ -221,7 +207,6 @@
         {
           "id": "GereduceerdeKadaster-iiif",
           "name": "IIIF collection",
-          "label": "IIIF collection",
           "kind": "iiif",
           "source": {
             "url": "https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json"
@@ -230,13 +215,11 @@
         {
           "id": "GereduceerdeKadaster-parcels",
           "name": "Parcels",
-          "label": "Parcels",
           "kind": "geojson"
         },
         {
           "id": "GereduceerdeKadaster-landusage",
           "name": "Land usage",
-          "label": "Land usage",
           "kind": "geojson"
         }
       ]
@@ -251,19 +234,16 @@
         {
           "id": "HanddrawnCollection-iiif",
           "name": "IIIF collection",
-          "label": "IIIF collection",
           "kind": "iiif"
         },
         {
           "id": "HanddrawnCollection-parcels",
           "name": "Parcels",
-          "label": "Parcels",
           "kind": "geojson"
         },
         {
           "id": "HanddrawnCollection-water",
           "name": "Water infrastructure",
-          "label": "Water infrastructure",
           "kind": "geojson"
         }
       ]

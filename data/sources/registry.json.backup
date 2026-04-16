@@ -1,0 +1,282 @@
+{
+  "version": 2,
+  "mainLayerOrder": [
+    "handdrawn",
+    "frickx",
+    "villaret",
+    "ferraris",
+    "gereduceerd",
+    "popp",
+    "vandermaelen",
+    "primitief",
+    "ngi1873",
+    "ngi1904"
+  ],
+  "mainLayers": [
+    {
+      "id": "ngi1904",
+      "label": "NGI Basemap 1904",
+      "timeframe": {
+        "label": "1904",
+        "startYear": 1904,
+        "endYear": 1914
+      },
+      "sublayers": [
+        {
+          "id": "ngi1904-wmts",
+          "name": "Map",
+          "label": "Map",
+          "kind": "wmts",
+          "source": {
+            "url": "https://wmts.ngi.be/arcgis/rest/services/seamless_carto__default__3857__450/MapServer/tile/{z}/{y}/{x}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ngi1873",
+      "label": "NGI Basemap 1873",
+      "timeframe": {
+        "label": "1873",
+        "startYear": 1873,
+        "endYear": 1880
+      },
+      "sublayers": [
+        {
+          "id": "ngi1873-wmts",
+          "name": "Map",
+          "label": "Map",
+          "kind": "wmts",
+          "source": {
+            "url": "https://wmts.ngi.be/arcgis/rest/services/seamless_carto__default__3857__140/MapServer/tile/{z}/{y}/{x}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "popp",
+      "label": "Poppkaart",
+      "timeframe": {
+        "label": "1842-1879",
+        "startYear": 1842,
+        "endYear": 1879
+      },
+      "sublayers": [
+        {
+          "id": "popp-wmts",
+          "name": "Map",
+          "label": "Map",
+          "kind": "wmts",
+          "source": {
+            "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=popp&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ferraris",
+      "label": "Ferraris",
+      "timeframe": {
+        "label": "1771",
+        "startYear": 1771,
+        "endYear": 1771
+      },
+      "sublayers": [
+        {
+          "id": "ferraris-wmts",
+          "name": "WMTS",
+          "label": "WMTS",
+          "kind": "wmts",
+          "source": {
+            "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ferraris&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
+          }
+        },
+        {
+          "id": "ferraris-landusage",
+          "name": "Land usage",
+          "label": "Land usage",
+          "kind": "wms"
+        },
+        {
+          "id": "ferraris-toponyms",
+          "name": "Toponyms",
+          "label": "Toponyms",
+          "kind": "searchable"
+        }
+      ]
+    },
+    {
+      "id": "villaret",
+      "label": "Villaret",
+      "timeframe": {
+        "label": "1745-1748",
+        "startYear": 1745,
+        "endYear": 1748
+      },
+      "sublayers": [
+        {
+          "id": "villaret-wmts",
+          "name": "Map",
+          "label": "Map",
+          "kind": "wms",
+          "source": {
+            "url": "https://geo.api.vlaanderen.be/HISTCART/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=Villaret&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=TRUE&CRS=EPSG%3A3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256"
+          }
+        }
+      ]
+    },
+    {
+      "id": "frickx",
+      "label": "Frickx",
+      "timeframe": {
+        "label": "1712",
+        "startYear": 1712,
+        "endYear": 1712
+      },
+      "sublayers": [
+        {
+          "id": "frickx-wmts",
+          "name": "Map",
+          "label": "Map",
+          "kind": "wmts",
+          "source": {
+            "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=frickx&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "vandermaelen",
+      "label": "Vandermaelen",
+      "timeframe": {
+        "label": "1846",
+        "startYear": 1846,
+        "endYear": 1846
+      },
+      "sublayers": [
+        {
+          "id": "vandermaelen-wmts",
+          "name": "WMTS",
+          "label": "WMTS",
+          "kind": "wmts",
+          "source": {
+            "url": "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vandermaelen&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
+          }
+        },
+        {
+          "id": "vandermaelen-landusage",
+          "name": "Land usage",
+          "label": "Land usage",
+          "kind": "wms"
+        },
+        {
+          "id": "vandermaelen-toponyms",
+          "name": "Toponyms",
+          "label": "Toponyms",
+          "kind": "searchable"
+        }
+      ]
+    },
+    {
+      "id": "primitief",
+      "label": "Primitief kadaster",
+      "timeframe": {
+        "label": "1808-1834",
+        "startYear": 1808,
+        "endYear": 1834
+      },
+      "sublayers": [
+        {
+          "id": "primitief-iiif",
+          "name": "IIIF collection",
+          "label": "IIIF collection",
+          "kind": "iiif",
+          "source": {
+            "url": "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster"
+          }
+        },
+        {
+          "id": "primitief-parcels",
+          "name": "Parcels",
+          "label": "Parcels",
+          "kind": "geojson"
+        },
+        {
+          "id": "primitief-landusage",
+          "name": "Land usage",
+          "label": "Land usage",
+          "kind": "geojson"
+        }
+      ]
+    },
+    {
+      "id": "gereduceerd",
+      "label": "Gereduceerd kadaster",
+      "timeframe": {
+        "label": "1847-1855",
+        "startYear": 1847,
+        "endYear": 1855
+      },
+      "sublayers": [
+        {
+          "id": "gereduceerd-iiif",
+          "name": "IIIF collection",
+          "label": "IIIF collection",
+          "kind": "iiif",
+          "source": {
+            "url": "https://raw.githubusercontent.com/RDebrulle/AllmapsTests/refs/heads/main/Gereduceerd_Kadaster.json"
+          }
+        },
+        {
+          "id": "gereduceerd-parcels",
+          "name": "Parcels",
+          "label": "Parcels",
+          "kind": "geojson"
+        },
+        {
+          "id": "gereduceerd-landusage",
+          "name": "Land usage",
+          "label": "Land usage",
+          "kind": "geojson"
+        }
+      ]
+    },
+    {
+      "id": "handdrawn",
+      "label": "Hand drawn collection",
+      "timeframe": {
+        "label": "19th c."
+      },
+      "sublayers": [
+        {
+          "id": "handdrawn-iiif",
+          "name": "IIIF collection",
+          "label": "IIIF collection",
+          "kind": "iiif"
+        },
+        {
+          "id": "handdrawn-parcels",
+          "name": "Parcels",
+          "label": "Parcels",
+          "kind": "geojson"
+        },
+        {
+          "id": "handdrawn-water",
+          "name": "Water infrastructure",
+          "label": "Water infrastructure",
+          "kind": "geojson"
+        }
+      ]
+    }
+  ],
+  "imageCollections": [
+    {
+      "id": "massart",
+      "label": "Jean Massart photographs",
+      "kind": "iiif",
+      "source": {
+        "url": "ugent://massart"
+      }
+    }
+  ]
+}

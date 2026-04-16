@@ -2,7 +2,7 @@
 
 Compiled IIIF + Allmaps data pipeline for Artemis.
 
-Crawls source IIIF collections, mirrors Allmaps georeferencing annotations (canvas-level), compiles manifests and collections for static hosting, and builds search artifacts used by the viewer.
+Crawls source IIIF collections, mirrors Allmaps georeferencing annotations, bundles published artifacts per map, and builds search artifacts used by the viewer.
 
 ## Stack
 
@@ -10,17 +10,29 @@ Crawls source IIIF collections, mirrors Allmaps georeferencing annotations (canv
 - Language: TypeScript
 - Core dependency: `@allmaps/id`
 
-## What It Produces
+## Output Structure
 
-- `build/index.json`: main dataset index — layers, render layers, per-manifest entries
-- `build/collection.json`: top-level IIIF v2 Collection
-- `build/collections/*.json`: per-layer compiled IIIF Collections
-- `build/manifests/*.json`: compiled manifests with Allmaps `otherContent` injected
-- `build/allmaps/canvases/*.json`: mirrored Allmaps canvas-level annotations
-- `build/iiif/info/index.json`: IIIF image info.json cache (keyed by image service URL)
-- `build/Toponyms/index.json`: toponym search index
-- `build/Massart/index.json`: Jean Massart photograph metadata (title, year, location, lat/lon, manifest URL)
-- `build/Parcels/`: historical parcel polygon data
+The `build/` directory contains all published artifacts:
+
+```
+build/
+├── index.json                           # Main entrypoint: domains, image services
+├── IIIF/                                # Per-map IIIF bundles
+│   ├── PrimitiefKadaster_manifests.json # Actual IIIF manifest objects
+│   ├── PrimitiefKadaster_info.json      # IIIF Image API info.json responses
+│   ├── GereduceerdeKadaster_manifests.json
+│   ├── GereduceerdeKadaster_info.json
+│   └── georef/                          # Consolidated canvas annotations
+│       ├── PrimitiefKadaster.json       # Georeferencing by canvas ID
+│       └── GereduceerdeKadaster.json
+├── Image collections/                  # Non-georeferenced image collections
+│   └── Massart/index.json              # Jean Massart photograph metadata
+├── Toponyms/                           # Per-map toponym search indices
+│   ├── PrimitiefKadaster/PrimitiefKadasterToponyms.json
+│   └── Ferraris/FerrarisToponyms.json
+└── Parcels/                            # Per-map historical parcel data
+    └── PrimitiefKadaster/PrimitiefKadasterParcels.geojson
+```
 
 ## Quick Start
 
@@ -31,42 +43,64 @@ bun install
 ## Commands
 
 ```bash
-# full pipeline
+# full pipeline (all manifests)
 bun run crawl
 
 # limited crawl (first N manifests per source)
-bun run crawl10
-bun run crawl1
+bun run crawl10   # first 10
+bun run crawl1    # first 1
 
 # include non-georeferenced manifests in output
 bun run crawl:all
 
-# build toponym search index only
+# build toponym search indices only
 bun run buildSearch   # alias: bun run toponyms
 ```
 
 ## Inputs
 
-- `data/sources/collections.txt`: source IIIF collection URLs + `ugent://` special schemes (one per line)
-- `data/sources/Toponyms/`: local raw toponym source files (not committed — keep only `README.txt` in git)
-- `static/`: hand-edited runtime assets and metadata for the viewer; not written by the pipeline
+- `data/sources/registry.json`: source registry for IIIF collections and service-backed layers
+- `data/sources/Toponyms/`: raw toponym source files (local-only, not in git)
+- `data/sources/Parcels/`: raw parcel GeoJSON files (local-only, not in git)
+- `static/`: hand-edited runtime assets and metadata for the viewer
 
-`ugent://massart` is resolved at crawl time by querying the UGent Primo catalog API directly — no pre-generated file required.
+`ugent://massart` is resolved at crawl time via UGent Primo catalog API — no pre-generated file required.
 
-## Notes
+## Implementation Notes
 
-- `cache/` and `build/iiif/info/` persist across runs; all other `build/` dirs are wiped and regenerated each run
-- By default only georeferenced manifests are included in collections; use `INCLUDE_NON_GEOREF=1` to include all
-- Set `BUILD_BASE_URL` to your GitHub Pages root to get absolute URLs in build outputs
-- QA report (fixed + excluded manifests) is written to `logs/report.log` (git-ignored)
-- `build/index.json` now exposes stable `layerId` values on both `layers` and `renderLayers`; the viewer can use those ids to join runtime content from `static/` without rerunning preprocessing
+### Architecture
+- `src/pipeline.ts` (main): crawl → mirror annotations → QA → compile → bundle per-map
+- `src/parcels.ts`: consolidate parcel GeoJSON files per map
+- `src/toponyms.ts`: filter and consolidate toponym data per map
+- `cache/`: persistent fetch cache across runs
+- `.build-cache/`: internal artifacts (individual canvas annotations, compiled manifests before bundling)
+- `build/`: published public output
+
+### Output Design
+- **Per-map IIIF bundles**: All manifests and image service info are bundled by map for efficient bulk loading
+- **Consolidated georeferencing**: Canvas annotations are consolidated in `georef/<map>.json` keyed by canvas ID
+- **No broken references**: All paths in public output are resolvable; internal canvas annotation files stay in `.build-cache/`
+- **Minimal schema**: Published data includes only fields the viewer needs
+
+### Configuration
+- `LIMIT`: process first N manifests per source (e.g., `LIMIT=10 bun run crawl`)
+- `INCLUDE_NON_GEOREF=1`: include non-georeferenced manifests in compiled output
+- `BUILD_BASE_URL`: generate absolute URLs if hosting elsewhere
+
+### Persistence
+- `cache/`: kept across runs for efficiency
+- `.build-cache/`: internal cache and QA artifacts, kept out of git
+- `build/`: wiped and regenerated each full pipeline run
+- QA report written to `logs/report.log` (git-ignored)
 
 ## Static Runtime Content
 
-- Keep manually maintained viewer content in `static/`, not in `build/`
-- The pipeline must not write to `static/`
-- The viewer should load files from `static/` directly at runtime and remain resilient when a `layerId` has no matching metadata yet
-- Missing `static` metadata should produce a warning in development and fall back to generated labels/default copy, not a runtime error
+Files in `static/` are hand-edited and consumed directly by the viewer at runtime:
+
+- Do not write pipeline output to `static/`
+- The pipeline must not overwrite hand-edited content
+- The viewer should load `static/` files directly without rerunning the pipeline
+- Missing runtime metadata should fall back gracefully, not error
 
 ## Related Repo
 

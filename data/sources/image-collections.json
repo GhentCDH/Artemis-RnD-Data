@@ -1,0 +1,22 @@
+{
+  "collections": [
+    {
+      "id": "massart",
+      "label": "Jean Massart photographs",
+      "provider": "Universiteit Gent",
+      "kind": "primo-api",
+      "catalogBaseUrl": "https://libcatalog.ugent.be/primaws/rest/pub",
+      "searchEndpoint": "/pnxs",
+      "directLinkEndpoint": "/directLink/{almaId}",
+      "manifestTemplate": "https://libcatalog.ugent.be/view/iiif/presentation/32RUG_INST/{repId}/manifest?iiifVersion=2&updateStatistics=false",
+      "query": {
+        "q": "creator,contains,Massart, Jean",
+        "multiFacets": "facet_rtype,include,images",
+        "tab": "Everything",
+        "inst": "32RUG_INST",
+        "vid": "32RUG_INST:32RUG_INST",
+        "lang": "en"
+      }
+    }
+  ]
+}

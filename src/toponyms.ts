@@ -25,16 +25,25 @@ type SourceFeatureCollection = {
 type IndexItem = {
   id: string;
   text: string;
-  rawText: string;
-  placeName?: string;
-  textNormalized: string;
-  sourceGroup: string;
-  sourceFile: string;
-  mapId: string;
-  mapName: string;
-  featureIndex: number;
   lon: number;
   lat: number;
+  map: string;
+  sheet?: string;
+};
+
+type PerMapOutput = {
+  generatedAt: string;
+  map: string;
+  mapLabel: string;
+  itemCount: number;
+  items: IndexItem[];
+};
+
+// Mapping from source directory name to PascalCase map identifier and display label
+const MAP_ID_MAPPING: Record<string, { id: string; label: string }> = {
+  Ferraris: { id: "Ferraris", label: "Ferraris" },
+  Primitief: { id: "PrimitiefKadaster", label: "Primitief Kadaster" },
+  Gereduceerd: { id: "GereduceerdeKadaster", label: "Gereduceerde Kadaster" },
 };
 
 function sha1(s: string): string {
@@ -56,6 +65,22 @@ function placeNameFromSourceFile(sourceFile: string): string | undefined {
   if (!m) return undefined;
   const place = m[1]?.trim();
   return place && place.length > 0 ? place : undefined;
+}
+
+function deriveSheetFromSourceFile(sourceFile: string): string | undefined {
+  const fileBase = basename(sourceFile, extname(sourceFile));
+  // Try to extract sheet number from filename patterns
+  // Examples: "Aalst_59_a_33489_21941_16.geojson" -> "59"
+  // "Aertselaer_1851.geojson" -> "1851"
+  const parts = fileBase.split("_");
+  if (parts.length >= 2) {
+    // Return the second part if it looks like a number or identifier
+    const potential = parts[1];
+    if (potential && /^\d+/.test(potential)) {
+      return potential;
+    }
+  }
+  return undefined;
 }
 
 function getPositions(geometry: GeoGeometry): Position[] {
@@ -117,35 +142,55 @@ async function listSourceFiles(rootDir: string): Promise<string[]> {
 async function main() {
   const sourceRoot = "data/sources/Toponyms";
   const outDir = "build/Toponyms";
-  const outIndex = join(outDir, "index.json");
 
   const files = await listSourceFiles(sourceRoot);
-  console.log(`[1/2] Found ${files.length} source files under ${sourceRoot}`);
+  console.log(`[1/3] Found ${files.length} source files under ${sourceRoot}`);
   if (files.length < 1) {
     throw new Error(
-      `No toponym source files found under ${sourceRoot}. Refusing to overwrite existing ${outIndex}.`
+      `No toponym source files found under ${sourceRoot}. Refusing to proceed.`
     );
   }
 
+  // Remove old output directory
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
 
-  const indexItems: IndexItem[] = [];
-  const sourceSummary = new Map<string, { fileCount: number; featureCount: number }>();
+  // Group items by map
+  const itemsByMap = new Map<string, IndexItem[]>();
+  const mapStats = new Map<string, { fileCount: number; featureCount: number }>();
 
   for (const file of files) {
-    const json = JSON.parse(await readFile(file, "utf-8")) as SourceFeatureCollection;
-    const features = Array.isArray(json.features) ? json.features : [];
-    const sourceGroup = basename(relative(sourceRoot, file).split("/")[0] ?? "");
-    const sourceFile = relative(sourceRoot, file).replace(/\\/g, "/");
-    const mapId = sourceGroup.toLowerCase();
-    const mapName = sourceGroup;
-    const placeName = placeNameFromSourceFile(sourceFile);
-
-    if (!sourceSummary.has(sourceGroup)) {
-      sourceSummary.set(sourceGroup, { fileCount: 0, featureCount: 0 });
+    let json: SourceFeatureCollection;
+    try {
+      const content = await readFile(file, "utf-8");
+      json = JSON.parse(content) as SourceFeatureCollection;
+    } catch (error) {
+      console.warn(`Warning: Failed to parse ${file}, skipping`);
+      continue;
     }
-    sourceSummary.get(sourceGroup)!.fileCount += 1;
+
+    const features = Array.isArray(json.features) ? json.features : [];
+    const sourceDir = basename(relative(sourceRoot, file).split("/")[0] ?? "");
+    const sourceFile = relative(sourceRoot, file).replace(/\\/g, "/");
+    const placeName = placeNameFromSourceFile(sourceFile);
+    const sheet = deriveSheetFromSourceFile(sourceFile);
+
+    const mapInfo = MAP_ID_MAPPING[sourceDir];
+    if (!mapInfo) {
+      console.warn(`Warning: Unknown source directory "${sourceDir}", skipping`);
+      continue;
+    }
+
+    const mapId = mapInfo.id;
+    if (!itemsByMap.has(mapId)) {
+      itemsByMap.set(mapId, []);
+      mapStats.set(mapId, { fileCount: 0, featureCount: 0 });
+    }
+
+    const stats = mapStats.get(mapId)!;
+    stats.fileCount += 1;
+
+    const items = itemsByMap.get(mapId)!;
 
     features.forEach((feature, featureIndex) => {
       if (!feature || feature.type !== "Feature" || !feature.geometry) return;
@@ -162,53 +207,54 @@ async function main() {
 
       const idSeed = `${sourceFile}:${featureIndex}:${textRaw}`;
       const id = sha1(idSeed).slice(0, 16);
-      const displayText = placeName ? `${placeName} - ${textRaw}` : textRaw;
 
-      indexItems.push({
+      items.push({
         id,
-        text: displayText,
-        rawText: textRaw,
-        ...(placeName ? { placeName } : {}),
-        textNormalized: normalizeText(displayText),
-        sourceGroup,
-        sourceFile,
-        mapId,
-        mapName,
-        featureIndex,
+        text: textRaw,
         lon,
         lat,
+        map: mapId,
+        ...(sheet ? { sheet } : {}),
       });
 
-      sourceSummary.get(sourceGroup)!.featureCount += 1;
+      stats.featureCount += 1;
     });
   }
 
-  indexItems.sort((a, b) => {
-    const textCmp = a.text.localeCompare(b.text);
-    if (textCmp !== 0) return textCmp;
-    const sourceCmp = a.sourceFile.localeCompare(b.sourceFile);
-    if (sourceCmp !== 0) return sourceCmp;
-    return a.featureIndex - b.featureIndex;
-  });
+  // Write per-map files
+  console.log(`[2/3] Writing per-map index files for ${itemsByMap.size} maps`);
+  for (const [mapId, items] of itemsByMap) {
+    const mapInfo = MAP_ID_MAPPING[Object.keys(MAP_ID_MAPPING).find(key => MAP_ID_MAPPING[key].id === mapId)!];
+    if (!mapInfo) continue;
 
-  const indexPayload = {
-    generatedAt: new Date().toISOString(),
-    sourceRoot,
-    sourceFileCount: files.length,
-    itemCount: indexItems.length,
-    sourceGroups: [...sourceSummary.entries()]
-      .map(([sourceGroup, stats]) => ({ sourceGroup, ...stats }))
-      .sort((a, b) => a.sourceGroup.localeCompare(b.sourceGroup)),
-    items: indexItems,
-  };
-  if (indexItems.length < 1) {
-    throw new Error(`Toponym source files were found but produced 0 index items. Refusing to write ${outIndex}.`);
+    // Sort items by text
+    items.sort((a, b) => a.text.localeCompare(b.text));
+
+    const mapDir = join(outDir, mapId);
+    await mkdir(mapDir, { recursive: true });
+
+    const output: PerMapOutput = {
+      generatedAt: new Date().toISOString(),
+      map: mapId,
+      mapLabel: mapInfo.label,
+      itemCount: items.length,
+      items,
+    };
+
+    const mapIndexPath = join(mapDir, `${mapId}Toponyms.json`);
+    await writeFile(mapIndexPath, JSON.stringify(output, null, 2), "utf-8");
+    console.log(`  Wrote ${mapIndexPath} (${items.length} items)`);
   }
 
-  console.log(`[2/2] Writing ${outIndex}`);
-  await writeFile(outIndex, JSON.stringify(indexPayload, null, 2), "utf-8");
-
-  console.log(`Done. files=${files.length}, items=${indexItems.length}`);
+  // Report summary
+  console.log(`[3/3] Summary`);
+  let totalItems = 0;
+  for (const [mapId, items] of itemsByMap) {
+    const stats = mapStats.get(mapId)!;
+    console.log(`  ${mapId}: ${items.length} items from ${stats.fileCount} files`);
+    totalItems += items.length;
+  }
+  console.log(`Total: ${totalItems} items across ${itemsByMap.size} maps`);
 }
 
 main().catch((error) => {

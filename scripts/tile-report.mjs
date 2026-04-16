@@ -29,7 +29,7 @@ const primit = [
 ];
 
 // Load cached info index (keyed by image service URL)
-const infoIndex = JSON.parse(readFileSync("build/iiif/info/index.json", "utf8"));
+const infoIndex = JSON.parse(readFileSync(".build-cache/iiif/info/index.json", "utf8"));
 
 function describeTiles(info) {
   // IIIF Image API 2: info.tiles = [{ width, height?, scaleFactors }]

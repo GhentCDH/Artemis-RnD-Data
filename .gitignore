@@ -25,6 +25,7 @@ logs/
 .eslintcache
 .cache
 *.tsbuildinfo
+.build-caches
 
 # IntelliJ based IDEs
 .idea
@@ -34,10 +35,13 @@ logs/
 
 # Artemis data pipeline
 cache/
+.build-cache/
 .bun/
 build/tmp/
 data/sources/Toponyms/*
 !data/sources/Toponyms/README.txt
+.codex
+llm.md
 
 # Windows junk
 Thumbs.db

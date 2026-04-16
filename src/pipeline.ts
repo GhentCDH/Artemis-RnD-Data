@@ -4,6 +4,7 @@ import { join, dirname } from "node:path";
 import { parseAnnotation, validateGeoreferencedMap } from "@allmaps/annotation";
 import { generateId } from "@allmaps/id";
 import { Image } from "@allmaps/iiif-parser";
+import sharp from "sharp";
 import { iiifSourceUrls, readSourceRegistry } from "./registry";
 
 // FLAG: set INCLUDE_NON_GEOREF=1 to also compile and include non-georeferenced manifests.
@@ -25,6 +26,16 @@ type SourceGroup = {
   sourceCollectionUrl: string;
   sourceCollectionLabel: string;
   refs: Array<{ url: string; label: string }>;
+};
+
+type SpriteFailure = {
+  mapId: string;
+  manifestId: string;
+  manifestLabel: string;
+  canvasId: string;
+  canvasAllmapsId: string;
+  serviceId: string;
+  reason: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -1108,9 +1119,23 @@ async function main() {
   const index: IndexEntry[] = [];
   const fixedManifests: SuccessfulFixManifest[] = [];
   const problematicManifests: ProblematicManifest[] = [];
+  const spriteFailures = new Map<string, SpriteFailure>();
   let georefManifests = 0;
   let compiledOk = 0;
   let newCanvasInfoCount = 0;
+
+  function recordSpriteFailure(failure: SpriteFailure) {
+    const key = `${failure.canvasAllmapsId}::${failure.serviceId}`;
+    const existing = spriteFailures.get(key);
+    if (!existing) {
+      spriteFailures.set(key, failure);
+      return;
+    }
+    if (existing.reason.startsWith("Sprite fetch failed:")) {
+      return;
+    }
+    spriteFailures.set(key, failure);
+  }
 
   for (const group of sourceGroups) {
     console.log(`  Source: ${group.sourceCollectionUrl}`);
@@ -1231,6 +1256,22 @@ async function main() {
 
   // Sprite generation helpers
   const ALLMAPS_SPRITE_MAX_SIZE = 128;
+  const ALLMAPS_SPRITESHEET_MAX_WIDTH = 4096;
+
+  type PackedSpriteSource = {
+    canvasItem: any;
+    imageId: string;
+    fullWidth: number;
+    fullHeight: number;
+    spriteWidth: number;
+    spriteHeight: number;
+    buffer: Buffer;
+  };
+
+  type PackedSpritePlacement = PackedSpriteSource & {
+    x: number;
+    y: number;
+  };
 
   function calculateSpriteSize(width: number, height: number): { width: number; height: number } {
     // Fit into a fixed 128px bounding box so the generated sprite always stays
@@ -1267,6 +1308,53 @@ async function main() {
     };
   }
 
+  function packSpritesIntoSheet(sprites: PackedSpriteSource[]): {
+    width: number;
+    height: number;
+    placements: PackedSpritePlacement[];
+  } {
+    if (sprites.length === 0) {
+      return { width: 0, height: 0, placements: [] };
+    }
+
+    const totalArea = sprites.reduce((sum, sprite) => sum + (sprite.spriteWidth * sprite.spriteHeight), 0);
+    const widestSprite = sprites.reduce((max, sprite) => Math.max(max, sprite.spriteWidth), 0);
+    const targetWidth = Math.max(
+      widestSprite,
+      Math.min(ALLMAPS_SPRITESHEET_MAX_WIDTH, Math.ceil(Math.sqrt(totalArea)))
+    );
+
+    let cursorX = 0;
+    let cursorY = 0;
+    let rowHeight = 0;
+    let sheetWidth = 0;
+    const placements: PackedSpritePlacement[] = [];
+
+    for (const sprite of [...sprites].sort((a, b) => b.spriteHeight - a.spriteHeight)) {
+      if (cursorX > 0 && cursorX + sprite.spriteWidth > targetWidth) {
+        cursorX = 0;
+        cursorY += rowHeight;
+        rowHeight = 0;
+      }
+
+      placements.push({
+        ...sprite,
+        x: cursorX,
+        y: cursorY
+      });
+
+      cursorX += sprite.spriteWidth;
+      rowHeight = Math.max(rowHeight, sprite.spriteHeight);
+      sheetWidth = Math.max(sheetWidth, cursorX);
+    }
+
+    return {
+      width: sheetWidth,
+      height: cursorY + rowHeight,
+      placements
+    };
+  }
+
   async function fetchSprite(
     serviceUrl: string,
     infoJson: any,
@@ -1282,6 +1370,12 @@ async function main() {
     const parsedImage = Image.parse(infoJson);
     const parserRequest = parsedImage.getImageRequest(spriteSize);
     const parserUrl = parsedImage.getImageUrl(parserRequest);
+    const localResizeFallbackUrls = [
+      `${normalizedServiceUrl}/full/full/0/default.jpg`,
+      `${normalizedServiceUrl}/full/max/0/default.jpg`,
+      `${normalizedServiceUrl}/full/full/0/native.jpg`,
+      `${normalizedServiceUrl}/full/max/0/native.jpg`
+    ];
     const candidateUrls = [
       // Prefer explicit width/height because this server often rejects canonical
       // IIIF v2 `w,` URLs with 502s for otherwise valid images.
@@ -1295,20 +1389,75 @@ async function main() {
     const seen = new Set<string>();
     let buffer: Buffer | null = null;
     const errors: string[] = [];
+    const retryableStatuses = new Set([429, 500, 502, 503, 504]);
 
     for (const imageUrl of candidateUrls) {
       if (seen.has(imageUrl)) continue;
       seen.add(imageUrl);
-      try {
-        const res = await fetch(imageUrl);
-        if (!res.ok) {
-          errors.push(`${res.status} ${imageUrl}`);
-          continue;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const res = await fetch(imageUrl);
+          if (!res.ok) {
+            if (retryableStatuses.has(res.status) && attempt < 3) {
+              await Bun.sleep(250 * attempt);
+              continue;
+            }
+            errors.push(`${res.status} ${imageUrl}`);
+            break;
+          }
+          buffer = Buffer.from(await res.arrayBuffer());
+          break;
+        } catch (err) {
+          if (attempt < 3) {
+            await Bun.sleep(250 * attempt);
+            continue;
+          }
+          errors.push(`${err instanceof Error ? err.message : String(err)} ${imageUrl}`);
         }
-        buffer = Buffer.from(await res.arrayBuffer());
+      }
+      if (buffer) {
         break;
-      } catch (err) {
-        errors.push(`${err instanceof Error ? err.message : String(err)} ${imageUrl}`);
+      }
+    }
+
+    if (!buffer) {
+      for (const imageUrl of localResizeFallbackUrls) {
+        if (seen.has(imageUrl)) continue;
+        seen.add(imageUrl);
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const res = await fetch(imageUrl);
+            if (!res.ok) {
+              if (retryableStatuses.has(res.status) && attempt < 2) {
+                await Bun.sleep(400 * attempt);
+                continue;
+              }
+              errors.push(`${res.status} ${imageUrl}`);
+              break;
+            }
+
+            const originalBuffer = Buffer.from(await res.arrayBuffer());
+            buffer = await sharp(originalBuffer)
+              .resize({
+                width: spriteSize.width,
+                height: spriteSize.height,
+                fit: "inside",
+                withoutEnlargement: true
+              })
+              .jpeg({ quality: 80 })
+              .toBuffer();
+            break;
+          } catch (err) {
+            if (attempt < 2) {
+              await Bun.sleep(400 * attempt);
+              continue;
+            }
+            errors.push(`${err instanceof Error ? err.message : String(err)} ${imageUrl}`);
+          }
+        }
+        if (buffer) {
+          break;
+        }
       }
     }
 
@@ -1383,59 +1532,43 @@ async function main() {
             }
           }
 
-          // Sprite generation (after georef and info are obtained)
-          let sprite: string | null = null;
-          let spriteWidth: number | null = null;
-          let spriteHeight: number | null = null;
-          let allmapsSprite:
-            | {
-                imageId: string;
-                scaleFactor: number;
-                x: number;
-                y: number;
-                width: number;
-                height: number;
-              }
-            | null = null;
+          const canvasItem: any = {
+            id: canvasId,
+            canvasAllmapsId,
+            info,
+            georeferencedMap
+          };
 
           if (info && georeferencedMap && serviceId) {
             const spriteSize = calculateSpriteSize(info.width, info.height);
             const cacheKey = `${canvasAllmapsId}_${spriteSize.width}x${spriteSize.height}.jpg`;
             const cachePath = `.build-cache/sprites/${mapId}/${cacheKey}`;
-            const outPath = `build/IIIF/${mapId}/sprites/${canvasAllmapsId}.jpg`;
 
             try {
               const buffer = await fetchSprite(serviceId, info, spriteSize, cachePath);
-              await mkdir(dirname(outPath), { recursive: true });
-              await writeFile(outPath, buffer);
-
-              sprite = `IIIF/${mapId}/sprites/${canvasAllmapsId}.jpg`;
-              spriteWidth = spriteSize.width;
-              spriteHeight = spriteSize.height;
-              allmapsSprite = buildAllmapsSprite(
-                georeferencedMap.resource.id,
-                info.width,
-                info.height,
-                spriteSize.width,
-                spriteSize.height
-              );
+              canvasItem._spriteSource = {
+                imageId: georeferencedMap.resource.id,
+                fullWidth: info.width,
+                fullHeight: info.height,
+                spriteWidth: spriteSize.width,
+                spriteHeight: spriteSize.height,
+                buffer
+              };
             } catch (err) {
+              recordSpriteFailure({
+                mapId,
+                manifestId: String(manifestData["@id"] ?? "").trim(),
+                manifestLabel: String(entry.label ?? manifestData.label ?? "").trim(),
+                canvasId,
+                canvasAllmapsId,
+                serviceId,
+                reason: err instanceof Error ? err.message : String(err)
+              });
               console.warn(`  Sprite failed for ${canvasAllmapsId}: ${err}`);
             }
           }
 
-          if (georeferencedMap) {
-            canvasItems.push({
-              id: canvasId,
-              canvasAllmapsId,
-              sprite,
-              spriteWidth,
-              spriteHeight,
-              allmapsSprite,
-              info,
-              georeferencedMap,
-            });
-          }
+          canvasItems.push(canvasItem);
         }
 
         if (canvasItems.length > 0) {
@@ -1452,9 +1585,111 @@ async function main() {
     }
 
     if (geomaps.length > 0) {
+      const spritesheetImagePath = `IIIF/${mapId}/sprites/sprites.jpg`;
+      const spritesheetJsonPath = `IIIF/${mapId}/sprites/sprites.json`;
+      const packedSprites: PackedSpriteSource[] = geomaps.flatMap((map) =>
+        (Array.isArray(map.canvases) ? map.canvases : []).flatMap((canvas: any) => {
+          const spriteSource = canvas?._spriteSource;
+          if (!spriteSource?.buffer) return [];
+          return [{
+            canvasItem: canvas,
+            imageId: String(spriteSource.imageId),
+            fullWidth: Number(spriteSource.fullWidth),
+            fullHeight: Number(spriteSource.fullHeight),
+            spriteWidth: Number(spriteSource.spriteWidth),
+            spriteHeight: Number(spriteSource.spriteHeight),
+            buffer: spriteSource.buffer as Buffer
+          }];
+        })
+      );
+
+      let spritesheetMeta: {
+        image: string;
+        json: string;
+        imageSize: [number, number];
+        count: number;
+      } | null = null;
+
+      if (packedSprites.length > 0) {
+        const { width, height, placements } = packSpritesIntoSheet(packedSprites);
+        const spritesDir = `build/IIIF/${mapId}/sprites`;
+        await mkdir(spritesDir, { recursive: true });
+
+        const sheet = sharp({
+          create: {
+            width,
+            height,
+            channels: 3,
+            background: { r: 255, g: 255, b: 255 }
+          }
+        }).composite(
+          placements.map((placement) => ({
+            input: placement.buffer,
+            left: placement.x,
+            top: placement.y
+          }))
+        );
+
+        await sheet.jpeg({ quality: 65 }).toFile(join(spritesDir, "sprites.jpg"));
+
+        const spritesJson = placements.map((placement) => ({
+          imageId: placement.imageId,
+          scaleFactor: Math.max(
+            placement.fullWidth / placement.spriteWidth,
+            placement.fullHeight / placement.spriteHeight
+          ),
+          x: placement.x,
+          y: placement.y,
+          width: placement.spriteWidth,
+          height: placement.spriteHeight
+        }));
+
+        await writeFile(join(spritesDir, "sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+
+        for (const placement of placements) {
+          placement.canvasItem._spriteRepresented = true;
+        }
+
+        spritesheetMeta = {
+          image: spritesheetImagePath,
+          json: spritesheetJsonPath,
+          imageSize: [width, height],
+          count: placements.length
+        };
+      }
+
+      const missingSprites = geomaps.flatMap((map) =>
+        (Array.isArray(map.canvases) ? map.canvases : []).flatMap((canvas: any) => {
+          const expectsSprite = Boolean(canvas?.georeferencedMap && canvas?.info);
+          if (!expectsSprite || canvas?._spriteRepresented) return [];
+          return [{
+            mapId,
+            manifestId: String(map?.id ?? ""),
+            manifestLabel: String(map?.label ?? ""),
+            canvasId: String(canvas?.id ?? ""),
+            canvasAllmapsId: String(canvas?.canvasAllmapsId ?? ""),
+            serviceId: String(canvas?.info?.["@id"] ?? canvas?.info?.id ?? ""),
+            reason: "Canvas expected a sprite but was not represented in the generated spritesheet"
+          } satisfies SpriteFailure];
+        })
+      );
+      if (missingSprites.length > 0) {
+        for (const failure of missingSprites) {
+          recordSpriteFailure(failure);
+        }
+      }
+
+      for (const map of geomaps) {
+        for (const canvas of Array.isArray(map.canvases) ? map.canvases : []) {
+          delete canvas._spriteSource;
+          delete canvas._spriteRepresented;
+        }
+      }
+
       const geomapsBundle = {
         generatedAt: new Date().toISOString(),
         mapId,
+        sprites: spritesheetMeta,
         maps: geomaps
       };
       await writeFile(`build/IIIF/${mapId}_geomaps.json`, JSON.stringify(geomapsBundle, null, 2), "utf-8");
@@ -1501,13 +1736,26 @@ async function main() {
       `       annotationPaths: ${m.annotationPaths.join(", ") || "-"}`,
       `       appliedFixes: ${m.appliedFixes.join(" | ") || "-"}`].join("\n")
   ).join("\n");
+  const spriteFailureList = [...spriteFailures.values()];
+  const spriteFailureLog = spriteFailureList.map((failure) =>
+    [`[SPRITE-MISSING] ${failure.canvasAllmapsId}  ${failure.manifestLabel || failure.manifestId}`,
+      `       manifest: ${failure.manifestId || "-"}`,
+      `       canvas: ${failure.canvasId || "-"}`,
+      `       service: ${failure.serviceId || "-"}`,
+      `       reason: ${failure.reason}`].join("\n")
+  ).join("\n");
   await writeFile(
     "logs/report.log",
     [`Annotation QA report — generated ${new Date().toISOString()}`, "",
       `Fixed manifests: ${fixedManifests.length}`, fixedManifests.length > 0 ? `\n${fixedLog}` : "  (none)", "",
-      `Excluded manifests: ${problematicManifests.length}`, problematicManifests.length > 0 ? `\n${problematicLog}` : "  (none)", ""].join("\n"),
+      `Excluded manifests: ${problematicManifests.length}`, problematicManifests.length > 0 ? `\n${problematicLog}` : "  (none)", "",
+      `Sprite failures: ${spriteFailureList.length}`, spriteFailureList.length > 0 ? `\n${spriteFailureLog}` : "  (none)", ""].join("\n"),
     "utf-8"
   );
+
+  if (spriteFailureList.length > 0) {
+    console.warn(`[WARN] ${spriteFailureList.length} canvas sprite(s) were missing from generated spritesheets. See logs/report.log`);
+  }
 
   // [Phase C] Generate Toponyms and Parcels
   console.log(`[4c/5] Generating Toponyms and Parcels...`);

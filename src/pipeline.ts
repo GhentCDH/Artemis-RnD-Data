@@ -503,6 +503,41 @@ function extractCanvasImageServices(man: V2Manifest): Record<string, string> {
 
 async function loadPublishedGeomapsAnnotationCache(): Promise<Map<string, any>> {
   const byCanvasId = new Map<string, any>();
+  let loadedCanvasesFromBuildCache = 0;
+  let loadedCanvasesFromGeomaps = 0;
+  let loadedMapsFromGeomaps = 0;
+  let geomapsFiles = 0;
+
+  // Primary bootstrap source: persistent internal cache of one georeferenced map
+  // per canvas. This survives build/ cleanup and should remain the source of truth
+  // for subsequent crawls.
+  try {
+    const entries = await readdir(".build-cache/allmaps/canvases", { withFileTypes: true });
+    const files = entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .map((entry) => entry.name)
+      .sort();
+
+    for (const file of files) {
+      try {
+        const raw = JSON.parse(await readFile(join(".build-cache/allmaps/canvases", file), "utf-8"));
+        const validated = validateGeoreferencedMap(raw);
+        const georeferencedMap = Array.isArray(validated) ? validated[0] : validated;
+        const canvasId = String(georeferencedMap?.resource?.partOf?.[0]?.id ?? "").trim();
+        if (!canvasId || byCanvasId.has(canvasId)) continue;
+        byCanvasId.set(canvasId, georeferencedMap);
+        loadedCanvasesFromBuildCache++;
+      } catch {
+        // Ignore malformed cache entries and continue loading the rest.
+      }
+    }
+  } catch {
+    // No internal cache yet — fall through to optional geomaps import.
+  }
+
+  // Secondary bootstrap source: previously published public geomaps bundles.
+  // Keep this as a compatibility import path so a fresh .build-cache can still
+  // be reconstructed from committed build artifacts.
   try {
     const entries = await readdir("build/IIIF", { withFileTypes: true });
     const files = entries
@@ -510,12 +545,11 @@ async function loadPublishedGeomapsAnnotationCache(): Promise<Map<string, any>> 
       .map((entry) => entry.name)
       .sort();
 
-    let loadedMaps = 0;
-    let loadedCanvases = 0;
+    geomapsFiles = files.length;
     for (const file of files) {
       const raw = JSON.parse(await readFile(join("build/IIIF", file), "utf-8"));
       const maps = Array.isArray(raw?.maps) ? raw.maps : [];
-      loadedMaps += maps.length;
+      loadedMapsFromGeomaps += maps.length;
       for (const map of maps) {
         const canvases = Array.isArray(map?.canvases) ? map.canvases : [];
         for (const canvas of canvases) {
@@ -526,14 +560,21 @@ async function loadPublishedGeomapsAnnotationCache(): Promise<Map<string, any>> 
             : (canvas?.georef ? parseAnnotation(canvas.georef)[0] : null);
           if (!georeferencedMap) continue;
           byCanvasId.set(canvasId, georeferencedMap);
-          loadedCanvases++;
+          loadedCanvasesFromGeomaps++;
         }
       }
     }
-
-    console.log(`  Published geomaps cache: ${files.length} bundle(s), ${loadedMaps} maps, ${loadedCanvases} canvases`);
   } catch {
-    console.log("  Published geomaps cache: none found, starting from empty local cache");
+    // Public geomaps are optional for bootstrap.
+  }
+
+  if (byCanvasId.size > 0) {
+    console.log(
+      `  Georef bootstrap cache: ${byCanvasId.size} canvases ` +
+      `(.build-cache=${loadedCanvasesFromBuildCache}, geomaps=${loadedCanvasesFromGeomaps} from ${geomapsFiles} bundle(s) / ${loadedMapsFromGeomaps} maps)`
+    );
+  } else {
+    console.log("  Georef bootstrap cache: empty");
   }
   return byCanvasId;
 }
@@ -1189,15 +1230,41 @@ async function main() {
   }
 
   // Sprite generation helpers
+  const ALLMAPS_SPRITE_MAX_SIZE = 128;
+
   function calculateSpriteSize(width: number, height: number): { width: number; height: number } {
-    const maxDim = Math.max(width, height);
-    // Use fixed size for all sprites: 512px longest dimension
-    // Balances preview quality with small file sizes
-    const targetLong = 512;
+    // Fit into a fixed 128px bounding box so the generated sprite always stays
+    // safely below Allmaps' current single-tile sprite limit.
+    const targetLong = ALLMAPS_SPRITE_MAX_SIZE;
     const aspect = width / height;
     return width >= height
-      ? { width: targetLong, height: Math.round(targetLong / aspect) }
-      : { width: Math.round(targetLong * aspect), height: targetLong };
+      ? { width: targetLong, height: Math.max(1, Math.round(targetLong / aspect)) }
+      : { width: Math.max(1, Math.round(targetLong * aspect)), height: targetLong };
+  }
+
+  function buildAllmapsSprite(
+    imageId: string,
+    fullWidth: number,
+    fullHeight: number,
+    spriteWidth: number,
+    spriteHeight: number
+  ): {
+    imageId: string;
+    scaleFactor: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
+    const scaleFactor = Math.max(fullWidth / spriteWidth, fullHeight / spriteHeight);
+    return {
+      imageId,
+      scaleFactor,
+      x: 0,
+      y: 0,
+      width: spriteWidth,
+      height: spriteHeight
+    };
   }
 
   async function fetchSprite(
@@ -1211,14 +1278,43 @@ async function main() {
       return await readFile(cachePath);
     } catch {}
 
-    // Use @allmaps/iiif-parser to construct the correct IIIF URL
+    const normalizedServiceUrl = serviceUrl.replace(/\/info\.json$/i, "").replace(/\/+$/, "");
     const parsedImage = Image.parse(infoJson);
-    const imageRequest = parsedImage.getImageRequest(spriteSize);
-    const imageUrl = parsedImage.getImageUrl(imageRequest);
+    const parserRequest = parsedImage.getImageRequest(spriteSize);
+    const parserUrl = parsedImage.getImageUrl(parserRequest);
+    const candidateUrls = [
+      // Prefer explicit width/height because this server often rejects canonical
+      // IIIF v2 `w,` URLs with 502s for otherwise valid images.
+      `${normalizedServiceUrl}/full/${spriteSize.width},${spriteSize.height}/0/default.jpg`,
+      // Some services behave better with the confined-size syntax.
+      `${normalizedServiceUrl}/full/!${spriteSize.width},${spriteSize.height}/0/default.jpg`,
+      // Keep the parser-generated canonical URL as a final fallback.
+      parserUrl
+    ];
 
-    const res = await fetch(imageUrl);
-    if (!res.ok) throw new Error(`Sprite fetch failed: ${res.status} ${imageUrl}`);
-    const buffer = Buffer.from(await res.arrayBuffer());
+    const seen = new Set<string>();
+    let buffer: Buffer | null = null;
+    const errors: string[] = [];
+
+    for (const imageUrl of candidateUrls) {
+      if (seen.has(imageUrl)) continue;
+      seen.add(imageUrl);
+      try {
+        const res = await fetch(imageUrl);
+        if (!res.ok) {
+          errors.push(`${res.status} ${imageUrl}`);
+          continue;
+        }
+        buffer = Buffer.from(await res.arrayBuffer());
+        break;
+      } catch (err) {
+        errors.push(`${err instanceof Error ? err.message : String(err)} ${imageUrl}`);
+      }
+    }
+
+    if (!buffer) {
+      throw new Error(`Sprite fetch failed: ${errors.join(" | ")}`);
+    }
 
     await mkdir(dirname(cachePath), { recursive: true });
     await writeFile(cachePath, buffer);
@@ -1291,6 +1387,16 @@ async function main() {
           let sprite: string | null = null;
           let spriteWidth: number | null = null;
           let spriteHeight: number | null = null;
+          let allmapsSprite:
+            | {
+                imageId: string;
+                scaleFactor: number;
+                x: number;
+                y: number;
+                width: number;
+                height: number;
+              }
+            | null = null;
 
           if (info && georeferencedMap && serviceId) {
             const spriteSize = calculateSpriteSize(info.width, info.height);
@@ -1306,6 +1412,13 @@ async function main() {
               sprite = `IIIF/${mapId}/sprites/${canvasAllmapsId}.jpg`;
               spriteWidth = spriteSize.width;
               spriteHeight = spriteSize.height;
+              allmapsSprite = buildAllmapsSprite(
+                georeferencedMap.resource.id,
+                info.width,
+                info.height,
+                spriteSize.width,
+                spriteSize.height
+              );
             } catch (err) {
               console.warn(`  Sprite failed for ${canvasAllmapsId}: ${err}`);
             }
@@ -1318,6 +1431,7 @@ async function main() {
               sprite,
               spriteWidth,
               spriteHeight,
+              allmapsSprite,
               info,
               georeferencedMap,
             });

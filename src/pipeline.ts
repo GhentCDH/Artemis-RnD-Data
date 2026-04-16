@@ -1253,13 +1253,43 @@ async function main() {
     }
   }
 
+  // Helper functions for pruning geomaps data
+  function pruneAnnotationPage(page: any): any {
+    if (!page) return page;
+    const items = (page.items ?? []).map((item: any) => {
+      const pruned: any = {};
+      // Copy essential fields, skip created/modified and provider
+      for (const [key, value] of Object.entries(item)) {
+        if (key === "created" || key === "modified") continue;  // Skip timestamps
+        if (key === "target" && typeof value === "object") {
+          const target: any = { ...value as any };
+          if (target.source && typeof target.source === "object") {
+            target.source = { ...target.source };
+            delete (target.source as any).provider;  // Remove attribution
+          }
+          pruned[key] = target;
+        } else {
+          pruned[key] = value;
+        }
+      }
+      return pruned;
+    });
+    return { ...page, items };
+  }
+
+  function pruneInfo(info: any): any {
+    if (!info) return info;
+    const pruned = { ...info };
+    delete (pruned as any).sizes;  // Remove thumbnail pyramid (not used by Allmaps)
+    return pruned;
+  }
+
   // [Phase B] Generate per-map IIIF bundles
   console.log(`[4b/5] Generating per-map IIIF bundles...`);
   await mkdir("build/IIIF", { recursive: true });
 
   // Group entries by map ID
   const manifestsByMapId = new Map<string, typeof index>();
-  const imageServicesByMapId = new Map<string, Record<string, string>>();
 
   for (const entry of index) {
     const mapId = deriveMapId(entry.sourceCollectionUrl, entry.sourceCollectionLabel, registry);
@@ -1267,14 +1297,9 @@ async function main() {
 
     if (!manifestsByMapId.has(mapId)) {
       manifestsByMapId.set(mapId, []);
-      imageServicesByMapId.set(mapId, {});
     }
 
     manifestsByMapId.get(mapId)!.push(entry);
-
-    // Collect image services from manifests
-    const services = extractCanvasImageServices((await cachedJson(entry.sourceManifestUrl, "cache/manifests")) as V2Manifest);
-    Object.assign(imageServicesByMapId.get(mapId)!, services);
   }
 
   // Generate per-map IIIF files (only for mainLayers, not image collections like Massart)
@@ -1283,93 +1308,71 @@ async function main() {
     const isImageCollection = registry.imageCollections?.some((ic: any) => ic.id === mapId);
     if (isImageCollection) continue;
 
-    // Generate <mapId>_manifests.json — actual manifest content for this map
-    const manifestsByLabel: Record<string, any> = {};
-    const manifestsList: any[] = [];
+    // Generate <mapId>_geomaps.json — pre-linked bundle with manifests, canvases, info, and georefs
+    const geomaps: any[] = [];
     for (const entry of mapEntries) {
+      if (!entry.manifestAllmapsId) continue;  // Only include georeferenced manifests
       if (!entry.compiledManifestPath) continue;
-      try {
-        const manifestData = JSON.parse(await readFile(`.build-cache/${entry.compiledManifestPath}`, "utf-8"));
-        manifestsByLabel[entry.label] = manifestData;
-        manifestsList.push({ label: entry.label, manifest: manifestData });
-      } catch {
-        // Skip if manifest not found
-      }
-    }
-    const manifestsBundle = {
-      generatedAt: new Date().toISOString(),
-      mapId,
-      manifestCount: manifestsList.length,
-      manifests: manifestsByLabel
-    };
-    await writeFile(`build/IIIF/${mapId}_manifests.json`, JSON.stringify(manifestsBundle, null, 2), "utf-8");
 
-    // Generate <mapId>_info.json — actual canvas info.json responses for this map
-    const infoByService: Record<string, any> = {};
-    for (const entry of mapEntries) {
-      if (!entry.compiledManifestPath) continue;
       try {
         const manifestData = JSON.parse(await readFile(`.build-cache/${entry.compiledManifestPath}`, "utf-8"));
-        // Extract image services from manifest canvases
-        if (manifestData.sequences && Array.isArray(manifestData.sequences)) {
-          for (const sequence of manifestData.sequences) {
-            if (Array.isArray(sequence.canvases)) {
-              for (const canvas of sequence.canvases) {
-                if (canvas.images && Array.isArray(canvas.images)) {
-                  for (const image of canvas.images) {
-                    const resource = image.resource;
-                    if (resource && resource.service && typeof resource.service === 'object') {
-                      const serviceId = resource.service['@id'] || resource.service.id;
-                      if (serviceId && canvasInfoIndex[serviceId]) {
-                        infoByService[serviceId] = canvasInfoIndex[serviceId];
-                      }
-                    }
-                  }
-                }
-              }
+        const canvases = manifestData?.sequences?.[0]?.canvases ?? [];
+
+        const canvasItems: any[] = [];
+        for (const canvas of canvases) {
+          const canvasId = String(canvas?.["@id"] ?? "").trim();
+          if (!canvasId) continue;
+
+          // Get georef annotation for this canvas
+          const canvasAllmapsId = await generateId(canvasId);
+          const annotPath = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
+          let georef: any = null;
+          try {
+            const raw = JSON.parse(await readFile(annotPath, "utf-8"));
+            georef = pruneAnnotationPage(raw);
+          } catch {
+            // Canvas has no annotation, skip it
+            continue;
+          }
+
+          // Get info.json for this canvas's image service
+          let info: any = null;
+          const serviceId = String(canvas.images?.[0]?.resource?.service?.["@id"] ?? "").trim();
+          if (serviceId) {
+            const normalizedServiceId = serviceId.replace(/\/+$/, "");
+            const rawInfo = canvasInfoIndex[normalizedServiceId];
+            if (rawInfo) {
+              info = pruneInfo(rawInfo);
             }
           }
+
+          if (georef) {  // Only add canvas if it has georef
+            canvasItems.push({ id: canvasId, info, georef });
+          }
+        }
+
+        if (canvasItems.length > 0) {
+          geomaps.push({
+            id: String(manifestData["@id"] ?? "").trim(),
+            label: entry.label,
+            isVerzamelblad: entry.isVerzamelblad,
+            canvases: canvasItems,
+          });
         }
       } catch {
         // Skip if manifest processing fails
       }
     }
-    const infoBundle = {
-      generatedAt: new Date().toISOString(),
-      mapId,
-      services: infoByService
-    };
-    await writeFile(`build/IIIF/${mapId}_info.json`, JSON.stringify(infoBundle, null, 2), "utf-8");
 
-    // Generate georef/<mapId>.json — georeference annotations by canvas
-    const georefByCanvas: Record<string, any> = {};
-    for (const entry of mapEntries) {
-      if (!entry.manifestAllmapsId) continue;
-      try {
-        const manifest = (await cachedJson(entry.sourceManifestUrl, "cache/manifests")) as V2Manifest;
-        const canvasIds = extractCanvasIdsFromV2Manifest(manifest);
-        for (const canvasId of canvasIds) {
-          const canvasAllmapsId = await generateId(canvasId);
-          const annotPath = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
-          try {
-            const annotData = JSON.parse(await readFile(annotPath, "utf-8"));
-            georefByCanvas[canvasId] = annotData;
-          } catch {
-            // Canvas has no annotation, skip
-          }
-        }
-      } catch {
-        // Skip if manifest not found
-      }
+    if (geomaps.length > 0) {
+      const geomapsBundle = {
+        generatedAt: new Date().toISOString(),
+        mapId,
+        maps: geomaps
+      };
+      await writeFile(`build/IIIF/${mapId}_geomaps.json`, JSON.stringify(geomapsBundle, null, 2), "utf-8");
+      console.log(`  Generated geomaps bundle for ${mapId}: ${geomaps.length} georeferenced maps, ${geomaps.reduce((sum, m) => sum + m.canvases.length, 0)} canvases`);
     }
-    const georefIndex = {
-      generatedAt: new Date().toISOString(),
-      mapId,
-      georefByCanvas
-    };
-    await writeFile(`build/IIIF/georef/${mapId}.json`, JSON.stringify(georefIndex, null, 2), "utf-8");
-
-    console.log(`  Generated IIIF bundles for ${mapId}: ${mapEntries.length} manifests`);
   }
 
   const indexOut = {
@@ -1379,10 +1382,6 @@ async function main() {
     compiledOk,
     // Only include mainLayers in domains, not image collections
     domains: Array.from(manifestsByMapId.keys()).filter((mapId) => !registry.imageCollections?.some((ic: any) => ic.id === mapId)),
-    imageServices: Array.from(imageServicesByMapId.entries()).reduce((acc, [mapId, services]) => {
-      acc[mapId] = services;
-      return acc;
-    }, {} as Record<string, Record<string, string>>),
     layers: layerMeta,
     renderLayers: renderLayerMeta,
     index

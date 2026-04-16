@@ -1,7 +1,9 @@
 import { mkdir, readFile, writeFile, stat, rm, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { basename, join } from "node:path";
+import { join, dirname } from "node:path";
+import { parseAnnotation, validateGeoreferencedMap } from "@allmaps/annotation";
 import { generateId } from "@allmaps/id";
+import { Image } from "@allmaps/iiif-parser";
 import { iiifSourceUrls, readSourceRegistry } from "./registry";
 
 // FLAG: set INCLUDE_NON_GEOREF=1 to also compile and include non-georeferenced manifests.
@@ -238,20 +240,16 @@ function serializeSvgPolygonPoints(points: Array<[number, number]>): string {
   return points.map(([x, y]) => `${x},${y}`).join(" ");
 }
 
-function extractGeoPointsFromMirroredAnnotation(raw: any): Array<[number, number]> {
+function extractGeoPointsFromGeoreferencedMap(raw: any): Array<[number, number]> {
   const out: Array<[number, number]> = [];
-  const items = Array.isArray(raw?.items) ? raw.items : [];
-  for (const item of items) {
-    const features = Array.isArray(item?.body?.features) ? item.body.features : [];
-    for (const feature of features) {
-      if (feature?.geometry?.type !== "Point") continue;
-      const c = feature?.geometry?.coordinates;
-      if (!Array.isArray(c) || c.length < 2) continue;
-      const lon = Number(c[0]);
-      const lat = Number(c[1]);
-      if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
-      out.push([lon, lat]);
-    }
+  const gcps = Array.isArray(raw?.gcps) ? raw.gcps : [];
+  for (const gcp of gcps) {
+    const c = gcp?.geo;
+    if (!Array.isArray(c) || c.length < 2) continue;
+    const lon = Number(c[0]);
+    const lat = Number(c[1]);
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+    out.push([lon, lat]);
   }
   return out;
 }
@@ -273,8 +271,8 @@ async function deriveAnnotationCenter(canvasAnnotationPaths: string[]): Promise<
   const merged: Array<[number, number]> = [];
   for (const relPath of uniqueStrings(canvasAnnotationPaths)) {
     try {
-      const raw = JSON.parse(await readFile(`build/${relPath}`, "utf-8"));
-      merged.push(...extractGeoPointsFromMirroredAnnotation(raw));
+      const raw = JSON.parse(await readFile(`.build-cache/${relPath}`, "utf-8"));
+      merged.push(...extractGeoPointsFromGeoreferencedMap(raw));
     } catch {
       // ignore bad/missing paths
     }
@@ -370,37 +368,29 @@ function convexHull(pointsInput: Array<[number, number]>): Array<[number, number
 
 function analyzeMirroredAnnotation(raw: any, annotationPath: string): AnnotationIssue[] {
   const issues: AnnotationIssue[] = [];
-  const items = Array.isArray(raw?.items) ? raw.items : [];
-  for (let idx = 0; idx < items.length; idx++) {
-    const item = items[idx];
-    const width = Number(item?.target?.source?.width);
-    const height = Number(item?.target?.source?.height);
-    const selector = item?.target?.selector?.value;
-    if (typeof selector === "string" && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
-      const points = parseSvgPolygonPoints(selector);
-      if (hasSelfIntersections(points)) {
-        issues.push({ code: "self-intersecting-mask", message: `item[${idx}] mask polygon is self-intersecting`, annotationPath });
-      }
-      const oobCount = points.filter(([x, y]) => x < 0 || y < 0 || x > width || y > height).length;
-      if (oobCount > 0) {
-        issues.push({ code: "mask-out-of-bounds", message: `item[${idx}] has ${oobCount} resource mask points outside image bounds`, annotationPath });
-      }
+  const width = Number(raw?.resource?.width);
+  const height = Number(raw?.resource?.height);
+  const mask = Array.isArray(raw?.resourceMask) ? raw.resourceMask : [];
+  if (mask.length > 0 && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+    if (hasSelfIntersections(mask)) {
+      issues.push({ code: "self-intersecting-mask", message: "resourceMask polygon is self-intersecting", annotationPath });
     }
-    const body = item?.body;
-    const features = Array.isArray(body?.features) ? body.features : [];
-    const pointFeatures = features.filter((f: any) => f?.geometry?.type === "Point");
-    const gcpCount = pointFeatures.length;
-    if (body?.transformation?.type === "thinPlateSpline" && gcpCount < 5) {
-      issues.push({ code: "tps-low-gcp", message: `item[${idx}] uses thinPlateSpline with only ${gcpCount} GCPs`, annotationPath });
+    const oobCount = mask.filter(([x, y]: [number, number]) => x < 0 || y < 0 || x > width || y > height).length;
+    if (oobCount > 0) {
+      issues.push({ code: "mask-out-of-bounds", message: `resourceMask has ${oobCount} points outside image bounds`, annotationPath });
     }
-    const geoKeys = pointFeatures
-      .map((f: any) => f?.geometry?.coordinates)
-      .filter((c: any) => Array.isArray(c) && c.length >= 2)
-      .map((c: any) => `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`);
-    const dupGeo = geoKeys.length - new Set(geoKeys).size;
-    if (dupGeo > 0) {
-      issues.push({ code: "duplicate-geo-gcp", message: `item[${idx}] has ${dupGeo} duplicate geographic GCP(s)`, annotationPath });
-    }
+  }
+  const gcps = Array.isArray(raw?.gcps) ? raw.gcps : [];
+  if (raw?.transformation?.type === "thinPlateSpline" && gcps.length < 5) {
+    issues.push({ code: "tps-low-gcp", message: `uses thinPlateSpline with only ${gcps.length} GCPs`, annotationPath });
+  }
+  const geoKeys = gcps
+    .map((gcp: any) => gcp?.geo)
+    .filter((c: any) => Array.isArray(c) && c.length >= 2)
+    .map((c: any) => `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`);
+  const dupGeo = geoKeys.length - new Set(geoKeys).size;
+  if (dupGeo > 0) {
+    issues.push({ code: "duplicate-geo-gcp", message: `has ${dupGeo} duplicate geographic GCP(s)`, annotationPath });
   }
   return issues;
 }
@@ -408,62 +398,42 @@ function analyzeMirroredAnnotation(raw: any, annotationPath: string): Annotation
 function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string[] } {
   const out = JSON.parse(JSON.stringify(raw));
   const appliedFixes: string[] = [];
-  const items = Array.isArray(out?.items) ? out.items : [];
-  for (let idx = 0; idx < items.length; idx++) {
-    const item = items[idx];
-    const width = Number(item?.target?.source?.width);
-    const height = Number(item?.target?.source?.height);
-    const selector = item?.target?.selector;
-    if (typeof selector?.value === "string" && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
-      const points = parseSvgPolygonPoints(selector.value);
-      if (points.length > 0) {
-        let clampedCount = 0;
-        const clamped = points.map(([x, y]) => {
-          const nx = Math.max(0, Math.min(width, x));
-          const ny = Math.max(0, Math.min(height, y));
-          if (nx !== x || ny !== y) clampedCount++;
-          return [nx, ny] as [number, number];
-        });
-        if (clampedCount > 0) {
-          selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(clamped)}"`);
-          appliedFixes.push(`clamped-mask-points:item[${idx}]:${clampedCount}`);
-        }
-        const normalized = normalizePolygon(parseSvgPolygonPoints(selector.value));
-        if (hasSelfIntersections(normalized)) {
-          const hull = convexHull(normalized);
-          if (hull.length >= 3 && !hasSelfIntersections(hull)) {
-            selector.value = selector.value.replace(/points="([^"]+)"/, `points="${serializeSvgPolygonPoints(hull)}"`);
-            appliedFixes.push(`repaired-self-intersection:item[${idx}]:convex-hull:${normalized.length}->${hull.length}`);
-          }
-        }
+  const width = Number(out?.resource?.width);
+  const height = Number(out?.resource?.height);
+  if (Array.isArray(out?.resourceMask) && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+    let clampedCount = 0;
+    out.resourceMask = out.resourceMask.map(([x, y]: [number, number]) => {
+      const nx = Math.max(0, Math.min(width, x));
+      const ny = Math.max(0, Math.min(height, y));
+      if (nx !== x || ny !== y) clampedCount++;
+      return [nx, ny] as [number, number];
+    });
+    if (clampedCount > 0) appliedFixes.push(`clamped-mask-points:${clampedCount}`);
+    const normalized = normalizePolygon(out.resourceMask);
+    if (hasSelfIntersections(normalized)) {
+      const hull = convexHull(normalized);
+      if (hull.length >= 3 && !hasSelfIntersections(hull)) {
+        out.resourceMask = hull;
+        appliedFixes.push(`repaired-self-intersection:convex-hull:${normalized.length}->${hull.length}`);
       }
     }
-    const body = item?.body;
-    const features = Array.isArray(body?.features) ? body.features : [];
-    if (features.length > 0) {
-      const seenGeo = new Set<string>();
-      let removed = 0;
-      const deduped: any[] = [];
-      for (const f of features) {
-        if (f?.geometry?.type !== "Point") { deduped.push(f); continue; }
-        const c = f?.geometry?.coordinates;
-        if (!Array.isArray(c) || c.length < 2) { deduped.push(f); continue; }
-        const key = `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`;
-        if (seenGeo.has(key)) { removed++; continue; }
-        seenGeo.add(key);
-        deduped.push(f);
-      }
-      if (removed > 0) {
-        body.features = deduped;
-        appliedFixes.push(`removed-duplicate-geo-gcp:item[${idx}]:${removed}`);
-      }
-    }
-    const pointFeatures = (Array.isArray(body?.features) ? body.features : []).filter((f: any) => f?.geometry?.type === "Point");
-    const gcpCount = pointFeatures.length;
-    if (body?.transformation?.type === "thinPlateSpline" && gcpCount < 5) {
-      body.transformation = { type: "polynomial", options: { order: 1 } };
-      appliedFixes.push(`downgraded-tps:item[${idx}]:gcp=${gcpCount}`);
-    }
+  }
+  if (Array.isArray(out?.gcps) && out.gcps.length > 0) {
+    const seenGeo = new Set<string>();
+    let removed = 0;
+    out.gcps = out.gcps.filter((gcp: any) => {
+      const c = gcp?.geo;
+      if (!Array.isArray(c) || c.length < 2) return true;
+      const key = `${Number(c[0]).toFixed(12)},${Number(c[1]).toFixed(12)}`;
+      if (seenGeo.has(key)) { removed++; return false; }
+      seenGeo.add(key);
+      return true;
+    });
+    if (removed > 0) appliedFixes.push(`removed-duplicate-geo-gcp:${removed}`);
+  }
+  if (out?.transformation?.type === "thinPlateSpline" && Array.isArray(out?.gcps) && out.gcps.length < 5) {
+    out.transformation = { type: "polynomial", options: { order: 1 } };
+    appliedFixes.push(`downgraded-tps:gcp=${out.gcps.length}`);
   }
   return { json: out, appliedFixes: uniqueStrings(appliedFixes) };
 }
@@ -531,81 +501,53 @@ function extractCanvasImageServices(man: V2Manifest): Record<string, string> {
   return result;
 }
 
-/**
- * Mirror a canvas-level Allmaps annotation to .build-cache/allmaps/canvases/<id>.json.
- * Combines the status check and fetch into one request (no separate HEAD/GET).
- */
-async function mirrorCanvasAnnotation(canvasAllmapsId: string): Promise<{ status: number; relPath: string }> {
-  const outAbs = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
-  const outRel = `allmaps/canvases/${canvasAllmapsId}.json`;
-  if (await exists(outAbs)) return { status: 200, relPath: outRel };
+async function loadPublishedGeomapsAnnotationCache(): Promise<Map<string, any>> {
+  const byCanvasId = new Map<string, any>();
+  try {
+    const entries = await readdir("build/IIIF", { withFileTypes: true });
+    const files = entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith("_geomaps.json"))
+      .map((entry) => entry.name)
+      .sort();
 
-  const res = await fetch(`https://annotations.allmaps.org/canvases/${canvasAllmapsId}`, { redirect: "follow" });
-  if (res.status !== 200) return { status: res.status, relPath: "" };
+    let loadedMaps = 0;
+    let loadedCanvases = 0;
+    for (const file of files) {
+      const raw = JSON.parse(await readFile(join("build/IIIF", file), "utf-8"));
+      const maps = Array.isArray(raw?.maps) ? raw.maps : [];
+      loadedMaps += maps.length;
+      for (const map of maps) {
+        const canvases = Array.isArray(map?.canvases) ? map.canvases : [];
+        for (const canvas of canvases) {
+          const canvasId = String(canvas?.id ?? "").trim();
+          if (!canvasId || byCanvasId.has(canvasId)) continue;
+          const georeferencedMap = canvas?.georeferencedMap
+            ? validateGeoreferencedMap(canvas.georeferencedMap)
+            : (canvas?.georef ? parseAnnotation(canvas.georef)[0] : null);
+          if (!georeferencedMap) continue;
+          byCanvasId.set(canvasId, georeferencedMap);
+          loadedCanvases++;
+        }
+      }
+    }
 
-  const json = await res.json();
-  await writeFile(outAbs, JSON.stringify(json, null, 2), "utf-8");
-  return { status: 200, relPath: outRel };
+    console.log(`  Published geomaps cache: ${files.length} bundle(s), ${loadedMaps} maps, ${loadedCanvases} canvases`);
+  } catch {
+    console.log("  Published geomaps cache: none found, starting from empty local cache");
+  }
+  return byCanvasId;
 }
 
-/**
- * For canvases that have no standalone canvas annotation in Allmaps (canvas endpoint → 404),
- * fetch the manifest-level annotation once and extract each canvas's items into a synthetic
- * canvas file in .build-cache/. This eliminates the need for a separate manifest mirror.
- *
- * Returns a map of canvasId → relPath for all canvases that were successfully covered.
- */
-async function fillUncoveredCanvasAnnotations(
-  manifestAllmapsId: string,
-  uncovered: Array<{ canvasId: string; canvasAllmapsId: string; imageServiceUrl: string }>
-): Promise<Record<string, string>> {
-  if (uncovered.length === 0) return {};
-
-  const result: Record<string, string> = {};
-  const needExtract: typeof uncovered = [];
-
-  for (const c of uncovered) {
-    const outAbs = `.build-cache/allmaps/canvases/${c.canvasAllmapsId}.json`;
-    if (await exists(outAbs)) {
-      result[c.canvasId] = `allmaps/canvases/${c.canvasAllmapsId}.json`;
-    } else {
-      needExtract.push(c);
-    }
-  }
-
-  if (needExtract.length === 0) return result;
-
-  const res = await fetch(`https://annotations.allmaps.org/manifests/${manifestAllmapsId}`, { redirect: "follow" });
-  if (res.status !== 200) return result;
-
-  const manifestAnnotation = await res.json();
-  const items: any[] = Array.isArray(manifestAnnotation?.items) ? manifestAnnotation.items : [];
-
-  for (const { canvasId, canvasAllmapsId, imageServiceUrl } of needExtract) {
-    const normalizedUrl = imageServiceUrl.replace(/\/+$/, "");
-    const matching = items.filter((item: any) => {
-      const src = item?.target?.source;
-      const srcId = (typeof src === "string" ? src : src?.id) ?? "";
-      return srcId.replace(/\/+$/, "") === normalizedUrl;
-    });
-    if (matching.length === 0) continue;
-
-    const synthetic = {
-      id: `https://annotations.allmaps.org/canvases/${canvasAllmapsId}`,
-      type: "AnnotationPage",
-      "@context": "http://www.w3.org/ns/anno.jsonld",
-      items: matching
-    };
-    await writeFile(`.build-cache/allmaps/canvases/${canvasAllmapsId}.json`, JSON.stringify(synthetic, null, 2), "utf-8");
-    result[canvasId] = `allmaps/canvases/${canvasAllmapsId}.json`;
-  }
-
-  return result;
+async function storeCanvasAnnotation(canvasAllmapsId: string, annotation: unknown): Promise<string> {
+  const outAbs = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
+  const outRel = `allmaps/canvases/${canvasAllmapsId}.json`;
+  await writeFile(outAbs, JSON.stringify(annotation, null, 2), "utf-8");
+  return outRel;
 }
 
 /**
  * Prepare manifest for compilation: add pipeline metadata.
- * Georeferencing data is accessed client-side from consolidated georef/<map>.json files.
+ * Georeferencing data is accessed client-side from consolidated geomaps bundles.
  */
 function compileV2Manifest(source: V2Manifest): V2Manifest {
   const out: V2Manifest = JSON.parse(JSON.stringify(source));
@@ -670,10 +612,10 @@ async function processManifestRef(
   { url, label }: { url: string; label: string },
   sourceCollectionUrl: string,
   sourceCollectionLabel: string,
-  buildBaseUrl: string | null,
   i: number,
   total: number,
-  existingCanvasInfoIds: Set<string>
+  existingCanvasInfoIds: Set<string>,
+  publishedGeomapsByCanvas: Map<string, any>
 ): Promise<
   | { kind: "ok"; entry: IndexEntry; georef: boolean; compiled: boolean; fixed?: SuccessfulFixManifest; canvasInfoEntries: Record<string, any> }
   | { kind: "problematic"; problematic: ProblematicManifest }
@@ -685,50 +627,29 @@ async function processManifestRef(
   const isVerzamelblad = hasVerzamelbladIdentifier(man, url, label);
   const manifestAllmapsId = await generateId(url);
 
-  // Mirror canvas-level annotations. One fetch per canvas (combines status check + download).
+  // Resolve georef annotations from the committed/published geomaps cache.
   const mirroredCanvasRelByCanvasId: Record<string, string> = {};
-  const canvasAllmapsIdByCanvasId: Record<string, string> = {};
-  let directCanvasHits = 0;
+  let cachedCanvasHits = 0;
 
   for (const canvasId of canvasIds) {
     const canvasAllmapsId = await generateId(canvasId);
-    canvasAllmapsIdByCanvasId[canvasId] = canvasAllmapsId;
-    const mirror = await mirrorCanvasAnnotation(canvasAllmapsId);
-    if (mirror.status === 200 && mirror.relPath) {
-      mirroredCanvasRelByCanvasId[canvasId] = mirror.relPath;
-      directCanvasHits++;
+    const cachedAnnotation = publishedGeomapsByCanvas.get(canvasId);
+    if (cachedAnnotation) {
+      mirroredCanvasRelByCanvasId[canvasId] = await storeCanvasAnnotation(canvasAllmapsId, cachedAnnotation);
+      cachedCanvasHits++;
     }
   }
 
-  // For canvases with no standalone canvas annotation, try extracting from the manifest
-  // annotation (fetched once). Saves a separate allmaps/manifests/ directory entirely.
-  const uncoveredCanvasIds = canvasIds.filter((id) => !mirroredCanvasRelByCanvasId[id]);
-  let manifestExtractedHits = 0;
-  if (uncoveredCanvasIds.length > 0) {
-    const canvasImageServices = extractCanvasImageServices(man);
-    const uncovered = uncoveredCanvasIds
-      .map((canvasId) => ({
-        canvasId,
-        canvasAllmapsId: canvasAllmapsIdByCanvasId[canvasId],
-        imageServiceUrl: canvasImageServices[canvasId] ?? ""
-      }))
-      .filter((c) => c.imageServiceUrl && c.canvasAllmapsId);
-
-    const extracted = await fillUncoveredCanvasAnnotations(manifestAllmapsId, uncovered);
-    for (const [canvasId, relPath] of Object.entries(extracted)) {
-      mirroredCanvasRelByCanvasId[canvasId] = relPath;
-      manifestExtractedHits++;
-    }
+  if (cachedCanvasHits > 0) {
+    console.log(`    geomaps cache hit: ${cachedCanvasHits}/${canvasIds.length} canvases`);
   }
 
   const georefDetected = Object.keys(mirroredCanvasRelByCanvasId).length > 0;
   const georefDetectedBy: IndexEntry["georefDetectedBy"] = !georefDetected
     ? undefined
-    : directCanvasHits > 0 && manifestExtractedHits > 0
-      ? "both"
-      : directCanvasHits > 0
-        ? "canvas"
-        : "manifest";
+    : cachedCanvasHits > 0
+      ? "canvas"
+      : undefined;
 
   // Non-georef manifest: slim index entry, skip compiled manifest (unless flag is set).
   if (!georefDetected) {
@@ -1081,6 +1002,7 @@ async function main() {
   await mkdir("cache/collections", { recursive: true });
   await mkdir("cache/manifests", { recursive: true });
   await mkdir("logs", { recursive: true });
+  const publishedGeomapsByCanvas = await loadPublishedGeomapsAnnotationCache();
 
   console.log("[0/5] Cleaning build output directories...");
   // Remove deprecated public-layout directories from earlier refactors.
@@ -1091,7 +1013,7 @@ async function main() {
     await rm(file, { force: true });
   }
   // Create public output directories
-  await mkdir("build/IIIF/georef", { recursive: true });
+  await mkdir("build/IIIF", { recursive: true });
   await mkdir("build/Toponyms", { recursive: true });
   await mkdir("build/Parcels", { recursive: true });
   await mkdir("build/Image collections", { recursive: true });
@@ -1120,8 +1042,6 @@ async function main() {
   const collectionUrls = iiifSourceUrls(registry);
   if (collectionUrls.length < 1) throw new Error("No IIIF sources found in data/sources/registry.json");
 
-  const buildBaseUrl = process.env.BUILD_BASE_URL ?? null;
-  const base = (path: string) => buildBaseUrl ? `${buildBaseUrl.replace(/\/+$/, "")}/${path}` : path;
   const limit = process.env.LIMIT ? Number(process.env.LIMIT) : undefined;
 
   console.log(`[1/5] Resolving manifests from ${collectionUrls.length} source(s)...`);
@@ -1162,7 +1082,7 @@ async function main() {
         console.warn(`[WARN] Known problematic manifest entering auto-fix path: ${ref.url} (${checkId})`);
       }
 
-      const result = await processManifestRef(ref, group.sourceCollectionUrl, group.sourceCollectionLabel, buildBaseUrl, i, slice.length, existingCanvasInfoIds);
+      const result = await processManifestRef(ref, group.sourceCollectionUrl, group.sourceCollectionLabel, i, slice.length, existingCanvasInfoIds, publishedGeomapsByCanvas);
       if (result.kind === "problematic") {
         problematicManifests.push(result.problematic);
         continue;
@@ -1185,7 +1105,7 @@ async function main() {
     layerId: string;
     sourceCollectionUrl: string;
     sourceCollectionLabel: string;
-    compiledCollectionPath: string;
+    geomapsPath: string;
     manifestCount: number;
     georefCount: number;
     singleCanvasGeorefCount: number;
@@ -1196,7 +1116,7 @@ async function main() {
     sourceCollectionUrl: string;
     sourceCollectionLabel: string;
     renderLayerKey: "default" | "verzamelblad";
-    compiledCollectionPath: string;
+    geomapsPath: string;
     manifestCount: number;
     georefCount: number;
     singleCanvasGeorefCount: number;
@@ -1206,18 +1126,16 @@ async function main() {
 
   for (const group of sourceGroups) {
     const entries = index.filter((e) => e.sourceCollectionUrl === group.sourceCollectionUrl);
-    // Collections only include entries that have a compiled manifest path.
     const compiledEntries = entries.filter((e) => e.compiledManifestPath);
-
     const colSlug = sha1(group.sourceCollectionUrl).slice(0, 16);
-    const colRelPath = `collections/${colSlug}.json`;
-    // Note: Collection files no longer written separately; per-map IIIF bundles are the canonical source
+    const mapId = deriveMapId(group.sourceCollectionUrl, group.sourceCollectionLabel, registry);
+    const geomapsPath = mapId ? `IIIF/${mapId}_geomaps.json` : "";
 
     layerMeta.push({
       layerId: colSlug,
       sourceCollectionUrl: group.sourceCollectionUrl,
       sourceCollectionLabel: group.sourceCollectionLabel,
-      compiledCollectionPath: colRelPath,
+      geomapsPath,
       manifestCount: compiledEntries.length,
       georefCount: compiledEntries.filter((e) => e.georefDetectedBy).length,
       singleCanvasGeorefCount: compiledEntries.filter((e) => e.annotSource === "single").length,
@@ -1233,17 +1151,15 @@ async function main() {
       const renderEntries = byRenderLayer[renderLayerKey];
       if (renderEntries.length < 1) continue;
       const renderLayerSlug = sha1(`${group.sourceCollectionUrl}::${renderLayerKey}`).slice(0, 16);
-      const renderLayerRelPath = `collections/${renderLayerSlug}.json`;
       const renderLayerLabel = renderLayerKey === "verzamelblad"
         ? `${group.sourceCollectionLabel || group.sourceCollectionUrl} - Verzamelblad`
         : group.sourceCollectionLabel || group.sourceCollectionUrl;
-      // Note: Render layer collection files no longer written separately
       renderLayerMeta.push({
         layerId: renderLayerSlug,
         sourceCollectionUrl: group.sourceCollectionUrl,
         sourceCollectionLabel: group.sourceCollectionLabel,
         renderLayerKey,
-        compiledCollectionPath: renderLayerRelPath,
+        geomapsPath,
         manifestCount: renderEntries.length,
         georefCount: renderEntries.filter((e) => e.georefDetectedBy).length,
         singleCanvasGeorefCount: renderEntries.filter((e) => e.annotSource === "single").length,
@@ -1254,27 +1170,15 @@ async function main() {
   }
 
   // Helper functions for pruning geomaps data
-  function pruneAnnotationPage(page: any): any {
-    if (!page) return page;
-    const items = (page.items ?? []).map((item: any) => {
-      const pruned: any = {};
-      // Copy essential fields, skip created/modified and provider
-      for (const [key, value] of Object.entries(item)) {
-        if (key === "created" || key === "modified") continue;  // Skip timestamps
-        if (key === "target" && typeof value === "object") {
-          const target: any = { ...value as any };
-          if (target.source && typeof target.source === "object") {
-            target.source = { ...target.source };
-            delete (target.source as any).provider;  // Remove attribution
-          }
-          pruned[key] = target;
-        } else {
-          pruned[key] = value;
-        }
-      }
-      return pruned;
-    });
-    return { ...page, items };
+  function pruneGeoreferencedMap(map: any): any {
+    if (!map) return map;
+    const pruned = JSON.parse(JSON.stringify(map));
+    delete pruned.created;
+    delete pruned.modified;
+    if (pruned.resource && typeof pruned.resource === "object") {
+      delete pruned.resource.provider;
+    }
+    return pruned;
   }
 
   function pruneInfo(info: any): any {
@@ -1282,6 +1186,43 @@ async function main() {
     const pruned = { ...info };
     delete (pruned as any).sizes;  // Remove thumbnail pyramid (not used by Allmaps)
     return pruned;
+  }
+
+  // Sprite generation helpers
+  function calculateSpriteSize(width: number, height: number): { width: number; height: number } {
+    const maxDim = Math.max(width, height);
+    // Use fixed size for all sprites: 512px longest dimension
+    // Balances preview quality with small file sizes
+    const targetLong = 512;
+    const aspect = width / height;
+    return width >= height
+      ? { width: targetLong, height: Math.round(targetLong / aspect) }
+      : { width: Math.round(targetLong * aspect), height: targetLong };
+  }
+
+  async function fetchSprite(
+    serviceUrl: string,
+    infoJson: any,
+    spriteSize: { width: number; height: number },
+    cachePath: string
+  ): Promise<Buffer> {
+    // Check disk cache first
+    try {
+      return await readFile(cachePath);
+    } catch {}
+
+    // Use @allmaps/iiif-parser to construct the correct IIIF URL
+    const parsedImage = Image.parse(infoJson);
+    const imageRequest = parsedImage.getImageRequest(spriteSize);
+    const imageUrl = parsedImage.getImageUrl(imageRequest);
+
+    const res = await fetch(imageUrl);
+    if (!res.ok) throw new Error(`Sprite fetch failed: ${res.status} ${imageUrl}`);
+    const buffer = Buffer.from(await res.arrayBuffer());
+
+    await mkdir(dirname(cachePath), { recursive: true });
+    await writeFile(cachePath, buffer);
+    return buffer;
   }
 
   // [Phase B] Generate per-map IIIF bundles
@@ -1326,10 +1267,10 @@ async function main() {
           // Get georef annotation for this canvas
           const canvasAllmapsId = await generateId(canvasId);
           const annotPath = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
-          let georef: any = null;
+          let georeferencedMap: any = null;
           try {
             const raw = JSON.parse(await readFile(annotPath, "utf-8"));
-            georef = pruneAnnotationPage(raw);
+            georeferencedMap = pruneGeoreferencedMap(raw);
           } catch {
             // Canvas has no annotation, skip it
             continue;
@@ -1346,8 +1287,40 @@ async function main() {
             }
           }
 
-          if (georef) {  // Only add canvas if it has georef
-            canvasItems.push({ id: canvasId, info, georef });
+          // Sprite generation (after georef and info are obtained)
+          let sprite: string | null = null;
+          let spriteWidth: number | null = null;
+          let spriteHeight: number | null = null;
+
+          if (info && georeferencedMap && serviceId) {
+            const spriteSize = calculateSpriteSize(info.width, info.height);
+            const cacheKey = `${canvasAllmapsId}_${spriteSize.width}x${spriteSize.height}.jpg`;
+            const cachePath = `.build-cache/sprites/${mapId}/${cacheKey}`;
+            const outPath = `build/IIIF/${mapId}/sprites/${canvasAllmapsId}.jpg`;
+
+            try {
+              const buffer = await fetchSprite(serviceId, info, spriteSize, cachePath);
+              await mkdir(dirname(outPath), { recursive: true });
+              await writeFile(outPath, buffer);
+
+              sprite = `IIIF/${mapId}/sprites/${canvasAllmapsId}.jpg`;
+              spriteWidth = spriteSize.width;
+              spriteHeight = spriteSize.height;
+            } catch (err) {
+              console.warn(`  Sprite failed for ${canvasAllmapsId}: ${err}`);
+            }
+          }
+
+          if (georeferencedMap) {
+            canvasItems.push({
+              id: canvasId,
+              canvasAllmapsId,
+              sprite,
+              spriteWidth,
+              spriteHeight,
+              info,
+              georeferencedMap,
+            });
           }
         }
 

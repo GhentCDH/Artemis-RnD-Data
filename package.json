@@ -12,7 +12,10 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@allmaps/id": "^1.0.0-beta.37"
+    "@allmaps/annotation": "^1.0.0-beta.36",
+    "@allmaps/id": "^1.0.0-beta.37",
+    "@allmaps/iiif-parser": "^1.0.0-beta.47",
+    "sharp": "^0.34.3"
   },
   "scripts": {
     "dev": "bun run src/index.ts",

@@ -12,7 +12,7 @@ import { iiifSourceUrls, readSourceRegistry } from "./registry";
 const INCLUDE_NON_GEOREF = !!process.env.INCLUDE_NON_GEOREF;
 const MASK_SIMPLIFY_MIN_POINTS = 12;
 const MASK_SIMPLIFY_MIN_DEVIATION = 3;
-const MASK_SIMPLIFY_DIAGONAL_FACTOR = 0.01;  // 1% of diagonal: 140px for 14k-diagonal (was 0.00015=3px, then 0.002=28px)
+const MASK_SIMPLIFY_DIAGONAL_FACTOR = 0.05;  // 5% of diagonal: only simplify clearly redundant points
 
 type V2Collection = {
   "@context"?: string;
@@ -1573,15 +1573,13 @@ async function main() {
         }
       };
 
-      // Add optional fields if transformation exists
-      if (body?.transformation) {
-        oldFormat.transformation = body.transformation;
-      }
-
       // Add GCPs if extracted
       if (gcps && gcps.length > 0) {
         oldFormat.gcps = gcps;
       }
+
+      // Use polynomial transformation for all (more stable than thinPlateSpline)
+      oldFormat.transformation = { type: "polynomial", options: { order: 1 } };
 
       // Add resourceMask if extracted
       if (resourceMask && resourceMask.length > 0) {

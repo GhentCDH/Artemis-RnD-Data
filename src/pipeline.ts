@@ -1988,6 +1988,7 @@ async function main() {
         );
 
         await writeFile(join(spritesDir, "sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+        await writeFile(join(spritesDir, "sprites_debug.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
 
         for (const placement of placements) {
           placement.canvasItem._spriteRepresented = true;

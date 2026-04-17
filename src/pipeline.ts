@@ -1619,10 +1619,13 @@ async function main() {
     fullWidth: number,
     fullHeight: number,
     spriteWidth: number,
-    spriteHeight: number
+    spriteHeight: number,
+    x = 0,
+    y = 0
   ): {
     imageId: string;
     scaleFactor: number;
+    spriteTileScale: number;
     x: number;
     y: number;
     width: number;
@@ -1632,8 +1635,9 @@ async function main() {
     return {
       imageId,
       scaleFactor,
-      x: 0,
-      y: 0,
+      spriteTileScale: ALLMAPS_SPRITE_MAX_SIZE / 256,
+      x,
+      y,
       width: spriteWidth,
       height: spriteHeight
     };
@@ -1971,22 +1975,34 @@ async function main() {
 
         await sheet.jpeg({ quality: 65 }).toFile(join(spritesDir, "sprites.jpg"));
 
-        const spritesJson = placements.map((placement) => ({
-          imageId: placement.imageId,
-          scaleFactor: Math.max(
-            placement.fullWidth / placement.spriteWidth,
-            placement.fullHeight / placement.spriteHeight
-          ),
-          x: placement.x,
-          y: placement.y,
-          width: placement.spriteWidth,
-          height: placement.spriteHeight
-        }));
+        const spritesJson = placements.map((placement) =>
+          buildAllmapsSprite(
+            placement.imageId,
+            placement.fullWidth,
+            placement.fullHeight,
+            placement.spriteWidth,
+            placement.spriteHeight,
+            placement.x,
+            placement.y
+          )
+        );
 
         await writeFile(join(spritesDir, "sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
 
         for (const placement of placements) {
           placement.canvasItem._spriteRepresented = true;
+          placement.canvasItem.sprite = spritesheetImagePath;
+          placement.canvasItem.allmapsSprite = buildAllmapsSprite(
+            placement.imageId,
+            placement.fullWidth,
+            placement.fullHeight,
+            placement.spriteWidth,
+            placement.spriteHeight,
+            placement.x,
+            placement.y
+          );
+          placement.canvasItem.spriteWidth = placement.spriteWidth;
+          placement.canvasItem.spriteHeight = placement.spriteHeight;
         }
 
         spritesheetMeta = {

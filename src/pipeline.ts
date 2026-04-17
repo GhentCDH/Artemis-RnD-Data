@@ -1526,7 +1526,76 @@ async function main() {
 
   // Helper functions for pruning geomaps data
 
-  // Parse SVG polygon points attribute into coordinate array
+  // Convert new AnnotationPage format back to old GeoreferencedMap format for viewer compatibility
+  function normalizeGeoreferencedMapFormat(map: any): any {
+    if (!map) return map;
+
+    // Check if this is the new AnnotationPage format
+    if (map.type === "AnnotationPage" && Array.isArray(map.items) && map.items.length > 0) {
+      const annotation = map.items[0];
+      if (!annotation || annotation.type !== "Annotation") return map;
+
+      const source = annotation.target?.source;
+      const selector = annotation.target?.selector;
+      const body = annotation.body;
+
+      if (!source || !selector) return map;
+
+      // Extract resourceMask from SVG selector if present
+      let resourceMask: Array<[number, number]> | undefined;
+      if (selector.type === "SvgSelector" && typeof selector.value === "string") {
+        const match = selector.value.match(/<polygon[^>]*points="([^"]*)"/);
+        if (match && match[1]) {
+          resourceMask = parseSvgPolygonPoints(match[1]);
+        }
+      }
+
+      // Extract GCPs from body if present
+      let gcps: any[] | undefined;
+      if (body?.type === "FeatureCollection" && Array.isArray(body.features)) {
+        gcps = body.features.map((feature: any) => ({
+          resource: feature.properties?.resourceCoords,
+          geo: feature.geometry?.coordinates
+        }));
+      }
+
+      // Rebuild in old GeoreferencedMap format
+      const oldFormat: any = {
+        "@context": "https://schemas.allmaps.org/map/2/context.json",
+        type: "GeoreferencedMap",
+        id: annotation.id || map.id,
+        resource: {
+          id: source.id,
+          height: source.height,
+          width: source.width,
+          type: source.type,
+          partOf: source.partOf
+        }
+      };
+
+      // Add optional fields if transformation exists
+      if (body?.transformation) {
+        oldFormat.transformation = body.transformation;
+      }
+
+      // Add GCPs if extracted
+      if (gcps && gcps.length > 0) {
+        oldFormat.gcps = gcps;
+      }
+
+      // Add resourceMask if extracted
+      if (resourceMask && resourceMask.length > 0) {
+        oldFormat.resourceMask = resourceMask;
+      }
+
+      return oldFormat;
+    }
+
+    // If already in old format, return as-is
+    return map;
+  }
+
+  // Parse SVG polygon points attribute into coordinate array (used by format converter)
   function parseSvgPolygonPoints(pointsStr: string): Array<[number, number]> {
     const coords: Array<[number, number]> = [];
     const numbers = pointsStr.match(/-?\d+(\.\d+)?/g) || [];
@@ -1536,101 +1605,57 @@ async function main() {
     return coords;
   }
 
-  // Encode coordinate array back into SVG polygon points attribute
-  function encodeSvgPolygonPoints(coords: Array<[number, number]>): string {
-    return coords.map(([x, y]) => `${Math.round(x)},${Math.round(y)}`).join(" ");
-  }
-
-  // Extract SVG selector value from georeferencedMap AnnotationPage structure
-  function extractSvgFromGeoreferencedMap(map: any): string | null {
-    try {
-      if (map?.items?.[0]?.target?.selector?.value) {
-        return map.items[0].target.selector.value;
-      }
-    } catch (e) {
-      // Fallback for any unexpected structure
-    }
-    return null;
-  }
-
-  // Get image dimensions from georeferencedMap
-  function getImageDimensionsFromGeoreferencedMap(map: any): { width: number; height: number } | null {
-    try {
-      const source = map?.items?.[0]?.target?.source;
-      if (source?.width && source?.height) {
-        return { width: Number(source.width), height: Number(source.height) };
-      }
-    } catch (e) {
-      // Fallback for any unexpected structure
-    }
-    return null;
-  }
-
-  // Update SVG selector value in georeferencedMap AnnotationPage structure
-  function updateSvgInGeoreferencedMap(map: any, newSvgValue: string): void {
-    try {
-      if (map?.items?.[0]?.target?.selector) {
-        map.items[0].target.selector.value = newSvgValue;
-      }
-    } catch (e) {
-      // Silently fail - structure may be unexpected
-    }
-  }
-
   function pruneGeoreferencedMap(map: any): { map: any; maskPointsPruned: number } {
     if (!map) return { map, maskPointsPruned: 0 };
-    const pruned = JSON.parse(JSON.stringify(map));
+
+    // First, normalize to old GeoreferencedMap format for viewer compatibility
+    let normalized = normalizeGeoreferencedMapFormat(map);
+    const pruned = JSON.parse(JSON.stringify(normalized));
     delete pruned.created;
     delete pruned.modified;
     let maskPointsPruned = 0;
 
-    // Handle old structure (if any still exist)
+    // Remove provider from resource if present
     if (pruned.resource && typeof pruned.resource === "object") {
       delete pruned.resource.provider;
     }
 
-    // Handle new AnnotationPage structure with SVG selectors
-    const svgValue = extractSvgFromGeoreferencedMap(pruned);
-    const dims = getImageDimensionsFromGeoreferencedMap(pruned);
+    // Optimize resourceMask if present (old format)
+    if (Array.isArray(pruned.resourceMask)) {
+      const width = Number(pruned.resource?.width);
+      const height = Number(pruned.resource?.height);
 
-    if (svgValue && dims && dims.width > 0 && dims.height > 0) {
-      const match = svgValue.match(/<polygon[^>]*points="([^"]*)"/);
-      if (match && match[1]) {
-        const pointsStr = match[1];
-        let coords = parseSvgPolygonPoints(pointsStr);
+      if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+        let coords = pruned.resourceMask;
         const startPointCount = coords.length;
 
         // Apply same optimizations as sanitizeMirroredAnnotation
         let clampedCount = 0;
         coords = coords.map(([x, y]: [number, number]) => {
-          const nx = Math.max(0, Math.min(dims.width, x));
-          const ny = Math.max(0, Math.min(dims.height, y));
+          const nx = Math.max(0, Math.min(width, x));
+          const ny = Math.max(0, Math.min(height, y));
           if (nx !== x || ny !== y) clampedCount++;
           return [nx, ny] as [number, number];
         });
 
-        let normalized = normalizePolygon(coords);
+        let polygonNormalized = normalizePolygon(coords);
 
         // Gentle simplification
-        let simplified = simplifyMaskPolygon(normalized, dims.width, dims.height);
-        if (simplified.length >= 3 && simplified.length < normalized.length) {
-          normalized = simplified;
+        let simplified = simplifyMaskPolygon(polygonNormalized, width, height);
+        if (simplified.length >= 3 && simplified.length < polygonNormalized.length) {
+          polygonNormalized = simplified;
         }
 
         // Convex hull as last resort for self-intersecting polygons
-        if (hasSelfIntersections(normalized)) {
-          const hull = convexHull(normalized);
+        if (hasSelfIntersections(polygonNormalized)) {
+          const hull = convexHull(polygonNormalized);
           if (hull.length >= 3 && !hasSelfIntersections(hull)) {
-            normalized = hull;
+            polygonNormalized = hull;
           }
         }
 
-        maskPointsPruned = startPointCount - normalized.length;
-
-        // Re-encode and update the SVG
-        const optimizedPointsStr = encodeSvgPolygonPoints(normalized);
-        const newSvg = svgValue.replace(/points="[^"]*"/, `points="${optimizedPointsStr}"`);
-        updateSvgInGeoreferencedMap(pruned, newSvg);
+        maskPointsPruned = startPointCount - polygonNormalized.length;
+        pruned.resourceMask = polygonNormalized;
       }
     }
 

@@ -6,13 +6,12 @@ import { generateId } from "@allmaps/id";
 import { Image } from "@allmaps/iiif-parser";
 import sharp from "sharp";
 import { iiifSourceUrls, readSourceRegistry } from "./registry";
+import { createSimplifier, getSimplificationConfig } from "./simplify";
 
 // FLAG: set INCLUDE_NON_GEOREF=1 to also compile and include non-georeferenced manifests.
 // By default only georeferenced manifests are compiled and listed in collections.
 const INCLUDE_NON_GEOREF = !!process.env.INCLUDE_NON_GEOREF;
-const MASK_SIMPLIFY_MIN_POINTS = 12;
-const MASK_SIMPLIFY_MIN_DEVIATION = 3;
-const MASK_SIMPLIFY_DIAGONAL_FACTOR = 0.05;  // 5% of diagonal: only simplify clearly redundant points
+const simplifyMask = createSimplifier(getSimplificationConfig());
 
 type V2Collection = {
   "@context"?: string;
@@ -389,94 +388,6 @@ function convexHull(pointsInput: Array<[number, number]>): Array<[number, number
   return [...lower, ...upper];
 }
 
-function pointDistance(a: [number, number], b: [number, number]): number {
-  return Math.hypot(b[0] - a[0], b[1] - a[1]);
-}
-
-function pointToSegmentDistance(
-  point: [number, number],
-  start: [number, number],
-  end: [number, number]
-): number {
-  const dx = end[0] - start[0];
-  const dy = end[1] - start[1];
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq <= 1e-9) return pointDistance(point, start);
-  const t = Math.max(0, Math.min(1, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / lenSq));
-  const proj: [number, number] = [start[0] + t * dx, start[1] + t * dy];
-  return pointDistance(point, proj);
-}
-
-function scoreMaskPoint(
-  prev: [number, number],
-  point: [number, number],
-  next: [number, number]
-): { deviation: number; span: number } {
-  const deviation = pointToSegmentDistance(point, prev, next);
-  const span = pointDistance(prev, point) + pointDistance(point, next);
-  return { deviation, span };
-}
-
-function simplifyMaskPolygon(
-  pointsInput: Array<[number, number]>,
-  width?: number,
-  height?: number
-): Array<[number, number]> {
-  let points = normalizePolygon(pointsInput);
-  if (points.length <= MASK_SIMPLIFY_MIN_POINTS) return points;
-
-  const diagonal = Number.isFinite(width) && Number.isFinite(height)
-    ? Math.hypot(Number(width), Number(height))
-    : 0;
-  const deviationThreshold = Math.max(
-    MASK_SIMPLIFY_MIN_DEVIATION,
-    diagonal * MASK_SIMPLIFY_DIAGONAL_FACTOR
-  );
-
-  const startLength = points.length;
-  let removedAny = true;
-  let iteration = 0;
-  while (removedAny && points.length > MASK_SIMPLIFY_MIN_POINTS) {
-    iteration++;
-    removedAny = false;
-    const candidates: Array<{ index: number; score: number }> = [];
-    for (let i = 0; i < points.length; i++) {
-      const prev = points[(i - 1 + points.length) % points.length];
-      const point = points[i];
-      const next = points[(i + 1) % points.length];
-      const { deviation, span } = scoreMaskPoint(prev, point, next);
-      if (span <= 1e-9) {
-        candidates.push({ index: i, score: -1 });
-        continue;
-      }
-      if (deviation > deviationThreshold) continue;
-      const score = deviation / deviationThreshold;
-      candidates.push({ index: i, score });
-    }
-
-    if (candidates.length < 1) break;
-    candidates.sort((a, b) => a.score - b.score);
-
-    // Try to remove multiple safe candidates in one batch iteration (30% max per cycle)
-    let removedThisRound = 0;
-    const maxRemovalPerRound = Math.max(1, Math.floor(candidates.length * 0.3));
-
-    for (const candidate of candidates) {
-      if (removedThisRound >= maxRemovalPerRound) break;
-      const nextPoints = points.filter((_, index) => index !== candidate.index);
-      if (nextPoints.length < 3 || hasSelfIntersections(nextPoints)) continue;
-      points = nextPoints;
-      removedThisRound++;
-      removedAny = true;
-    }
-  }
-
-  if (points.length < startLength) {
-    // Silently track the removal - will be reported in sanitizeMirroredAnnotation
-  }
-  return points;
-}
-
 function analyzeMirroredAnnotation(raw: any, annotationPath: string): AnnotationIssue[] {
   const issues: AnnotationIssue[] = [];
   const width = Number(raw?.resource?.width);
@@ -524,7 +435,7 @@ function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string
     let normalized = normalizePolygon(out.resourceMask);
 
     // First attempt: gentle simplification (works even on self-intersecting polygons)
-    let simplified = simplifyMaskPolygon(normalized, width, height);
+    let simplified = simplifyMask(normalized, width, height);
     if (simplified.length >= 3 && simplified.length < normalized.length) {
       stats.maskPointsPruned += normalized.length - simplified.length;
       appliedFixes.push(`simplified-mask:${normalized.length}->${simplified.length}`);
@@ -1336,6 +1247,13 @@ async function main() {
   await mkdir("logs", { recursive: true });
   const rawAnnotationsByCanvas = await loadRawAnnotationCache();
 
+  // Show which simplification algorithm is configured
+  const simplifyConfig = getSimplificationConfig();
+  const configStr = simplifyConfig.algorithm === "douglas-peucker"
+    ? `Douglas-Peucker (epsilon=${simplifyConfig.epsilon})`
+    : `Greedy Batching (diagonalFactor=${simplifyConfig.diagonalFactor}, minDeviation=${simplifyConfig.minDeviation})`;
+  console.log(`Using mask simplification: ${configStr}`);
+
   console.log("[0/5] Cleaning build output directories...");
   // Remove deprecated public-layout directories from earlier refactors.
   for (const dir of ["build/manifests", "build/collections", "build/allmaps", "build/Massart", "build/iiif"]) {
@@ -1639,7 +1557,7 @@ async function main() {
         let polygonNormalized = normalizePolygon(coords);
 
         // Gentle simplification
-        let simplified = simplifyMaskPolygon(polygonNormalized, width, height);
+        let simplified = simplifyMask(polygonNormalized, width, height);
         if (simplified.length >= 3 && simplified.length < polygonNormalized.length) {
           polygonNormalized = simplified;
         }

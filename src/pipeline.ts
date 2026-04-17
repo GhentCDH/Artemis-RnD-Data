@@ -2100,6 +2100,20 @@ async function main() {
     console.warn(`[WARN] ${spriteFailureList.length} canvas sprite(s) were missing from generated spritesheets. See logs/report.log`);
   }
 
+  // Generate debug spritesheets with pink tint
+  console.log(`[4b+/5] Generating debug spritesheets...`);
+  const spriteFiles = Array.from(new Bun.Glob("build/IIIF/*/sprites/sprites.jpg").scanSync());
+  for (const spritePath of spriteFiles) {
+    const debugPath = spritePath.replace("sprites.jpg", "sprites_debug.jpg");
+    await sharp(spritePath)
+      .modulate({
+        hue: 330,
+        saturation: 1.3
+      })
+      .toFile(debugPath);
+  }
+  console.log(`  Generated ${spriteFiles.length} debug spritesheet(s)`);
+
   // [Phase C] Generate Toponyms and Parcels
   console.log(`[4c/5] Generating Toponyms and Parcels...`);
   await generateToponyms(registry);

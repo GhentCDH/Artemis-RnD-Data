@@ -46,14 +46,14 @@ jobs:
               [[ -z "${pattern//[[:space:]]/}" ]] && continue
               find build static -name "$pattern" -delete 2>/dev/null || true
             done < .buildignore
-            rm -f .buildignore
+            git rm -f .buildignore
           fi
 
           # Add files
           git add build static
 
           # Commit if there are changes
-          if [ -n "$(git status --porcelain)" ]; then
+          if [ -n "$(git diff --cached --name-only)" ]; then
             git commit -m "deploy: update data from main ($COMMIT_SHA)"
             git push origin live
           else

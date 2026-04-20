@@ -12,7 +12,7 @@ Crawls source IIIF collections, mirrors Allmaps georeferencing annotations, bund
 
 ## Output Structure
 
-The `build/` directory contains all published artifacts:
+The `build/` directory contains all published artifacts: - Screw GIT
 
 ```
 build/

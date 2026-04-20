@@ -89,34 +89,9 @@ bun run buildSearch   # alias: bun run toponyms
 - **Minimal schema**: Published data includes only fields the viewer needs
 
 ### Configuration
-
-| Variable | Description | Default |
-|---|---|---|
-| `LIMIT` | Process first N manifests per source | all |
-| `INCLUDE_NON_GEOREF=1` | Include non-georeferenced manifests in compiled output | off |
-| `BUILD_BASE_URL` | Generate absolute URLs if hosting elsewhere | relative |
-| `MASK_SIMPLIFY_ALGORITHM` | `douglas-peucker` or `greedy-batching` | `douglas-peucker` |
-| `MASK_SIMPLIFY_EPSILON` | Douglas-Peucker epsilon in pixels | `2.0` |
-| `MASK_SIMPLIFY_DIAGONAL_FACTOR` | Greedy-batching diagonal multiplier | `0.75` |
-| `MASK_SIMPLIFY_MIN_DEVIATION` | Greedy-batching absolute minimum deviation | `3` |
-
-**Linux / macOS**
-```bash
-MASK_SIMPLIFY_EPSILON=6.0 bun run crawl
-LIMIT=10 MASK_SIMPLIFY_EPSILON=6.0 bun run crawl
-```
-
-**Windows (PowerShell)**
-```powershell
-$env:MASK_SIMPLIFY_EPSILON="6.0"; bun run crawl
-$env:LIMIT="10"; $env:MASK_SIMPLIFY_EPSILON="6.0"; bun run crawl
-```
-
-**Windows (Command Prompt)**
-```cmd
-set MASK_SIMPLIFY_EPSILON=6.0 && bun run crawl
-set LIMIT=10 && set MASK_SIMPLIFY_EPSILON=6.0 && bun run crawl
-```
+- `LIMIT`: process first N manifests per source (e.g., `LIMIT=10 bun run crawl`)
+- `INCLUDE_NON_GEOREF=1`: include non-georeferenced manifests in compiled output
+- `BUILD_BASE_URL`: generate absolute URLs if hosting elsewhere
 
 ### Persistence
 - `cache/`: kept across runs for efficiency

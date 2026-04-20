@@ -2193,6 +2193,9 @@ async function main() {
       );
 
       await sheet.jpeg({ quality: 65 }).toFile(join(massartDir, "Massart_sprites.jpg"));
+      await sharp(join(massartDir, "Massart_sprites.jpg"))
+        .modulate({ hue: 330, saturation: 3.5, brightness: 0.85 })
+        .toFile(join(massartDir, "Massart_sprites_debug.jpg"));
 
       const spritesJson: Record<string, { x: number; y: number; width: number; height: number }> = {};
       for (const p of placements) {

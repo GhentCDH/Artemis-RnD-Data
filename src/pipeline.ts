@@ -162,7 +162,7 @@ function normalizeMassartTitle(rawTitle: string): string {
     .trim();
 
   const withoutBracketedCatalogSuffix = withoutPhotograph
-    .replace(/\s*:\s*\[[^\]]*$/u, "")
+    .replace(/\s*:\s*\[[^\]]*\]\s*$/u, "")
     .trim();
 
   return withoutBracketedCatalogSuffix || withoutPhotograph || trimmed;
@@ -1627,6 +1627,7 @@ async function main() {
 
   // Sprite generation helpers
   const ALLMAPS_SPRITE_MAX_SIZE = 128;
+  const MASSART_SPRITE_MAX_SIZE = 256;
   const ALLMAPS_SPRITESHEET_MAX_WIDTH = 4096;
 
   type PackedSpriteSource = {
@@ -2108,13 +2109,114 @@ async function main() {
 
   if (ugentMassartItems.length > 0) {
     await mkdir("build/Image collections/Massart", { recursive: true });
-    await writeFile("build/Image collections/Massart/index.json", JSON.stringify({
+
+    // Fetch sprites for each Massart item
+    console.log(`[4c/5] Generating Massart sprites...`);
+    type MassartSpriteSource = {
+      repId: string;
+      fullWidth: number;
+      fullHeight: number;
+      spriteWidth: number;
+      spriteHeight: number;
+      buffer: Buffer;
+    };
+
+    const massartSpriteSources: MassartSpriteSource[] = [];
+
+    for (const item of ugentMassartItems) {
+      // Raw manifests are cached by sha1(url) regardless of georef status
+      const rawManifestPath = `.build-cache/manifests/${sha1(item.manifestUrl)}.json`;
+
+      try {
+        const manifestData = JSON.parse(await readFile(rawManifestPath, "utf-8"));
+        const canvas = manifestData?.sequences?.[0]?.canvases?.[0];
+        if (!canvas) continue;
+
+        const serviceId = String(canvas.images?.[0]?.resource?.service?.["@id"] ?? "").trim();
+        if (!serviceId) continue;
+
+        const normalizedServiceId = serviceId.replace(/\/+$/, "");
+        const info = canvasInfoIndex[normalizedServiceId]
+          ?? await cachedJson(`${normalizedServiceId}/info.json`, ".build-cache/iiif").catch(() => null);
+        if (!info) continue;
+
+        const spriteSize = calculateSpriteSize(info.width, info.height);
+        // Scale up to MASSART_SPRITE_MAX_SIZE (2x IIIF map sprites)
+        const scale = MASSART_SPRITE_MAX_SIZE / ALLMAPS_SPRITE_MAX_SIZE;
+        const massartSpriteSize = {
+          width: Math.round(spriteSize.width * scale),
+          height: Math.round(spriteSize.height * scale)
+        };
+        const cacheKey = `${item.repId}_${massartSpriteSize.width}x${massartSpriteSize.height}.jpg`;
+        const cachePath = `.build-cache/sprites/Massart/${cacheKey}`;
+
+        try {
+          const buffer = await fetchSprite(serviceId, info, massartSpriteSize, cachePath);
+          massartSpriteSources.push({
+            repId: item.repId,
+            fullWidth: info.width,
+            fullHeight: info.height,
+            spriteWidth: massartSpriteSize.width,
+            spriteHeight: massartSpriteSize.height,
+            buffer
+          });
+        } catch (err) {
+          console.warn(`  Massart sprite failed for ${item.repId}: ${err}`);
+        }
+      } catch {
+        // Skip if manifest unreadable
+      }
+    }
+
+    let massartSpriteMeta: { image: string; json: string; imageSize: [number, number]; count: number } | null = null;
+
+    if (massartSpriteSources.length > 0) {
+      const massartDir = "build/Image collections/Massart";
+
+      const packedForSheet: PackedSpriteSource[] = massartSpriteSources.map((s) => ({
+        canvasItem: null,
+        canvasAllmapsId: s.repId,
+        imageId: s.repId,
+        fullWidth: s.fullWidth,
+        fullHeight: s.fullHeight,
+        spriteWidth: s.spriteWidth,
+        spriteHeight: s.spriteHeight,
+        buffer: s.buffer
+      }));
+
+      const { width, height, placements } = packSpritesIntoSheet(packedForSheet);
+
+      const sheet = sharp({
+        create: { width, height, channels: 3, background: { r: 255, g: 255, b: 255 } }
+      }).composite(
+        placements.map((p) => ({ input: p.buffer, left: p.x, top: p.y }))
+      );
+
+      await sheet.jpeg({ quality: 65 }).toFile(join(massartDir, "Massart_sprites.jpg"));
+
+      const spritesJson: Record<string, { x: number; y: number; width: number; height: number }> = {};
+      for (const p of placements) {
+        spritesJson[p.canvasAllmapsId] = { x: p.x, y: p.y, width: p.spriteWidth, height: p.spriteHeight };
+      }
+      await writeFile(join(massartDir, "Massart_sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+
+      massartSpriteMeta = {
+        image: "Image collections/Massart/Massart_sprites.jpg",
+        json: "Image collections/Massart/Massart_sprites.json",
+        imageSize: [width, height],
+        count: placements.length
+      };
+      console.log(`  Massart sprites: ${placements.length} sprites packed (${width}×${height}px)`);
+    }
+
+    await writeFile("build/Image collections/Massart/Massart_index.json", JSON.stringify({
       generatedAt: new Date().toISOString(),
       totalItems: ugentMassartItems.length,
       coordsAvailable: ugentMassartItems.filter((i) => i.lat !== undefined).length,
+      sprites: massartSpriteMeta,
       items: ugentMassartItems,
     }, null, 2), "utf-8");
-    console.log(`  Massart index: ${ugentMassartItems.length} items → build/Image collections/Massart/index.json`);
+    console.log(`  Massart index: ${ugentMassartItems.length} items → build/Image collections/Massart/Massart_index.json`);
   }
 
   // QA report written to logs/ (git-ignored), not build/.

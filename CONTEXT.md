@@ -33,7 +33,9 @@ build/
 │       └── GereduceerdeKadaster.json
 ├── Image collections/
 │   └── Massart/
-│       └── index.json                         # UGent Massart photo metadata
+│       ├── Massart_index.json                 # UGent Massart photo metadata + sprite bundle ref
+│       ├── Massart_sprites.jpg                # Massart spritesheet (256px max, 2× IIIF map sprites)
+│       └── Massart_sprites.json               # Sprite rectangles keyed by repId
 ├── Toponyms/
 │   ├── PrimitiefKadaster/
 │   └── Ferraris/
@@ -178,7 +180,9 @@ The data repo currently publishes:
 - `build/IIIF/georef/<mapId>.json`
 - `build/Toponyms/<mapId>/<mapId>Toponyms.json`
 - `build/Parcels/<mapId>/<mapId>Parcels.geojson`
-- `build/Image collections/Massart/index.json`
+- `build/Image collections/Massart/Massart_index.json`
+- `build/Image collections/Massart/Massart_sprites.jpg`
+- `build/Image collections/Massart/Massart_sprites.json`
 
 The viewer now expects `*_geomaps.json` bundle-level sprite metadata plus `sprites.json` lookup, rather than per-canvas `allmapsSprite` duplication.
 

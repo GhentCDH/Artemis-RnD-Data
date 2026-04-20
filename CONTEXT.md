@@ -8,9 +8,11 @@
 - Public registry: `build/index.json`
 - Related viewer repo: `../Artemis-RND/app`
 
-## 2. Current Architecture (Implemented as of 2026-04-16)
+## 2. Current Architecture (Implemented as of 2026-04-16, partially outdated)
 
 ### Build Output Structure
+
+Note: the sprite layout described below reflects the current `dev` branch output, but it is not the desired final contract. See the TODOs and known issues sections for the required fixes.
 
 ```text
 build/
@@ -186,6 +188,17 @@ The viewer now expects `*_geomaps.json` bundle-level sprite metadata plus `sprit
 - Those canvases are logged as sprite failures and omitted from the spritesheet
 - Cache invalidation is still manual
 - Some viewer behavior still depends on layer conventions outside the pipeline
+- Confirmed bug: many georeferenced entries in `build/index.json` now lose `centerLon` / `centerLat`
+- Root cause: `deriveAnnotationCenter()` still expects georeferenced-map-shaped JSON with top-level `gcps`, but the pipeline now often reads raw Allmaps annotation pages from `.build-cache/allmaps/canvases/`
+- Confirmed bug: Massart title normalization is too aggressive and corrupts some titles by splitting on the first colon
+- Confirmed contract bug: the current shared-spritesheet output is not the required final direction; Artemis must publish one sprite image per canvas again
+
+## 7.1 Confirmed TODOs
+
+- Restore one sprite image per canvas in `build/IIIF/<mapId>/sprites/`; do not rely on a shared bundle spritesheet as the canonical output contract
+- Update `*_geomaps.json` generation to keep per-canvas sprite references stable for the viewer
+- Fix `deriveAnnotationCenter()` so `build/index.json` reliably emits `centerLon` / `centerLat` from the current annotation cache format
+- Fix Massart title cleanup so it removes catalog suffix noise without truncating legitimate title text
 
 ## 8. Configuration
 

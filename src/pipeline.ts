@@ -135,8 +135,7 @@ async function resolveUgentMassartSource(limit?: number): Promise<{ group: Sourc
       const repId = (link.redirect_to as string).match(/\/(\d+)$/)?.[1];
       if (!repId) return null;
       const manifestUrl = `${UGENT_IIIF_BASE}/view/iiif/presentation/${UGENT_INST}/${repId}/manifest?iiifVersion=2&updateStatistics=false`;
-      // Extract actual title: everything before first colon (scope identifier is after the colon)
-      const displayTitle = rawTitle.split(":")[0].trim();
+      const displayTitle = normalizeMassartTitle(rawTitle);
       return { title: displayTitle, year, location, lat: coords?.lat, lon: coords?.lon, manifestUrl, mmsId: recordId, repId };
     }));
     for (const r of results) {
@@ -152,6 +151,21 @@ async function resolveUgentMassartSource(limit?: number): Promise<{ group: Sourc
     group: { sourceCollectionUrl: "ugent://massart", sourceCollectionLabel: "Jean Massart photographs — Universiteit Gent", refs },
     items,
   };
+}
+
+function normalizeMassartTitle(rawTitle: string): string {
+  const trimmed = rawTitle.trim();
+  if (!trimmed) return trimmed;
+
+  const withoutPhotograph = trimmed
+    .replace(/\s*\/\s*\[photograph\]\s*$/i, "")
+    .trim();
+
+  const withoutBracketedCatalogSuffix = withoutPhotograph
+    .replace(/\s*:\s*\[[^\]]*$/u, "")
+    .trim();
+
+  return withoutBracketedCatalogSuffix || withoutPhotograph || trimmed;
 }
 
 type IndexEntry = {
@@ -276,6 +290,32 @@ function extractGeoPointsFromGeoreferencedMap(raw: any): Array<[number, number]>
   return out;
 }
 
+function extractGeoPointsFromAnnotationPage(raw: any): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  const items = Array.isArray(raw?.items) ? raw.items : [];
+  for (const item of items) {
+    const body = item?.body;
+    const features = Array.isArray(body?.features) ? body.features : [];
+    for (const feature of features) {
+      const resource = feature?.properties?.resourceCoords;
+      const geo = feature?.geometry?.coordinates;
+      if (!Array.isArray(resource) || resource.length < 2) continue;
+      if (!Array.isArray(geo) || geo.length < 2) continue;
+      const lon = Number(geo[0]);
+      const lat = Number(geo[1]);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+      out.push([lon, lat]);
+    }
+  }
+  return out;
+}
+
+function extractGeoPointsFromAnyAnnotation(raw: any): Array<[number, number]> {
+  if (!raw || typeof raw !== "object") return [];
+  if (raw.type === "AnnotationPage") return extractGeoPointsFromAnnotationPage(raw);
+  return extractGeoPointsFromGeoreferencedMap(raw);
+}
+
 function centerFromGeoPoints(points: Array<[number, number]>): [number, number] | null {
   if (points.length < 1) return null;
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -294,7 +334,7 @@ async function deriveAnnotationCenter(canvasAnnotationPaths: string[]): Promise<
   for (const relPath of uniqueStrings(canvasAnnotationPaths)) {
     try {
       const raw = JSON.parse(await readFile(`.build-cache/${relPath}`, "utf-8"));
-      merged.push(...extractGeoPointsFromGeoreferencedMap(raw));
+      merged.push(...extractGeoPointsFromAnyAnnotation(raw));
     } catch {
       // ignore bad/missing paths
     }
@@ -1591,6 +1631,7 @@ async function main() {
 
   type PackedSpriteSource = {
     canvasItem: any;
+    canvasAllmapsId: string;
     imageId: string;
     fullWidth: number;
     fullHeight: number;
@@ -1689,6 +1730,8 @@ async function main() {
       placements
     };
   }
+
+  type SpriteAtlasEntry = ReturnType<typeof buildAllmapsSprite>;
 
   async function fetchSprite(
     serviceUrl: string,
@@ -1890,6 +1933,7 @@ async function main() {
                 throw new Error("Cannot determine image ID from georeferencedMap.resource.id or serviceId");
               }
               canvasItem._spriteSource = {
+                canvasAllmapsId,
                 imageId,
                 fullWidth: info.width,
                 fullHeight: info.height,
@@ -1936,6 +1980,7 @@ async function main() {
           if (!spriteSource?.buffer) return [];
           return [{
             canvasItem: canvas,
+            canvasAllmapsId: String(spriteSource.canvasAllmapsId),
             imageId: String(spriteSource.imageId),
             fullWidth: Number(spriteSource.fullWidth),
             fullHeight: Number(spriteSource.fullHeight),
@@ -1975,25 +2020,10 @@ async function main() {
 
         await sheet.jpeg({ quality: 65 }).toFile(join(spritesDir, "sprites.jpg"));
 
-        const spritesJson = placements.map((placement) =>
-          buildAllmapsSprite(
-            placement.imageId,
-            placement.fullWidth,
-            placement.fullHeight,
-            placement.spriteWidth,
-            placement.spriteHeight,
-            placement.x,
-            placement.y
-          )
-        );
-
-        await writeFile(join(spritesDir, "sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
-        await writeFile(join(spritesDir, "sprites_debug.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+        const spritesJson: Record<string, SpriteAtlasEntry> = {};
 
         for (const placement of placements) {
-          placement.canvasItem._spriteRepresented = true;
-          placement.canvasItem.sprite = spritesheetImagePath;
-          placement.canvasItem.allmapsSprite = buildAllmapsSprite(
+          const spriteEntry = buildAllmapsSprite(
             placement.imageId,
             placement.fullWidth,
             placement.fullHeight,
@@ -2002,8 +2032,14 @@ async function main() {
             placement.x,
             placement.y
           );
-          placement.canvasItem.spriteWidth = placement.spriteWidth;
-          placement.canvasItem.spriteHeight = placement.spriteHeight;
+          spritesJson[placement.canvasAllmapsId] = spriteEntry;
+        }
+
+        await writeFile(join(spritesDir, "sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+        await writeFile(join(spritesDir, "sprites_debug.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+
+        for (const placement of placements) {
+          placement.canvasItem._spriteRepresented = true;
         }
 
         spritesheetMeta = {

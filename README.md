@@ -20,13 +20,8 @@ build/
 ├── IIIF/                                # Per-map IIIF bundles
 │   ├── PrimitiefKadaster_manifests.json # Actual IIIF manifest objects
 │   ├── PrimitiefKadaster_info.json      # IIIF Image API info.json responses
-│   ├── PrimitiefKadaster_geomaps.json   # Georeferenced maps + inline sprite references
 │   ├── GereduceerdeKadaster_manifests.json
 │   ├── GereduceerdeKadaster_info.json
-│   ├── PrimitiefKadaster/
-│   │   └── sprites/
-│   │       ├── sprites.jpg              # Shared spritesheet for all canvases in the map bundle
-│   │       └── sprites.json             # Sprite positions keyed by Allmaps image ID
 │   └── georef/                          # Consolidated canvas annotations
 │       ├── PrimitiefKadaster.json       # Georeferencing by canvas ID
 │       └── GereduceerdeKadaster.json
@@ -84,7 +79,6 @@ bun run buildSearch   # alias: bun run toponyms
 ### Output Design
 - **Per-map IIIF bundles**: All manifests and image service info are bundled by map for efficient bulk loading
 - **Consolidated georeferencing**: Canvas annotations are consolidated in `georef/<map>.json` keyed by canvas ID
-- **Spritesheets for Allmaps**: Each `IIIF/<map>/sprites/` directory contains a shared `sprites.jpg` and `sprites.json` manifest; canvas records in `*_geomaps.json` point into that shared sheet
 - **No broken references**: All paths in public output are resolvable; internal canvas annotation files stay in `.build-cache/`
 - **Minimal schema**: Published data includes only fields the viewer needs
 

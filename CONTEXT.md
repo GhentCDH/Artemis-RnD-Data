@@ -2,194 +2,224 @@
 
 ## 1. Overview
 
-- Repo purpose: Bun/TypeScript data pipeline for Artemis build artifacts.
-- Current branch: `master`
-- Main pipeline entrypoint: `src/pipeline.ts`
+- Repo purpose: Bun/TypeScript pipeline that compiles Artemis data artifacts for the viewer
+- Main entrypoint: `src/pipeline.ts`
 - Search entrypoint: `src/toponyms.ts`
-- Main published artifact: `build/index.json`
+- Public registry: `build/index.json`
+- Related viewer repo: `../Artemis-RND/app`
 
-## 2. Current Architecture (Implemented as of 2026-04-15)
+## 2. Current Architecture (Implemented as of 2026-04-16, partially outdated)
 
 ### Build Output Structure
 
-```
+Note: the sprite layout described below reflects the current `dev` branch output, but it is not the desired final contract. See the TODOs and known issues sections for the required fixes.
+
+```text
 build/
-├── index.json                                 # Entrypoint: domains, image services, manifest registry
-├── IIIF/                                      # Per-map IIIF bundles
-│   ├── PrimitiefKadaster_manifests.json       # 327 compiled IIIF manifests (actual objects)
+├── index.json                                 # Entrypoint: domains, render layers, manifest registry
+├── IIIF/
+│   ├── PrimitiefKadaster_manifests.json       # Compiled IIIF manifest objects
 │   ├── PrimitiefKadaster_info.json            # IIIF Image API info.json responses by service URL
-│   ├── GereduceerdeKadaster_manifests.json    # 248 compiled manifests
-│   ├── GereduceerdeKadaster_info.json
-│   └── georef/                                # Consolidated per-canvas georeferencing
-│       ├── PrimitiefKadaster.json             # {mapId, georefByCanvas: {canvasId: AnnotationPage}}
-│       └── GereduceerdeKadaster.json          # 231 georeferenced canvases total
-├── Image collections/                         # Non-georeferenced image collections
-│   └── Massart/
-│       └── index.json                         # 60 Jean Massart photograph items
-├── Toponyms/                                  # Per-map toponym search indices
+│   ├── PrimitiefKadaster_geomaps.json         # Georeferenced maps + bundle-level sprite metadata
 │   ├── PrimitiefKadaster/
-│   │   └── PrimitiefKadasterToponyms.json     # 2,514 toponyms (filtered for OCR artifacts)
+│   │   └── sprites/
+│   │       ├── sprites.jpg                    # Shared spritesheet for the map bundle
+│   │       └── sprites.json                   # Sprite rectangles keyed by Allmaps image ID
+│   ├── GereduceerdeKadaster_manifests.json
+│   ├── GereduceerdeKadaster_info.json
+│   ├── GereduceerdeKadaster_geomaps.json
+│   └── georef/
+│       ├── PrimitiefKadaster.json             # Consolidated georeferencing by canvas ID
+│       └── GereduceerdeKadaster.json
+├── Image collections/
+│   └── Massart/
+│       ├── Massart_index.json                 # UGent Massart photo metadata + sprite bundle ref
+│       ├── Massart_sprites.jpg                # Massart spritesheet (256px max, 2× IIIF map sprites)
+│       └── Massart_sprites.json               # Sprite rectangles keyed by repId
+├── Toponyms/
+│   ├── PrimitiefKadaster/
 │   └── Ferraris/
-│       └── FerrarisToponyms.json              # Filtered toponym items
-└── Parcels/                                   # Per-map historical parcel data
+└── Parcels/
     └── PrimitiefKadaster/
-        └── PrimitiefKadasterParcels.geojson   # 28,207 GeoJSON polygons
-
-Internal caching (.build-cache/, not in build/):
-├── manifests/                                 # Compiled manifest objects (before bundling)
-├── iiif/                                      # Internal IIIF processing data
-└── allmaps/canvases/                          # Individual canvas annotations (QA purposes only)
-    └── <id>.json                              # 423 canvas annotation files (not in public output)
 ```
 
-### Design Principles
+### Internal Working State
 
-1. **Public vs. Internal**: `build/` contains all public artifacts; `.build-cache/` holds internal processing state
-2. **Consolidated Bundles**: Instead of scattered files per manifest, IIIF output is bundled per-map
-3. **No Broken References**: All paths in public output are resolvable; internal canvas files aren't exposed
-4. **Minimal Schema**: Published data includes only fields the viewer actually needs
-5. **Per-Map Organization**: Toponyms, Parcels, and Manifests are organized per map ID for clarity
+```text
+cache/                                          # Persistent upstream fetch cache
+.build-cache/
+├── manifests/                                 # Compiled manifests before final bundling
+├── iiif/                                      # Internal IIIF processing data
+├── allmaps/canvases/                          # Mirrored canvas-level annotations for QA/debug
+└── sprites/<mapId>/                           # Cached fetched/downscaled sprite rasters
+logs/report.log                                # Annotation QA + sprite failure report
+```
 
-## 3. Implementation Details
+## 3. Pipeline Phases
 
 ### Phase A: Source Resolution
-- Reads from registry.json and direct IIIF/Primo APIs
-- Crawls manifests, deduplicates, filters by limit (if set)
-- Caches at fetch time to `cache/collections/` and `cache/manifests/`
 
-### Phase B: Manifest Processing  
-- Mirrors canvas-level Allmaps annotations to `.build-cache/allmaps/canvases/`
-- For missing canvas annotations, extracts from manifest-level annotations
-- Validates and sanitizes all annotations (QA step)
-- Compiles manifests with pipeline metadata
+- Reads configured IIIF collections from `data/sources/registry.json`
+- Resolves `ugent://massart` dynamically from the UGent Primo API
+- Deduplicates manifests and applies `LIMIT` if set
+- Uses `cache/` for collection and manifest fetch reuse
+
+### Phase B: Manifest Processing
+
+- Mirrors canvas-level Allmaps annotations into `.build-cache/allmaps/canvases/`
+- Falls back to manifest-level annotation extraction when canvas-level annotation is absent
+- Validates and sanitizes georeferencing
 - Stores compiled manifests in `.build-cache/manifests/`
+- Builds `canvasInfoIndex` keyed by normalized image service URL
 
-### Phase C: Bundling & Publishing
-- Groups manifests by map ID derived from source collection
-- Generates three bundles per map:
-  - `<mapId>_manifests.json`: actual manifest objects keyed by label
-  - `<mapId>_info.json`: IIIF Image API responses keyed by service URL
-  - `georef/<mapId>.json`: consolidated canvas annotations keyed by canvas ID
-- Generates Massart index and places under `Image collections/`
-- Publishes to `build/IIIF/`, `build/Image collections/`, `build/Toponyms/`, `build/Parcels/`
+### Phase C: Per-Map IIIF Bundling
 
-### Phase D: Search Artifacts
-- Generates per-map toponym indices (filtered for OCR artifacts)
-- Consolidates parcel GeoJSON files per map
-- Publishes to respective directories
+For each map ID:
 
-### Phase E: Publishing
-- Writes `build/index.json` with:
-  - `domains`: list of maps with georeferenced content
-  - `imageServices`: canvas URL → image service URL mapping for all maps
-  - `generatedAt`, `totalManifests`, `georefManifests`, `compiledOk`: stats
+- writes `<mapId>_manifests.json`
+- writes `<mapId>_info.json`
+- writes `<mapId>_geomaps.json`
+- writes `IIIF/<mapId>/sprites/sprites.jpg`
+- writes `IIIF/<mapId>/sprites/sprites.json`
 
-## 4. Configuration
+`*_geomaps.json` now contains:
 
-- `LIMIT`: process first N manifests per source (e.g., `LIMIT=10 bun run crawl`)
-- `INCLUDE_NON_GEOREF=1`: include non-georeferenced manifests in compiled output
-- `BUILD_BASE_URL`: generate absolute URLs if hosting elsewhere
+- `generatedAt`
+- `mapId`
+- `sprites`: `{ image, json, imageSize, count } | null`
+- `maps[]`: manifest-level entries with `id`, `label`, `isVerzamelblad`, and `canvases[]`
 
-### Persistence
+Each canvas entry now keeps only:
 
-- `cache/`: fetch cache (kept across runs)
-- `.build-cache/`: internal artifacts (wiped and regenerated each run)
-- `build/`: published output (wiped and regenerated each run)
-- `logs/report.log`: QA report (git-ignored)
+- `id`
+- `canvasAllmapsId`
+- `info`
+- `georeferencedMap`
+
+Per-canvas sprite rectangles are no longer duplicated inside `geomaps`; the canonical sprite rectangle data lives only in `sprites.json`.
+
+### Phase D: Search/Parcel Artifacts
+
+- Generates per-map toponym indices
+- Consolidates parcel GeoJSON by map
+- Publishes to `build/Toponyms/` and `build/Parcels/`
+
+### Phase E: Final Registry
+
+`build/index.json` includes:
+
+- `generatedAt`
+- `totalManifests`
+- `georefManifests`
+- `compiledOk`
+- `domains`
+- `layers`
+- `renderLayers`
+- `index`
+
+## 4. Sprite Generation Contract
+
+### Current Allmaps-Oriented Design
+
+- Sprites are generated per map bundle, not per canvas file
+- The shared spritesheet lives at `build/IIIF/<mapId>/sprites/sprites.jpg`
+- The sprite manifest lives at `build/IIIF/<mapId>/sprites/sprites.json`
+- `sprites.json` entries use the Allmaps render shape:
+  - `imageId`
+  - `scaleFactor`
+  - `x`
+  - `y`
+  - `width`
+  - `height`
+
+### Generation Logic
+
+- Target sprite thumbnail size is bounded by `ALLMAPS_SPRITE_MAX_SIZE = 128`
+- Individual sprites are fetched from the IIIF service and cached in `.build-cache/sprites/`
+- Shared sheets are packed with a simple row-based packer capped by `ALLMAPS_SPRITESHEET_MAX_WIDTH = 4096`
+- Output sheet image is composed with `sharp`
+
+### Resilience / Failure Handling
+
+Sprite fetch attempts use:
+
+1. IIIF resized request
+2. alternative confined-size request
+3. parser-generated canonical request
+4. fallback full-image fetch (`full/full`, `full/max`, `native`) with local resize via `sharp`
+
+Retry/backoff is applied for `429`, `500`, `502`, `503`, `504`.
+
+If a canvas still cannot produce a sprite:
+
+- it is recorded in `logs/report.log` under `Sprite failures`
+- the build emits a warning
+- the build does **not** fail anymore
+
+This tolerance exists because some upstream IIIF services appear to be fundamentally inaccessible for those canvases, even outside Artemis.
 
 ## 5. Key Decisions
 
-- **Canvas Annotations**: Client-side lookup from consolidated `georef/<mapId>.json` instead of individual file references
-- **Map IDs**: PascalCase without spaces (PrimitiefKadaster, GereduceerdeKadaster, Ferraris, etc.)
-- **Manifest Bundling**: All manifests for a map in one `<mapId>_manifests.json` file (keyed by label)
-- **Georeferencing**: Consolidated by canvas ID in `<mapId>.json` under `georef/`
-- **Published Data**: Only georeferenced manifests; non-georeferenced manifests are compiled internally but not exposed
-- **Entrypoint**: Single `build/index.json` acts as the registry
-- **Massart**: Stored under `Image collections/` since it has no Allmaps georeferencing
+- **Public vs internal separation**: `build/` is publishable output; `.build-cache/` is private processing state
+- **Per-map bundling**: Manifests, info responses, geomaps, and sprites are grouped by map ID
+- **Single source of sprite truth**: Per-canvas sprite coordinates are stored only in `sprites.json`
+- **Viewer compatibility**: The viewer resolves sprite rectangles by `georeferencedMap.resource.id`
+- **Logged tolerance**: Missing sprites are tolerated only when logged explicitly
+- **Massart isolation**: Massart remains under `Image collections/` because it does not use Allmaps georeferencing
 
-## 6. Search Contract
+## 6. Viewer-Facing Contract
 
-### Toponyms
+The data repo currently publishes:
 
-- **Output location**: `build/Toponyms/<mapId>/<mapId>Toponyms.json`
-- **Schema**: Minimal, with fields viewer needs:
-  - `text`: toponym name
-  - `lon`, `lat`: coordinates
-  - `map`: map identifier (PascalCase)
-  - `sheet`: source sheet/file identifier
-  - `id`: optional internal identifier
-- **Filtering**: Removes OCR artifacts (single letters, pure numbers, 20%+ special chars, ### patterns, 4+ repeated chars, etc.)
-- **Example**: `"à Anvers"` at coordinates from sheet `1851.geojson`
+- `build/index.json`
+- `build/IIIF/<mapId>_manifests.json`
+- `build/IIIF/<mapId>_info.json`
+- `build/IIIF/<mapId>_geomaps.json`
+- `build/IIIF/<mapId>/sprites/sprites.jpg`
+- `build/IIIF/<mapId>/sprites/sprites.json`
+- `build/IIIF/georef/<mapId>.json`
+- `build/Toponyms/<mapId>/<mapId>Toponyms.json`
+- `build/Parcels/<mapId>/<mapId>Parcels.geojson`
+- `build/Image collections/Massart/Massart_index.json`
+- `build/Image collections/Massart/Massart_sprites.jpg`
+- `build/Image collections/Massart/Massart_sprites.json`
 
-### Parcels
+The viewer now expects `*_geomaps.json` bundle-level sprite metadata plus `sprites.json` lookup, rather than per-canvas `allmapsSprite` duplication.
 
-- **Output location**: `build/Parcels/<mapId>/<mapId>Parcels.geojson`
-- **Schema**: Standard GeoJSON FeatureCollection
-  - Features have `type: "Feature"`, empty `properties`, and `Polygon` geometry
-  - Coordinates are [lon, lat] pairs
-  - Only georeferenced parcel polygons included
-- **Data drop**: OCR artifacts, text polygons, confidence fields, extraction metadata
-- **Example**: 28,207 polygons from Primitief Kadaster
+## 7. Current Constraints / Known Issues
 
-### Image Collections (Massart)
+- Some Ghent IIIF image services consistently return `502` or fail even on full-image endpoints
+- Those canvases are logged as sprite failures and omitted from the spritesheet
+- Cache invalidation is still manual
+- Some viewer behavior still depends on layer conventions outside the pipeline
+- Confirmed bug: many georeferenced entries in `build/index.json` now lose `centerLon` / `centerLat`
+- Root cause: `deriveAnnotationCenter()` still expects georeferenced-map-shaped JSON with top-level `gcps`, but the pipeline now often reads raw Allmaps annotation pages from `.build-cache/allmaps/canvases/`
+- Confirmed bug: Massart title normalization is too aggressive and corrupts some titles by splitting on the first colon
+- Confirmed contract bug: the current shared-spritesheet output is not the required final direction; Artemis must publish one sprite image per canvas again
 
-- **Output location**: `build/Image collections/Massart/index.json`
-- **Schema**: Object with:
-  - `generatedAt`: ISO timestamp
-  - `totalItems`: count of records
-  - `coordsAvailable`: count with lat/lon
-  - `items[]`: array with fields:
-    - `title`, `year`, `location`, `lat`, `lon`
-    - `manifestUrl`: IIIF manifest URL
-    - `mmsId`, `repId`: UGent identifiers
-- **Source**: Resolved dynamically from UGent Primo API (ugent://massart)
+## 7.1 Confirmed TODOs
 
-## 7. Viewer Integration
+- Restore one sprite image per canvas in `build/IIIF/<mapId>/sprites/`; do not rely on a shared bundle spritesheet as the canonical output contract
+- Update `*_geomaps.json` generation to keep per-canvas sprite references stable for the viewer
+- Fix `deriveAnnotationCenter()` so `build/index.json` reliably emits `centerLon` / `centerLat` from the current annotation cache format
+- Fix Massart title cleanup so it removes catalog suffix noise without truncating legitimate title text
 
-The current viewer-facing contract in this repo is:
+## 8. Configuration
 
-- `build/index.json`: public entrypoint
-- `build/IIIF/<map>_manifests.json`: manifest objects grouped per map
-- `build/IIIF/<map>_info.json`: IIIF Image API info responses grouped per map
-- `build/IIIF/georef/<map>.json`: canvas georeferencing grouped per map
-- `build/Toponyms/<map>/<map>Toponyms.json`: per-map toponym search data
-- `build/Parcels/<map>/<map>Parcels.geojson`: per-map parcel polygons
-- `build/Image collections/Massart/index.json`: Massart photo metadata
-- `static/site.json`, `static/layers.json`: runtime metadata, maintained by hand
+- `LIMIT`: process first N manifests per source
+- `INCLUDE_NON_GEOREF=1`: include non-georeferenced manifests in compiled output
+- `BUILD_BASE_URL`: optional absolute URL generation
 
-Current constraints:
+## 9. Static Runtime Content
 
-- **Layer Matching**: Viewer integration still depends on map-level IDs and metadata staying aligned
-- **Service-Backed Layers**: Ferraris, Villaret, Popp, etc. still rely on viewer-side service definitions
-- **Massart Rendering**: Massart items have no Allmaps annotations, so they do not produce render layers
+Files in `static/` are hand-maintained runtime inputs and must not be overwritten by the pipeline:
 
-## 8. Known Issues
+- `site.json`
+- `layers.json`
+- `attribution-logos/`
+- `Baselayer/`
 
-- **Primitief Single-Canvas Rendering**: Intermittent flicker for a small set of single-canvas manifests
-- **Cache Staleness**: No automatic cache invalidation for upstream collections/manifests
-- **Viewer Coupling**: Some viewer behavior still depends on conventions rather than a fully data-driven layer contract
+## 10. Related Repos
 
-## 9. Future Work
-
-- **Sprite Generation**: Add sprite-generation step for per-map raster layers
-- **Viewer Updates**: Reduce remaining viewer coupling to map-specific conventions
-- **Service-Backed Layers**: Move WMTS/WMS layer definitions from viewer hardcode to registry
-- **Timeline Integration**: Add timeframe metadata to enable viewer timeline features
-- **Parcel Sublayers**: Implement Gereduceerd and Hand drawn parcels
-- **Cache Strategy**: Add automatic cache invalidation
-
-## 10. Static Runtime Content
-
-Files in `static/` are hand-edited and consumed directly by the viewer at runtime:
-
-- `site.json`: site title, info text, attribution, logo references
-- `layers.json`: runtime metadata keyed by viewer layer identifiers  
-- `attribution-logos/`: image assets referenced from `site.json`
-- `Baselayer/`: manually maintained baselayer geometry
-
-The pipeline must NOT write to `static/`. The viewer loads these files directly without rerunning the pipeline.
-
-## 11. Related Repos
-
-- Viewer: `../Artemis-RnD`
-- Specs: `/home/alexander/Documents/Artemis-RnD/` (external reference documents)
+- Viewer: `../Artemis-RND/app`
+- Workspace root: `/home/alexander/Documents/Artemis-RnD`

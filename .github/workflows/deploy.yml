@@ -37,6 +37,17 @@ jobs:
 
           # Copy build and static from main
           git checkout main -- build static
+          git checkout main -- .buildignore 2>/dev/null || true
+
+          # Remove files matching .buildignore patterns
+          if [ -f .buildignore ]; then
+            while IFS= read -r pattern || [ -n "$pattern" ]; do
+              [[ "$pattern" =~ ^[[:space:]]*# ]] && continue
+              [[ -z "${pattern//[[:space:]]/}" ]] && continue
+              find build static -name "$pattern" -delete 2>/dev/null || true
+            done < .buildignore
+            rm -f .buildignore
+          fi
 
           # Add files
           git add build static

@@ -4,11 +4,14 @@ import { join, dirname } from "node:path";
 import { parseAnnotation, validateGeoreferencedMap } from "@allmaps/annotation";
 import { generateId } from "@allmaps/id";
 import { Image } from "@allmaps/iiif-parser";
+import sharp from "sharp";
 import { iiifSourceUrls, readSourceRegistry } from "./registry";
+import { createSimplifier, getSimplificationConfig } from "./simplify";
 
 // FLAG: set INCLUDE_NON_GEOREF=1 to also compile and include non-georeferenced manifests.
 // By default only georeferenced manifests are compiled and listed in collections.
 const INCLUDE_NON_GEOREF = !!process.env.INCLUDE_NON_GEOREF;
+const simplifyMask = createSimplifier(getSimplificationConfig());
 
 type V2Collection = {
   "@context"?: string;
@@ -25,6 +28,16 @@ type SourceGroup = {
   sourceCollectionUrl: string;
   sourceCollectionLabel: string;
   refs: Array<{ url: string; label: string }>;
+};
+
+type SpriteFailure = {
+  mapId: string;
+  manifestId: string;
+  manifestLabel: string;
+  canvasId: string;
+  canvasAllmapsId: string;
+  serviceId: string;
+  reason: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -122,7 +135,8 @@ async function resolveUgentMassartSource(limit?: number): Promise<{ group: Sourc
       const repId = (link.redirect_to as string).match(/\/(\d+)$/)?.[1];
       if (!repId) return null;
       const manifestUrl = `${UGENT_IIIF_BASE}/view/iiif/presentation/${UGENT_INST}/${repId}/manifest?iiifVersion=2&updateStatistics=false`;
-      return { title: rawTitle, year, location, lat: coords?.lat, lon: coords?.lon, manifestUrl, mmsId: recordId, repId };
+      const displayTitle = normalizeMassartTitle(rawTitle);
+      return { title: displayTitle, year, location, lat: coords?.lat, lon: coords?.lon, manifestUrl, mmsId: recordId, repId };
     }));
     for (const r of results) {
       if (!r) continue;
@@ -137,6 +151,21 @@ async function resolveUgentMassartSource(limit?: number): Promise<{ group: Sourc
     group: { sourceCollectionUrl: "ugent://massart", sourceCollectionLabel: "Jean Massart photographs — Universiteit Gent", refs },
     items,
   };
+}
+
+function normalizeMassartTitle(rawTitle: string): string {
+  const trimmed = rawTitle.trim();
+  if (!trimmed) return trimmed;
+
+  const withoutPhotograph = trimmed
+    .replace(/\s*\/\s*\[photograph\]\s*$/i, "")
+    .trim();
+
+  const withoutBracketedCatalogSuffix = withoutPhotograph
+    .replace(/\s*:\s*\[[^\]]*\]\s*$/u, "")
+    .trim();
+
+  return withoutBracketedCatalogSuffix || withoutPhotograph || trimmed;
 }
 
 type IndexEntry = {
@@ -181,6 +210,13 @@ type SuccessfulFixManifest = {
   annotationPaths: string[];
   issuesBefore: string[];
   appliedFixes: string[];
+  maskPointsPruned: number;
+  duplicateGcpsPruned: number;
+};
+
+type AnnotationPruneStats = {
+  maskPointsPruned: number;
+  duplicateGcpsPruned: number;
 };
 
 // Manifests with self-intersecting resource masks — excluded from build.
@@ -254,6 +290,32 @@ function extractGeoPointsFromGeoreferencedMap(raw: any): Array<[number, number]>
   return out;
 }
 
+function extractGeoPointsFromAnnotationPage(raw: any): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  const items = Array.isArray(raw?.items) ? raw.items : [];
+  for (const item of items) {
+    const body = item?.body;
+    const features = Array.isArray(body?.features) ? body.features : [];
+    for (const feature of features) {
+      const resource = feature?.properties?.resourceCoords;
+      const geo = feature?.geometry?.coordinates;
+      if (!Array.isArray(resource) || resource.length < 2) continue;
+      if (!Array.isArray(geo) || geo.length < 2) continue;
+      const lon = Number(geo[0]);
+      const lat = Number(geo[1]);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+      out.push([lon, lat]);
+    }
+  }
+  return out;
+}
+
+function extractGeoPointsFromAnyAnnotation(raw: any): Array<[number, number]> {
+  if (!raw || typeof raw !== "object") return [];
+  if (raw.type === "AnnotationPage") return extractGeoPointsFromAnnotationPage(raw);
+  return extractGeoPointsFromGeoreferencedMap(raw);
+}
+
 function centerFromGeoPoints(points: Array<[number, number]>): [number, number] | null {
   if (points.length < 1) return null;
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -272,7 +334,7 @@ async function deriveAnnotationCenter(canvasAnnotationPaths: string[]): Promise<
   for (const relPath of uniqueStrings(canvasAnnotationPaths)) {
     try {
       const raw = JSON.parse(await readFile(`.build-cache/${relPath}`, "utf-8"));
-      merged.push(...extractGeoPointsFromGeoreferencedMap(raw));
+      merged.push(...extractGeoPointsFromAnyAnnotation(raw));
     } catch {
       // ignore bad/missing paths
     }
@@ -395,9 +457,10 @@ function analyzeMirroredAnnotation(raw: any, annotationPath: string): Annotation
   return issues;
 }
 
-function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string[] } {
+function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string[]; stats: AnnotationPruneStats } {
   const out = JSON.parse(JSON.stringify(raw));
   const appliedFixes: string[] = [];
+  const stats: AnnotationPruneStats = { maskPointsPruned: 0, duplicateGcpsPruned: 0 };
   const width = Number(out?.resource?.width);
   const height = Number(out?.resource?.height);
   if (Array.isArray(out?.resourceMask) && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
@@ -409,14 +472,27 @@ function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string
       return [nx, ny] as [number, number];
     });
     if (clampedCount > 0) appliedFixes.push(`clamped-mask-points:${clampedCount}`);
-    const normalized = normalizePolygon(out.resourceMask);
+    let normalized = normalizePolygon(out.resourceMask);
+
+    // First attempt: gentle simplification (works even on self-intersecting polygons)
+    let simplified = simplifyMask(normalized, width, height);
+    if (simplified.length >= 3 && simplified.length < normalized.length) {
+      stats.maskPointsPruned += normalized.length - simplified.length;
+      appliedFixes.push(`simplified-mask:${normalized.length}->${simplified.length}`);
+      normalized = simplified;
+    }
+
+    // Second attempt: if still self-intersecting, try convex hull as last resort
     if (hasSelfIntersections(normalized)) {
+      const originalLength = normalized.length;
       const hull = convexHull(normalized);
       if (hull.length >= 3 && !hasSelfIntersections(hull)) {
-        out.resourceMask = hull;
-        appliedFixes.push(`repaired-self-intersection:convex-hull:${normalized.length}->${hull.length}`);
+        normalized = hull;
+        appliedFixes.push(`repaired-self-intersection:convex-hull:${originalLength}->${hull.length}`);
       }
     }
+
+    out.resourceMask = normalized;
   }
   if (Array.isArray(out?.gcps) && out.gcps.length > 0) {
     const seenGeo = new Set<string>();
@@ -429,13 +505,16 @@ function sanitizeMirroredAnnotation(raw: any): { json: any; appliedFixes: string
       seenGeo.add(key);
       return true;
     });
-    if (removed > 0) appliedFixes.push(`removed-duplicate-geo-gcp:${removed}`);
+    if (removed > 0) {
+      stats.duplicateGcpsPruned += removed;
+      appliedFixes.push(`removed-duplicate-geo-gcp:${removed}`);
+    }
   }
   if (out?.transformation?.type === "thinPlateSpline" && Array.isArray(out?.gcps) && out.gcps.length < 5) {
     out.transformation = { type: "polynomial", options: { order: 1 } };
     appliedFixes.push(`downgraded-tps:gcp=${out.gcps.length}`);
   }
-  return { json: out, appliedFixes: uniqueStrings(appliedFixes) };
+  return { json: out, appliedFixes: uniqueStrings(appliedFixes), stats };
 }
 
 async function collectAnnotationIssues(annotationPaths: string[]): Promise<AnnotationIssue[]> {
@@ -501,16 +580,60 @@ function extractCanvasImageServices(man: V2Manifest): Record<string, string> {
   return result;
 }
 
-async function loadPublishedGeomapsAnnotationCache(): Promise<Map<string, any>> {
+async function storeRawCanvasAnnotation(canvasAllmapsId: string, annotation: unknown): Promise<string> {
+  const outAbs = `.build-cache/allmaps/raw-canvases/${canvasAllmapsId}.json`;
+  const outRel = `allmaps/raw-canvases/${canvasAllmapsId}.json`;
+  await writeFile(outAbs, JSON.stringify(annotation, null, 2), "utf-8");
+  return outRel;
+}
+
+async function fetchRawGeoreferencedMap(candidate: any): Promise<any | null> {
+  const mapId = String(candidate?.id ?? "").trim();
+  if (!mapId) return null;
+  try {
+    const raw = await cachedJson(mapId, ".build-cache/allmaps");
+    const validated = validateGeoreferencedMap(raw);
+    return Array.isArray(validated) ? validated[0] : validated;
+  } catch {
+    return null;
+  }
+}
+
+async function loadRawAnnotationCache(): Promise<Map<string, any>> {
   const byCanvasId = new Map<string, any>();
-  let loadedCanvasesFromBuildCache = 0;
+  let loadedCanvasesFromRawCache = 0;
+  let loadedCanvasesFromLegacyCache = 0;
   let loadedCanvasesFromGeomaps = 0;
   let loadedMapsFromGeomaps = 0;
   let geomapsFiles = 0;
 
-  // Primary bootstrap source: persistent internal cache of one georeferenced map
-  // per canvas. This survives build/ cleanup and should remain the source of truth
-  // for subsequent crawls.
+  // Primary bootstrap source: persistent raw Allmaps annotations per canvas.
+  try {
+    const entries = await readdir(".build-cache/allmaps/raw-canvases", { withFileTypes: true });
+    const files = entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .map((entry) => entry.name)
+      .sort();
+
+    for (const file of files) {
+      try {
+        const raw = JSON.parse(await readFile(join(".build-cache/allmaps/raw-canvases", file), "utf-8"));
+        const validated = validateGeoreferencedMap(raw);
+        const georeferencedMap = Array.isArray(validated) ? validated[0] : validated;
+        const canvasId = String(georeferencedMap?.resource?.partOf?.[0]?.id ?? "").trim();
+        if (!canvasId || byCanvasId.has(canvasId)) continue;
+        byCanvasId.set(canvasId, georeferencedMap);
+        loadedCanvasesFromRawCache++;
+      } catch {
+        // Ignore malformed cache entries and continue loading the rest.
+      }
+    }
+  } catch {
+    // No raw cache yet — fall through to compatibility imports.
+  }
+
+  // Compatibility import: legacy sanitized canvas cache. Rehydrate raw cache by
+  // refetching the canonical Allmaps map JSON through its stable annotation ID.
   try {
     const entries = await readdir(".build-cache/allmaps/canvases", { withFileTypes: true });
     const files = entries
@@ -520,58 +643,37 @@ async function loadPublishedGeomapsAnnotationCache(): Promise<Map<string, any>> 
 
     for (const file of files) {
       try {
-        const raw = JSON.parse(await readFile(join(".build-cache/allmaps/canvases", file), "utf-8"));
-        const validated = validateGeoreferencedMap(raw);
+        const cached = JSON.parse(await readFile(join(".build-cache/allmaps/canvases", file), "utf-8"));
+        const validated = validateGeoreferencedMap(cached);
         const georeferencedMap = Array.isArray(validated) ? validated[0] : validated;
         const canvasId = String(georeferencedMap?.resource?.partOf?.[0]?.id ?? "").trim();
         if (!canvasId || byCanvasId.has(canvasId)) continue;
-        byCanvasId.set(canvasId, georeferencedMap);
-        loadedCanvasesFromBuildCache++;
+        const rawGeoreferencedMap = await fetchRawGeoreferencedMap(georeferencedMap);
+        const chosen = rawGeoreferencedMap ?? georeferencedMap;
+        byCanvasId.set(canvasId, chosen);
+        const canvasAllmapsId = await generateId(canvasId);
+        await storeRawCanvasAnnotation(canvasAllmapsId, chosen);
+        loadedCanvasesFromLegacyCache++;
       } catch {
-        // Ignore malformed cache entries and continue loading the rest.
+        // Ignore malformed legacy cache entries and continue loading the rest.
       }
     }
   } catch {
-    // No internal cache yet — fall through to optional geomaps import.
+    // No legacy cache available.
   }
 
-  // Secondary bootstrap source: previously published public geomaps bundles.
-  // Keep this as a compatibility import path so a fresh .build-cache can still
-  // be reconstructed from committed build artifacts.
-  try {
-    const entries = await readdir("build/IIIF", { withFileTypes: true });
-    const files = entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith("_geomaps.json"))
-      .map((entry) => entry.name)
-      .sort();
-
-    geomapsFiles = files.length;
-    for (const file of files) {
-      const raw = JSON.parse(await readFile(join("build/IIIF", file), "utf-8"));
-      const maps = Array.isArray(raw?.maps) ? raw.maps : [];
-      loadedMapsFromGeomaps += maps.length;
-      for (const map of maps) {
-        const canvases = Array.isArray(map?.canvases) ? map.canvases : [];
-        for (const canvas of canvases) {
-          const canvasId = String(canvas?.id ?? "").trim();
-          if (!canvasId || byCanvasId.has(canvasId)) continue;
-          const georeferencedMap = canvas?.georeferencedMap
-            ? validateGeoreferencedMap(canvas.georeferencedMap)
-            : (canvas?.georef ? parseAnnotation(canvas.georef)[0] : null);
-          if (!georeferencedMap) continue;
-          byCanvasId.set(canvasId, georeferencedMap);
-          loadedCanvasesFromGeomaps++;
-        }
-      }
-    }
-  } catch {
-    // Public geomaps are optional for bootstrap.
-  }
+  // NOTE: Removed secondary bootstrap from build/IIIF/*_geomaps.json (2026-04-17)
+  // This created a circular dependency: relying on output files to bootstrap input.
+  // The correct pattern is: persistent .build-cache/ bootstraps itself, build/ is pure output.
+  // On a fresh run or after deleting .build-cache, no annotations will be found until:
+  // 1. Cache is manually seeded with previously published geomaps, OR
+  // 2. Fallback to fetch from Allmaps API is implemented (TODO)
+  // For now, rely entirely on .build-cache/allmaps/ and .build-cache/collections/
 
   if (byCanvasId.size > 0) {
     console.log(
       `  Georef bootstrap cache: ${byCanvasId.size} canvases ` +
-      `(.build-cache=${loadedCanvasesFromBuildCache}, geomaps=${loadedCanvasesFromGeomaps} from ${geomapsFiles} bundle(s) / ${loadedMapsFromGeomaps} maps)`
+      `(.build-cache/raw=${loadedCanvasesFromRawCache}, .build-cache/legacy=${loadedCanvasesFromLegacyCache}, geomaps=${loadedCanvasesFromGeomaps} from ${geomapsFiles} bundle(s) / ${loadedMapsFromGeomaps} maps)`
     );
   } else {
     console.log("  Georef bootstrap cache: empty");
@@ -584,6 +686,85 @@ async function storeCanvasAnnotation(canvasAllmapsId: string, annotation: unknow
   const outRel = `allmaps/canvases/${canvasAllmapsId}.json`;
   await writeFile(outAbs, JSON.stringify(annotation, null, 2), "utf-8");
   return outRel;
+}
+
+/**
+ * Mirror a canvas-level Allmaps annotation to .build-cache/allmaps/canvases/<id>.json.
+ * Fetches from https://annotations.allmaps.org/canvases/{canvasAllmapsId} if not cached.
+ */
+async function mirrorCanvasAnnotation(canvasAllmapsId: string): Promise<{ status: number; relPath: string }> {
+  const outAbs = `.build-cache/allmaps/canvases/${canvasAllmapsId}.json`;
+  const outRel = `allmaps/canvases/${canvasAllmapsId}.json`;
+  if (await exists(outAbs)) return { status: 200, relPath: outRel };
+
+  try {
+    const res = await fetch(`https://annotations.allmaps.org/canvases/${canvasAllmapsId}`, { redirect: "follow" });
+    if (res.status !== 200) return { status: res.status, relPath: "" };
+
+    const json = await res.json();
+    await writeFile(outAbs, JSON.stringify(json, null, 2), "utf-8");
+    return { status: 200, relPath: outRel };
+  } catch (err) {
+    console.warn(`[WARN] Failed to fetch canvas annotation from Allmaps: ${canvasAllmapsId} (${err instanceof Error ? err.message : err})`);
+    return { status: 0, relPath: "" };
+  }
+}
+
+/**
+ * For canvases with no standalone canvas annotation in Allmaps (canvas endpoint → 404),
+ * fetch the manifest-level annotation and extract each canvas's items into .build-cache/.
+ */
+async function fillUncoveredCanvasAnnotations(
+  manifestAllmapsId: string,
+  uncovered: Array<{ canvasId: string; canvasAllmapsId: string; imageServiceUrl: string }>
+): Promise<Record<string, string>> {
+  if (uncovered.length === 0) return {};
+
+  const result: Record<string, string> = {};
+  const needExtract: typeof uncovered = [];
+
+  for (const c of uncovered) {
+    const outAbs = `.build-cache/allmaps/canvases/${c.canvasAllmapsId}.json`;
+    if (await exists(outAbs)) {
+      result[c.canvasId] = `allmaps/canvases/${c.canvasAllmapsId}.json`;
+    } else {
+      needExtract.push(c);
+    }
+  }
+
+  if (needExtract.length === 0) return result;
+
+  try {
+    const res = await fetch(`https://annotations.allmaps.org/manifests/${manifestAllmapsId}`, { redirect: "follow" });
+    if (res.status !== 200) return result;
+
+    const manifestAnnotation = await res.json();
+    const items: any[] = Array.isArray(manifestAnnotation?.items) ? manifestAnnotation.items : [];
+
+    for (const { canvasId, canvasAllmapsId, imageServiceUrl } of needExtract) {
+      const normalizedUrl = imageServiceUrl.replace(/\/+$/, "");
+      const matching = items.filter((item: any) => {
+        const src = item?.target?.source;
+        const srcId = (typeof src === "string" ? src : src?.id) ?? "";
+        return srcId.replace(/\/+$/, "") === normalizedUrl;
+      });
+      if (matching.length === 0) continue;
+
+      const synthetic = {
+        id: `https://annotations.allmaps.org/canvases/${canvasAllmapsId}`,
+        type: "AnnotationPage",
+        "@context": "http://www.w3.org/ns/anno.jsonld",
+        items: matching
+      };
+      await mkdir(dirname(`.build-cache/allmaps/canvases/${canvasAllmapsId}.json`), { recursive: true });
+      await writeFile(`.build-cache/allmaps/canvases/${canvasAllmapsId}.json`, JSON.stringify(synthetic, null, 2), "utf-8");
+      result[canvasId] = `allmaps/canvases/${canvasAllmapsId}.json`;
+    }
+  } catch (err) {
+    console.warn(`[WARN] Failed to fetch manifest annotation from Allmaps: ${manifestAllmapsId} (${err instanceof Error ? err.message : err})`);
+  }
+
+  return result;
 }
 
 /**
@@ -640,7 +821,7 @@ function deriveMapId(sourceCollectionUrl: string, sourceCollectionLabel: string,
 }
 
 async function resolveSourceGroup(collectionUrl: string): Promise<SourceGroup> {
-  const json = (await cachedJson(collectionUrl, "cache/collections")) as V2Collection;
+  const json = (await cachedJson(collectionUrl, ".build-cache/collections")) as V2Collection;
   const label = normalizeSourceCollectionLabel((json.label ?? "").toString());
   let refs = listManifestRefs(json);
   if (refs.length === 0) refs = [{ url: collectionUrl, label }];
@@ -656,41 +837,83 @@ async function processManifestRef(
   i: number,
   total: number,
   existingCanvasInfoIds: Set<string>,
-  publishedGeomapsByCanvas: Map<string, any>
+  rawAnnotationsByCanvas: Map<string, any>
 ): Promise<
-  | { kind: "ok"; entry: IndexEntry; georef: boolean; compiled: boolean; fixed?: SuccessfulFixManifest; canvasInfoEntries: Record<string, any> }
+  | { kind: "ok"; entry: IndexEntry; georef: boolean; compiled: boolean; fixed?: SuccessfulFixManifest; pruneStats: AnnotationPruneStats; canvasInfoEntries: Record<string, any> }
   | { kind: "problematic"; problematic: ProblematicManifest }
 > {
   console.log(`  - [${i + 1}/${total}] ${label || "(no label)"} :: ${url}`);
 
-  const man = (await cachedJson(url, "cache/manifests")) as V2Manifest;
+  const man = (await cachedJson(url, ".build-cache/manifests")) as V2Manifest;
   const canvasIds = extractCanvasIdsFromV2Manifest(man);
   const isVerzamelblad = hasVerzamelbladIdentifier(man, url, label);
   const manifestAllmapsId = await generateId(url);
 
-  // Resolve georef annotations from the committed/published geomaps cache.
+  // Resolve georef annotations: first try pre-loaded cache, then fetch from Allmaps.
   const mirroredCanvasRelByCanvasId: Record<string, string> = {};
   let cachedCanvasHits = 0;
+  let fetchedFromAllmaps = 0;
+  let uncoveredCount = 0;
 
   for (const canvasId of canvasIds) {
     const canvasAllmapsId = await generateId(canvasId);
-    const cachedAnnotation = publishedGeomapsByCanvas.get(canvasId);
+
+    // Try pre-loaded cache first
+    const cachedAnnotation = rawAnnotationsByCanvas.get(canvasId);
     if (cachedAnnotation) {
       mirroredCanvasRelByCanvasId[canvasId] = await storeCanvasAnnotation(canvasAllmapsId, cachedAnnotation);
       cachedCanvasHits++;
+      continue;
+    }
+
+    // Try to fetch from Allmaps if not in cache
+    const mirror = await mirrorCanvasAnnotation(canvasAllmapsId);
+    if (mirror.status === 200 && mirror.relPath) {
+      mirroredCanvasRelByCanvasId[canvasId] = mirror.relPath;
+      fetchedFromAllmaps++;
+      continue;
+    }
+
+    // Not found yet, will try manifest-level extraction below
+    uncoveredCount++;
+  }
+
+  // For canvases with no standalone canvas annotation, try extracting from manifest-level annotation
+  const uncoveredCanvasIds = canvasIds.filter((id) => !mirroredCanvasRelByCanvasId[id]);
+  let manifestExtractedHits = 0;
+  if (uncoveredCanvasIds.length > 0) {
+    const canvasImageServices = extractCanvasImageServices(man);
+    const uncovered: Array<{ canvasId: string; canvasAllmapsId: string; imageServiceUrl: string }> = [];
+
+    for (const canvasId of uncoveredCanvasIds) {
+      const canvasAllmapsId = await generateId(canvasId);
+      const imageServiceUrl = canvasImageServices[canvasId] ?? "";
+      if (imageServiceUrl && canvasAllmapsId) {
+        uncovered.push({ canvasId, canvasAllmapsId, imageServiceUrl });
+      }
+    }
+
+    if (uncovered.length > 0) {
+      const extracted = await fillUncoveredCanvasAnnotations(manifestAllmapsId, uncovered);
+      for (const [canvasId, relPath] of Object.entries(extracted)) {
+        mirroredCanvasRelByCanvasId[canvasId] = relPath;
+        manifestExtractedHits++;
+      }
     }
   }
 
-  if (cachedCanvasHits > 0) {
-    console.log(`    geomaps cache hit: ${cachedCanvasHits}/${canvasIds.length} canvases`);
+  if (cachedCanvasHits > 0 || fetchedFromAllmaps > 0 || manifestExtractedHits > 0) {
+    console.log(`    georef resolved: cache=${cachedCanvasHits}, allmaps=${fetchedFromAllmaps}, manifest=${manifestExtractedHits}/${canvasIds.length}`);
   }
 
   const georefDetected = Object.keys(mirroredCanvasRelByCanvasId).length > 0;
   const georefDetectedBy: IndexEntry["georefDetectedBy"] = !georefDetected
     ? undefined
-    : cachedCanvasHits > 0
+    : cachedCanvasHits > 0 || fetchedFromAllmaps > 0
       ? "canvas"
-      : undefined;
+      : manifestExtractedHits > 0
+        ? "manifest"
+        : undefined;
 
   // Non-georef manifest: slim index entry, skip compiled manifest (unless flag is set).
   if (!georefDetected) {
@@ -703,6 +926,7 @@ async function processManifestRef(
       entry: { label: (man.label ?? label ?? "").toString(), sourceManifestUrl: url, sourceCollectionUrl, sourceCollectionLabel, canvasCount: canvasIds.length, isVerzamelblad, compiledManifestPath },
       georef: false,
       compiled: INCLUDE_NON_GEOREF,
+      pruneStats: { maskPointsPruned: 0, duplicateGcpsPruned: 0 },
       canvasInfoEntries: {}
     };
   }
@@ -711,20 +935,27 @@ async function processManifestRef(
   const annotationPathsToCheck = uniqueStrings(Object.values(mirroredCanvasRelByCanvasId));
   const issuesBeforeFix = await collectAnnotationIssues(annotationPathsToCheck);
   let appliedFixes: string[] = [];
-  if (issuesBeforeFix.length > 0) {
-    for (const relPath of annotationPathsToCheck) {
-      try {
-        const raw = JSON.parse(await readFile(`.build-cache/${relPath}`, "utf-8"));
-        const sanitized = sanitizeMirroredAnnotation(raw);
-        if (sanitized.appliedFixes.length > 0) {
-          appliedFixes.push(...sanitized.appliedFixes.map((f) => `${relPath}:${f}`));
-          await writeFile(`.build-cache/${relPath}`, JSON.stringify(sanitized.json, null, 2), "utf-8");
-        }
-      } catch (err: any) {
-        console.warn(`[WARN] Could not sanitize mirrored annotation: .build-cache/${relPath} (${err?.message ?? err})`);
+  let pruneStats: AnnotationPruneStats = { maskPointsPruned: 0, duplicateGcpsPruned: 0 };
+  for (const relPath of annotationPathsToCheck) {
+    try {
+      const raw = JSON.parse(await readFile(`.build-cache/${relPath}`, "utf-8"));
+      const sanitized = sanitizeMirroredAnnotation(raw);
+      pruneStats.maskPointsPruned += sanitized.stats.maskPointsPruned;
+      pruneStats.duplicateGcpsPruned += sanitized.stats.duplicateGcpsPruned;
+      if (sanitized.appliedFixes.length > 0) {
+        appliedFixes.push(...sanitized.appliedFixes.map((f) => `${relPath}:${f}`));
+        // NOTE: Do NOT write pruned version back to cache. Cache must stay RAW from Allmaps.
+        // Pruning is re-applied fresh on every build so thresholds can be tuned without re-fetching.
       }
+    } catch (err: any) {
+      console.warn(`[WARN] Could not sanitize mirrored annotation: .build-cache/${relPath} (${err?.message ?? err})`);
     }
-    appliedFixes = uniqueStrings(appliedFixes);
+  }
+  appliedFixes = uniqueStrings(appliedFixes);
+  if (pruneStats.maskPointsPruned > 0 || pruneStats.duplicateGcpsPruned > 0) {
+    console.log(
+      `    pruned: mask points=${pruneStats.maskPointsPruned}, duplicate GCPs=${pruneStats.duplicateGcpsPruned}`
+    );
   }
 
   const issuesAfterFix = await collectAnnotationIssues(annotationPathsToCheck);
@@ -755,7 +986,16 @@ async function processManifestRef(
   await writeFile(`.build-cache/${compiledManifestPath}`, JSON.stringify(compiled, null, 2), "utf-8");
 
   const fixedManifest: SuccessfulFixManifest | undefined = issuesBeforeFix.length > 0
-    ? { manifestAllmapsId, label: (man.label ?? label ?? "").toString(), sourceManifestUrl: url, annotationPaths: annotationPathsToCheck, issuesBefore: summarizeIssues(issuesBeforeFix), appliedFixes }
+    ? {
+        manifestAllmapsId,
+        label: (man.label ?? label ?? "").toString(),
+        sourceManifestUrl: url,
+        annotationPaths: annotationPathsToCheck,
+        issuesBefore: summarizeIssues(issuesBeforeFix),
+        appliedFixes,
+        maskPointsPruned: pruneStats.maskPointsPruned,
+        duplicateGcpsPruned: pruneStats.duplicateGcpsPruned
+      }
     : undefined;
 
   // Fetch info.json for georeffed canvases, skipping already-cached entries.
@@ -792,6 +1032,7 @@ async function processManifestRef(
     },
     georef: true,
     compiled: true,
+    pruneStats,
     fixed: fixedManifest,
     canvasInfoEntries
   };
@@ -1042,8 +1283,16 @@ async function generateParcels(): Promise<void> {
 async function main() {
   await mkdir("cache/collections", { recursive: true });
   await mkdir("cache/manifests", { recursive: true });
+  await mkdir("cache/allmaps", { recursive: true });
   await mkdir("logs", { recursive: true });
-  const publishedGeomapsByCanvas = await loadPublishedGeomapsAnnotationCache();
+  const rawAnnotationsByCanvas = await loadRawAnnotationCache();
+
+  // Show which simplification algorithm is configured
+  const simplifyConfig = getSimplificationConfig();
+  const configStr = simplifyConfig.algorithm === "douglas-peucker"
+    ? `Douglas-Peucker (epsilon=${simplifyConfig.epsilon})`
+    : `Greedy Batching (diagonalFactor=${simplifyConfig.diagonalFactor}, minDeviation=${simplifyConfig.minDeviation})`;
+  console.log(`Using mask simplification: ${configStr}`);
 
   console.log("[0/5] Cleaning build output directories...");
   // Remove deprecated public-layout directories from earlier refactors.
@@ -1060,7 +1309,10 @@ async function main() {
   await mkdir("build/Image collections", { recursive: true });
   // Create internal cache directories (hidden)
   await mkdir(".build-cache/manifests", { recursive: true });
+  await mkdir(".build-cache/collections", { recursive: true });
+  await mkdir(".build-cache/allmaps", { recursive: true });
   await mkdir(".build-cache/iiif/info", { recursive: true });
+  await mkdir(".build-cache/allmaps/raw-canvases", { recursive: true });
   await mkdir(".build-cache/allmaps/canvases", { recursive: true });
 
   // Persistent canvas info.json index — keyed by image service URL.
@@ -1108,9 +1360,25 @@ async function main() {
   const index: IndexEntry[] = [];
   const fixedManifests: SuccessfulFixManifest[] = [];
   const problematicManifests: ProblematicManifest[] = [];
+  const spriteFailures = new Map<string, SpriteFailure>();
   let georefManifests = 0;
   let compiledOk = 0;
   let newCanvasInfoCount = 0;
+  let totalMaskPointsPruned = 0;
+  let totalDuplicateGcpsPruned = 0;
+
+  function recordSpriteFailure(failure: SpriteFailure) {
+    const key = `${failure.canvasAllmapsId}::${failure.serviceId}`;
+    const existing = spriteFailures.get(key);
+    if (!existing) {
+      spriteFailures.set(key, failure);
+      return;
+    }
+    if (existing.reason.startsWith("Sprite fetch failed:")) {
+      return;
+    }
+    spriteFailures.set(key, failure);
+  }
 
   for (const group of sourceGroups) {
     console.log(`  Source: ${group.sourceCollectionUrl}`);
@@ -1123,13 +1391,17 @@ async function main() {
         console.warn(`[WARN] Known problematic manifest entering auto-fix path: ${ref.url} (${checkId})`);
       }
 
-      const result = await processManifestRef(ref, group.sourceCollectionUrl, group.sourceCollectionLabel, i, slice.length, existingCanvasInfoIds, publishedGeomapsByCanvas);
+      const result = await processManifestRef(ref, group.sourceCollectionUrl, group.sourceCollectionLabel, i, slice.length, existingCanvasInfoIds, rawAnnotationsByCanvas);
       if (result.kind === "problematic") {
         problematicManifests.push(result.problematic);
         continue;
       }
       index.push(result.entry);
-      if (result.fixed) fixedManifests.push(result.fixed);
+      totalMaskPointsPruned += result.pruneStats.maskPointsPruned;
+      totalDuplicateGcpsPruned += result.pruneStats.duplicateGcpsPruned;
+      if (result.fixed) {
+        fixedManifests.push(result.fixed);
+      }
       if (result.georef) georefManifests++;
       if (result.compiled) compiledOk++;
       for (const [serviceKey, info] of Object.entries(result.canvasInfoEntries)) {
@@ -1211,15 +1483,139 @@ async function main() {
   }
 
   // Helper functions for pruning geomaps data
-  function pruneGeoreferencedMap(map: any): any {
+
+  // Convert new AnnotationPage format back to old GeoreferencedMap format for viewer compatibility
+  function normalizeGeoreferencedMapFormat(map: any): any {
     if (!map) return map;
-    const pruned = JSON.parse(JSON.stringify(map));
+
+    // Check if this is the new AnnotationPage format
+    if (map.type === "AnnotationPage" && Array.isArray(map.items) && map.items.length > 0) {
+      const annotation = map.items[0];
+      if (!annotation || annotation.type !== "Annotation") return map;
+
+      const source = annotation.target?.source;
+      const selector = annotation.target?.selector;
+      const body = annotation.body;
+
+      if (!source || !selector) return map;
+
+      // Extract resourceMask from SVG selector if present
+      let resourceMask: Array<[number, number]> | undefined;
+      if (selector.type === "SvgSelector" && typeof selector.value === "string") {
+        const match = selector.value.match(/<polygon[^>]*points="([^"]*)"/);
+        if (match && match[1]) {
+          resourceMask = parseSvgPolygonPoints(match[1]);
+        }
+      }
+
+      // Extract GCPs from body if present
+      let gcps: any[] | undefined;
+      if (body?.type === "FeatureCollection" && Array.isArray(body.features)) {
+        gcps = body.features.map((feature: any) => ({
+          resource: feature.properties?.resourceCoords,
+          geo: feature.geometry?.coordinates
+        }));
+      }
+
+      // Rebuild in old GeoreferencedMap format
+      const oldFormat: any = {
+        "@context": "https://schemas.allmaps.org/map/2/context.json",
+        type: "GeoreferencedMap",
+        id: annotation.id || map.id,
+        resource: {
+          id: source.id,
+          height: source.height,
+          width: source.width,
+          type: source.type,
+          partOf: source.partOf
+        }
+      };
+
+      // Add GCPs if extracted
+      if (gcps && gcps.length > 0) {
+        oldFormat.gcps = gcps;
+      }
+
+      // Use polynomial transformation for all (more stable than thinPlateSpline)
+      oldFormat.transformation = { type: "polynomial", options: { order: 1 } };
+
+      // Add resourceMask if extracted
+      if (resourceMask && resourceMask.length > 0) {
+        oldFormat.resourceMask = resourceMask;
+      }
+
+      return oldFormat;
+    }
+
+    // If already in old format, return as-is
+    return map;
+  }
+
+  // Parse SVG polygon points attribute into coordinate array (used by format converter)
+  function parseSvgPolygonPoints(pointsStr: string): Array<[number, number]> {
+    const coords: Array<[number, number]> = [];
+    const numbers = pointsStr.match(/-?\d+(\.\d+)?/g) || [];
+    for (let i = 0; i < numbers.length; i += 2) {
+      coords.push([parseFloat(numbers[i]), parseFloat(numbers[i + 1])]);
+    }
+    return coords;
+  }
+
+  function pruneGeoreferencedMap(map: any): { map: any; maskPointsPruned: number } {
+    if (!map) return { map, maskPointsPruned: 0 };
+
+    // First, normalize to old GeoreferencedMap format for viewer compatibility
+    let normalized = normalizeGeoreferencedMapFormat(map);
+    const pruned = JSON.parse(JSON.stringify(normalized));
     delete pruned.created;
     delete pruned.modified;
+    let maskPointsPruned = 0;
+
+    // Remove provider from resource if present
     if (pruned.resource && typeof pruned.resource === "object") {
       delete pruned.resource.provider;
     }
-    return pruned;
+
+    // Optimize resourceMask if present (old format)
+    if (Array.isArray(pruned.resourceMask)) {
+      const width = Number(pruned.resource?.width);
+      const height = Number(pruned.resource?.height);
+
+      if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+        let coords = pruned.resourceMask;
+        const startPointCount = coords.length;
+
+        // Apply same optimizations as sanitizeMirroredAnnotation
+        let clampedCount = 0;
+        coords = coords.map(([x, y]: [number, number]) => {
+          const nx = Math.max(0, Math.min(width, x));
+          const ny = Math.max(0, Math.min(height, y));
+          if (nx !== x || ny !== y) clampedCount++;
+          return [nx, ny] as [number, number];
+        });
+
+        let polygonNormalized = normalizePolygon(coords);
+
+        // Gentle simplification
+        let simplified = simplifyMask(polygonNormalized, width, height);
+        if (simplified.length >= 3 && simplified.length < polygonNormalized.length) {
+          polygonNormalized = simplified;
+        }
+
+        // Convex hull as last resort for self-intersecting polygons
+        if (hasSelfIntersections(polygonNormalized)) {
+          const hull = convexHull(polygonNormalized);
+          if (hull.length >= 3 && !hasSelfIntersections(hull)) {
+            polygonNormalized = hull;
+          }
+        }
+
+        maskPointsPruned = startPointCount - polygonNormalized.length;
+        pruned.resourceMask = polygonNormalized;
+      }
+    }
+
+    return { map: pruned, maskPointsPruned };
   }
 
   function pruneInfo(info: any): any {
@@ -1231,6 +1627,24 @@ async function main() {
 
   // Sprite generation helpers
   const ALLMAPS_SPRITE_MAX_SIZE = 128;
+  const MASSART_SPRITE_MAX_SIZE = 256;
+  const ALLMAPS_SPRITESHEET_MAX_WIDTH = 4096;
+
+  type PackedSpriteSource = {
+    canvasItem: any;
+    canvasAllmapsId: string;
+    imageId: string;
+    fullWidth: number;
+    fullHeight: number;
+    spriteWidth: number;
+    spriteHeight: number;
+    buffer: Buffer;
+  };
+
+  type PackedSpritePlacement = PackedSpriteSource & {
+    x: number;
+    y: number;
+  };
 
   function calculateSpriteSize(width: number, height: number): { width: number; height: number } {
     // Fit into a fixed 128px bounding box so the generated sprite always stays
@@ -1247,10 +1661,13 @@ async function main() {
     fullWidth: number,
     fullHeight: number,
     spriteWidth: number,
-    spriteHeight: number
+    spriteHeight: number,
+    x = 0,
+    y = 0
   ): {
     imageId: string;
     scaleFactor: number;
+    spriteTileScale: number;
     x: number;
     y: number;
     width: number;
@@ -1260,12 +1677,62 @@ async function main() {
     return {
       imageId,
       scaleFactor,
-      x: 0,
-      y: 0,
+      spriteTileScale: ALLMAPS_SPRITE_MAX_SIZE / 256,
+      x,
+      y,
       width: spriteWidth,
       height: spriteHeight
     };
   }
+
+  function packSpritesIntoSheet(sprites: PackedSpriteSource[]): {
+    width: number;
+    height: number;
+    placements: PackedSpritePlacement[];
+  } {
+    if (sprites.length === 0) {
+      return { width: 0, height: 0, placements: [] };
+    }
+
+    const totalArea = sprites.reduce((sum, sprite) => sum + (sprite.spriteWidth * sprite.spriteHeight), 0);
+    const widestSprite = sprites.reduce((max, sprite) => Math.max(max, sprite.spriteWidth), 0);
+    const targetWidth = Math.max(
+      widestSprite,
+      Math.min(ALLMAPS_SPRITESHEET_MAX_WIDTH, Math.ceil(Math.sqrt(totalArea)))
+    );
+
+    let cursorX = 0;
+    let cursorY = 0;
+    let rowHeight = 0;
+    let sheetWidth = 0;
+    const placements: PackedSpritePlacement[] = [];
+
+    for (const sprite of [...sprites].sort((a, b) => b.spriteHeight - a.spriteHeight)) {
+      if (cursorX > 0 && cursorX + sprite.spriteWidth > targetWidth) {
+        cursorX = 0;
+        cursorY += rowHeight;
+        rowHeight = 0;
+      }
+
+      placements.push({
+        ...sprite,
+        x: cursorX,
+        y: cursorY
+      });
+
+      cursorX += sprite.spriteWidth;
+      rowHeight = Math.max(rowHeight, sprite.spriteHeight);
+      sheetWidth = Math.max(sheetWidth, cursorX);
+    }
+
+    return {
+      width: sheetWidth,
+      height: cursorY + rowHeight,
+      placements
+    };
+  }
+
+  type SpriteAtlasEntry = ReturnType<typeof buildAllmapsSprite>;
 
   async function fetchSprite(
     serviceUrl: string,
@@ -1282,6 +1749,12 @@ async function main() {
     const parsedImage = Image.parse(infoJson);
     const parserRequest = parsedImage.getImageRequest(spriteSize);
     const parserUrl = parsedImage.getImageUrl(parserRequest);
+    const localResizeFallbackUrls = [
+      `${normalizedServiceUrl}/full/full/0/default.jpg`,
+      `${normalizedServiceUrl}/full/max/0/default.jpg`,
+      `${normalizedServiceUrl}/full/full/0/native.jpg`,
+      `${normalizedServiceUrl}/full/max/0/native.jpg`
+    ];
     const candidateUrls = [
       // Prefer explicit width/height because this server often rejects canonical
       // IIIF v2 `w,` URLs with 502s for otherwise valid images.
@@ -1295,20 +1768,75 @@ async function main() {
     const seen = new Set<string>();
     let buffer: Buffer | null = null;
     const errors: string[] = [];
+    const retryableStatuses = new Set([429, 500, 502, 503, 504]);
 
     for (const imageUrl of candidateUrls) {
       if (seen.has(imageUrl)) continue;
       seen.add(imageUrl);
-      try {
-        const res = await fetch(imageUrl);
-        if (!res.ok) {
-          errors.push(`${res.status} ${imageUrl}`);
-          continue;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const res = await fetch(imageUrl);
+          if (!res.ok) {
+            if (retryableStatuses.has(res.status) && attempt < 3) {
+              await Bun.sleep(250 * attempt);
+              continue;
+            }
+            errors.push(`${res.status} ${imageUrl}`);
+            break;
+          }
+          buffer = Buffer.from(await res.arrayBuffer());
+          break;
+        } catch (err) {
+          if (attempt < 3) {
+            await Bun.sleep(250 * attempt);
+            continue;
+          }
+          errors.push(`${err instanceof Error ? err.message : String(err)} ${imageUrl}`);
         }
-        buffer = Buffer.from(await res.arrayBuffer());
+      }
+      if (buffer) {
         break;
-      } catch (err) {
-        errors.push(`${err instanceof Error ? err.message : String(err)} ${imageUrl}`);
+      }
+    }
+
+    if (!buffer) {
+      for (const imageUrl of localResizeFallbackUrls) {
+        if (seen.has(imageUrl)) continue;
+        seen.add(imageUrl);
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const res = await fetch(imageUrl);
+            if (!res.ok) {
+              if (retryableStatuses.has(res.status) && attempt < 2) {
+                await Bun.sleep(400 * attempt);
+                continue;
+              }
+              errors.push(`${res.status} ${imageUrl}`);
+              break;
+            }
+
+            const originalBuffer = Buffer.from(await res.arrayBuffer());
+            buffer = await sharp(originalBuffer)
+              .resize({
+                width: spriteSize.width,
+                height: spriteSize.height,
+                fit: "inside",
+                withoutEnlargement: true
+              })
+              .jpeg({ quality: 80 })
+              .toBuffer();
+            break;
+          } catch (err) {
+            if (attempt < 2) {
+              await Bun.sleep(400 * attempt);
+              continue;
+            }
+            errors.push(`${err instanceof Error ? err.message : String(err)} ${imageUrl}`);
+          }
+        }
+        if (buffer) {
+          break;
+        }
       }
     }
 
@@ -1324,6 +1852,8 @@ async function main() {
   // [Phase B] Generate per-map IIIF bundles
   console.log(`[4b/5] Generating per-map IIIF bundles...`);
   await mkdir("build/IIIF", { recursive: true });
+
+  let totalSvgMaskPointsPruned = 0;
 
   // Group entries by map ID
   const manifestsByMapId = new Map<string, typeof index>();
@@ -1366,7 +1896,9 @@ async function main() {
           let georeferencedMap: any = null;
           try {
             const raw = JSON.parse(await readFile(annotPath, "utf-8"));
-            georeferencedMap = pruneGeoreferencedMap(raw);
+            const pruneResult = pruneGeoreferencedMap(raw);
+            georeferencedMap = pruneResult.map;
+            totalSvgMaskPointsPruned += pruneResult.maskPointsPruned;
           } catch {
             // Canvas has no annotation, skip it
             continue;
@@ -1383,59 +1915,48 @@ async function main() {
             }
           }
 
-          // Sprite generation (after georef and info are obtained)
-          let sprite: string | null = null;
-          let spriteWidth: number | null = null;
-          let spriteHeight: number | null = null;
-          let allmapsSprite:
-            | {
-                imageId: string;
-                scaleFactor: number;
-                x: number;
-                y: number;
-                width: number;
-                height: number;
-              }
-            | null = null;
+          const canvasItem: any = {
+            id: canvasId,
+            canvasAllmapsId,
+            info,
+            georeferencedMap
+          };
 
           if (info && georeferencedMap && serviceId) {
             const spriteSize = calculateSpriteSize(info.width, info.height);
             const cacheKey = `${canvasAllmapsId}_${spriteSize.width}x${spriteSize.height}.jpg`;
             const cachePath = `.build-cache/sprites/${mapId}/${cacheKey}`;
-            const outPath = `build/IIIF/${mapId}/sprites/${canvasAllmapsId}.jpg`;
 
             try {
               const buffer = await fetchSprite(serviceId, info, spriteSize, cachePath);
-              await mkdir(dirname(outPath), { recursive: true });
-              await writeFile(outPath, buffer);
-
-              sprite = `IIIF/${mapId}/sprites/${canvasAllmapsId}.jpg`;
-              spriteWidth = spriteSize.width;
-              spriteHeight = spriteSize.height;
-              allmapsSprite = buildAllmapsSprite(
-                georeferencedMap.resource.id,
-                info.width,
-                info.height,
-                spriteSize.width,
-                spriteSize.height
-              );
+              const imageId = georeferencedMap?.resource?.id ?? serviceId;
+              if (!imageId) {
+                throw new Error("Cannot determine image ID from georeferencedMap.resource.id or serviceId");
+              }
+              canvasItem._spriteSource = {
+                canvasAllmapsId,
+                imageId,
+                fullWidth: info.width,
+                fullHeight: info.height,
+                spriteWidth: spriteSize.width,
+                spriteHeight: spriteSize.height,
+                buffer
+              };
             } catch (err) {
+              recordSpriteFailure({
+                mapId,
+                manifestId: String(manifestData["@id"] ?? "").trim(),
+                manifestLabel: String(entry.label ?? manifestData.label ?? "").trim(),
+                canvasId,
+                canvasAllmapsId,
+                serviceId,
+                reason: err instanceof Error ? err.message : String(err)
+              });
               console.warn(`  Sprite failed for ${canvasAllmapsId}: ${err}`);
             }
           }
 
-          if (georeferencedMap) {
-            canvasItems.push({
-              id: canvasId,
-              canvasAllmapsId,
-              sprite,
-              spriteWidth,
-              spriteHeight,
-              allmapsSprite,
-              info,
-              georeferencedMap,
-            });
-          }
+          canvasItems.push(canvasItem);
         }
 
         if (canvasItems.length > 0) {
@@ -1452,9 +1973,116 @@ async function main() {
     }
 
     if (geomaps.length > 0) {
+      const spritesheetImagePath = `IIIF/${mapId}/sprites/sprites.jpg`;
+      const spritesheetJsonPath = `IIIF/${mapId}/sprites/sprites.json`;
+      const packedSprites: PackedSpriteSource[] = geomaps.flatMap((map) =>
+        (Array.isArray(map.canvases) ? map.canvases : []).flatMap((canvas: any) => {
+          const spriteSource = canvas?._spriteSource;
+          if (!spriteSource?.buffer) return [];
+          return [{
+            canvasItem: canvas,
+            canvasAllmapsId: String(spriteSource.canvasAllmapsId),
+            imageId: String(spriteSource.imageId),
+            fullWidth: Number(spriteSource.fullWidth),
+            fullHeight: Number(spriteSource.fullHeight),
+            spriteWidth: Number(spriteSource.spriteWidth),
+            spriteHeight: Number(spriteSource.spriteHeight),
+            buffer: spriteSource.buffer as Buffer
+          }];
+        })
+      );
+
+      let spritesheetMeta: {
+        image: string;
+        json: string;
+        imageSize: [number, number];
+        count: number;
+      } | null = null;
+
+      if (packedSprites.length > 0) {
+        const { width, height, placements } = packSpritesIntoSheet(packedSprites);
+        const spritesDir = `build/IIIF/${mapId}/sprites`;
+        await mkdir(spritesDir, { recursive: true });
+
+        const sheet = sharp({
+          create: {
+            width,
+            height,
+            channels: 3,
+            background: { r: 255, g: 255, b: 255 }
+          }
+        }).composite(
+          placements.map((placement) => ({
+            input: placement.buffer,
+            left: placement.x,
+            top: placement.y
+          }))
+        );
+
+        await sheet.jpeg({ quality: 65 }).toFile(join(spritesDir, "sprites.jpg"));
+
+        const spritesJson: Record<string, SpriteAtlasEntry> = {};
+
+        for (const placement of placements) {
+          const spriteEntry = buildAllmapsSprite(
+            placement.imageId,
+            placement.fullWidth,
+            placement.fullHeight,
+            placement.spriteWidth,
+            placement.spriteHeight,
+            placement.x,
+            placement.y
+          );
+          spritesJson[placement.canvasAllmapsId] = spriteEntry;
+        }
+
+        await writeFile(join(spritesDir, "sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+        await writeFile(join(spritesDir, "sprites_debug.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+
+        for (const placement of placements) {
+          placement.canvasItem._spriteRepresented = true;
+        }
+
+        spritesheetMeta = {
+          image: spritesheetImagePath,
+          json: spritesheetJsonPath,
+          imageSize: [width, height],
+          count: placements.length
+        };
+      }
+
+      const missingSprites = geomaps.flatMap((map) =>
+        (Array.isArray(map.canvases) ? map.canvases : []).flatMap((canvas: any) => {
+          const expectsSprite = Boolean(canvas?.georeferencedMap && canvas?.info);
+          if (!expectsSprite || canvas?._spriteRepresented) return [];
+          return [{
+            mapId,
+            manifestId: String(map?.id ?? ""),
+            manifestLabel: String(map?.label ?? ""),
+            canvasId: String(canvas?.id ?? ""),
+            canvasAllmapsId: String(canvas?.canvasAllmapsId ?? ""),
+            serviceId: String(canvas?.info?.["@id"] ?? canvas?.info?.id ?? ""),
+            reason: "Canvas expected a sprite but was not represented in the generated spritesheet"
+          } satisfies SpriteFailure];
+        })
+      );
+      if (missingSprites.length > 0) {
+        for (const failure of missingSprites) {
+          recordSpriteFailure(failure);
+        }
+      }
+
+      for (const map of geomaps) {
+        for (const canvas of Array.isArray(map.canvases) ? map.canvases : []) {
+          delete canvas._spriteSource;
+          delete canvas._spriteRepresented;
+        }
+      }
+
       const geomapsBundle = {
         generatedAt: new Date().toISOString(),
         mapId,
+        sprites: spritesheetMeta,
         maps: geomaps
       };
       await writeFile(`build/IIIF/${mapId}_geomaps.json`, JSON.stringify(geomapsBundle, null, 2), "utf-8");
@@ -1476,16 +2104,122 @@ async function main() {
   await writeFile("build/index.json", JSON.stringify(indexOut, null, 2), "utf-8");
   await writeFile(canvasInfoIndexPath, JSON.stringify(canvasInfoIndex, null, 2), "utf-8");
   console.log(`  Canvas info.json index: ${Object.keys(canvasInfoIndex).length} entries (${newCanvasInfoCount} new this run)`);
+  console.log(`  SVG mask optimization: ${totalSvgMaskPointsPruned} polygon points removed across all georeferences`);
+  console.log(`  Annotation pruning: ${totalMaskPointsPruned} resourceMask points removed, ${totalDuplicateGcpsPruned} duplicate GCPs removed`);
 
   if (ugentMassartItems.length > 0) {
     await mkdir("build/Image collections/Massart", { recursive: true });
-    await writeFile("build/Image collections/Massart/index.json", JSON.stringify({
+
+    // Fetch sprites for each Massart item
+    console.log(`[4c/5] Generating Massart sprites...`);
+    type MassartSpriteSource = {
+      repId: string;
+      fullWidth: number;
+      fullHeight: number;
+      spriteWidth: number;
+      spriteHeight: number;
+      buffer: Buffer;
+    };
+
+    const massartSpriteSources: MassartSpriteSource[] = [];
+
+    for (const item of ugentMassartItems) {
+      // Raw manifests are cached by sha1(url) regardless of georef status
+      const rawManifestPath = `.build-cache/manifests/${sha1(item.manifestUrl)}.json`;
+
+      try {
+        const manifestData = JSON.parse(await readFile(rawManifestPath, "utf-8"));
+        const canvas = manifestData?.sequences?.[0]?.canvases?.[0];
+        if (!canvas) continue;
+
+        const serviceId = String(canvas.images?.[0]?.resource?.service?.["@id"] ?? "").trim();
+        if (!serviceId) continue;
+
+        const normalizedServiceId = serviceId.replace(/\/+$/, "");
+        const info = canvasInfoIndex[normalizedServiceId]
+          ?? await cachedJson(`${normalizedServiceId}/info.json`, ".build-cache/iiif").catch(() => null);
+        if (!info) continue;
+
+        const spriteSize = calculateSpriteSize(info.width, info.height);
+        // Scale up to MASSART_SPRITE_MAX_SIZE (2x IIIF map sprites)
+        const scale = MASSART_SPRITE_MAX_SIZE / ALLMAPS_SPRITE_MAX_SIZE;
+        const massartSpriteSize = {
+          width: Math.round(spriteSize.width * scale),
+          height: Math.round(spriteSize.height * scale)
+        };
+        const cacheKey = `${item.repId}_${massartSpriteSize.width}x${massartSpriteSize.height}.jpg`;
+        const cachePath = `.build-cache/sprites/Massart/${cacheKey}`;
+
+        try {
+          const buffer = await fetchSprite(serviceId, info, massartSpriteSize, cachePath);
+          massartSpriteSources.push({
+            repId: item.repId,
+            fullWidth: info.width,
+            fullHeight: info.height,
+            spriteWidth: massartSpriteSize.width,
+            spriteHeight: massartSpriteSize.height,
+            buffer
+          });
+        } catch (err) {
+          console.warn(`  Massart sprite failed for ${item.repId}: ${err}`);
+        }
+      } catch {
+        // Skip if manifest unreadable
+      }
+    }
+
+    let massartSpriteMeta: { image: string; json: string; imageSize: [number, number]; count: number } | null = null;
+
+    if (massartSpriteSources.length > 0) {
+      const massartDir = "build/Image collections/Massart";
+
+      const packedForSheet: PackedSpriteSource[] = massartSpriteSources.map((s) => ({
+        canvasItem: null,
+        canvasAllmapsId: s.repId,
+        imageId: s.repId,
+        fullWidth: s.fullWidth,
+        fullHeight: s.fullHeight,
+        spriteWidth: s.spriteWidth,
+        spriteHeight: s.spriteHeight,
+        buffer: s.buffer
+      }));
+
+      const { width, height, placements } = packSpritesIntoSheet(packedForSheet);
+
+      const sheet = sharp({
+        create: { width, height, channels: 3, background: { r: 255, g: 255, b: 255 } }
+      }).composite(
+        placements.map((p) => ({ input: p.buffer, left: p.x, top: p.y }))
+      );
+
+      await sheet.jpeg({ quality: 65 }).toFile(join(massartDir, "Massart_sprites.jpg"));
+      await sharp(join(massartDir, "Massart_sprites.jpg"))
+        .modulate({ hue: 330, saturation: 3.5, brightness: 0.85 })
+        .toFile(join(massartDir, "Massart_sprites_debug.jpg"));
+
+      const spritesJson: Record<string, { x: number; y: number; width: number; height: number }> = {};
+      for (const p of placements) {
+        spritesJson[p.canvasAllmapsId] = { x: p.x, y: p.y, width: p.spriteWidth, height: p.spriteHeight };
+      }
+      await writeFile(join(massartDir, "Massart_sprites.json"), JSON.stringify(spritesJson, null, 2), "utf-8");
+
+      massartSpriteMeta = {
+        image: "Image collections/Massart/Massart_sprites.jpg",
+        json: "Image collections/Massart/Massart_sprites.json",
+        imageSize: [width, height],
+        count: placements.length
+      };
+      console.log(`  Massart sprites: ${placements.length} sprites packed (${width}×${height}px)`);
+    }
+
+    await writeFile("build/Image collections/Massart/Massart_index.json", JSON.stringify({
       generatedAt: new Date().toISOString(),
       totalItems: ugentMassartItems.length,
       coordsAvailable: ugentMassartItems.filter((i) => i.lat !== undefined).length,
+      sprites: massartSpriteMeta,
       items: ugentMassartItems,
     }, null, 2), "utf-8");
-    console.log(`  Massart index: ${ugentMassartItems.length} items → build/Image collections/Massart/index.json`);
+    console.log(`  Massart index: ${ugentMassartItems.length} items → build/Image collections/Massart/Massart_index.json`);
   }
 
   // QA report written to logs/ (git-ignored), not build/.
@@ -1499,15 +2233,44 @@ async function main() {
     [`[FIXED] ${m.manifestAllmapsId}  ${m.label}`, `       ${m.sourceManifestUrl}`,
       `       issuesBefore: ${m.issuesBefore.join(" | ") || "-"}`,
       `       annotationPaths: ${m.annotationPaths.join(", ") || "-"}`,
-      `       appliedFixes: ${m.appliedFixes.join(" | ") || "-"}`].join("\n")
+      `       appliedFixes: ${m.appliedFixes.join(" | ") || "-"}`,
+      `       pruned: mask points=${m.maskPointsPruned}, duplicate GCPs=${m.duplicateGcpsPruned}`].join("\n")
+  ).join("\n");
+  const spriteFailureList = [...spriteFailures.values()];
+  const spriteFailureLog = spriteFailureList.map((failure) =>
+    [`[SPRITE-MISSING] ${failure.canvasAllmapsId}  ${failure.manifestLabel || failure.manifestId}`,
+      `       manifest: ${failure.manifestId || "-"}`,
+      `       canvas: ${failure.canvasId || "-"}`,
+      `       service: ${failure.serviceId || "-"}`,
+      `       reason: ${failure.reason}`].join("\n")
   ).join("\n");
   await writeFile(
     "logs/report.log",
     [`Annotation QA report — generated ${new Date().toISOString()}`, "",
+      `Pruned totals: mask points=${totalMaskPointsPruned}, duplicate GCPs=${totalDuplicateGcpsPruned}`, "",
       `Fixed manifests: ${fixedManifests.length}`, fixedManifests.length > 0 ? `\n${fixedLog}` : "  (none)", "",
-      `Excluded manifests: ${problematicManifests.length}`, problematicManifests.length > 0 ? `\n${problematicLog}` : "  (none)", ""].join("\n"),
+      `Excluded manifests: ${problematicManifests.length}`, problematicManifests.length > 0 ? `\n${problematicLog}` : "  (none)", "",
+      `Sprite failures: ${spriteFailureList.length}`, spriteFailureList.length > 0 ? `\n${spriteFailureLog}` : "  (none)", ""].join("\n"),
     "utf-8"
   );
+
+  if (spriteFailureList.length > 0) {
+    console.warn(`[WARN] ${spriteFailureList.length} canvas sprite(s) were missing from generated spritesheets. See logs/report.log`);
+  }
+
+  // Generate debug spritesheets with pink tint
+  console.log(`[4b+/5] Generating debug spritesheets...`);
+  const spriteFiles = Array.from(new Bun.Glob("build/IIIF/*/sprites/sprites.jpg").scanSync());
+  for (const spritePath of spriteFiles) {
+    const debugPath = spritePath.replace("sprites.jpg", "sprites_debug.jpg");
+    await sharp(spritePath)
+      .modulate({
+        hue: 330,
+        saturation: 1.3
+      })
+      .toFile(debugPath);
+  }
+  console.log(`  Generated ${spriteFiles.length} debug spritesheet(s)`);
 
   // [Phase C] Generate Toponyms and Parcels
   console.log(`[4c/5] Generating Toponyms and Parcels...`);

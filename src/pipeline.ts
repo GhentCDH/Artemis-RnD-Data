@@ -1242,7 +1242,7 @@ async function generateParcels(): Promise<void> {
                 if (feature.type === "Feature" && feature.geometry?.type === "Polygon") {
                   consolidatedFeatures.push({
                     type: "Feature",
-                    properties: {},
+                    properties: { type: "parcel" },
                     geometry: {
                       type: "Polygon",
                       coordinates: feature.geometry.coordinates,

@@ -46,7 +46,7 @@ async function consolidateParcelsForMap(mapSourceDir: string, mapId: string, out
               // Create minimal schema version with empty properties
               const minimalFeature: Feature = {
                 type: "Feature",
-                properties: {},
+                properties: { type: "parcel" },
                 geometry: {
                   type: "Polygon",
                   coordinates: (feature.geometry as any).coordinates,

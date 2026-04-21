@@ -6,7 +6,13 @@ import { generateId } from "@allmaps/id";
 import { Image } from "@allmaps/iiif-parser";
 import sharp from "sharp";
 import { iiifSourceUrls, readSourceRegistry } from "./registry";
-import { createSimplifier, getSimplificationConfig } from "./simplify";
+import { createSimplifier, getSimplificationConfig, simplifyPolygonDouglasPeucker } from "./simplify";
+
+// Geographic Douglas-Peucker epsilon for parcel simplification (degrees WGS84, ~1.5 m in Belgium).
+// Override via PARCEL_SIMPLIFY_EPSILON env var.
+const PARCEL_GEO_EPSILON = process.env.PARCEL_SIMPLIFY_EPSILON
+  ? parseFloat(process.env.PARCEL_SIMPLIFY_EPSILON)
+  : 0.000015;
 
 // FLAG: set INCLUDE_NON_GEOREF=1 to also compile and include non-georeferenced manifests.
 // By default only georeferenced manifests are compiled and listed in collections.
@@ -1239,14 +1245,16 @@ async function generateParcels(): Promise<void> {
 
             if (geojson.type === "FeatureCollection" && Array.isArray(geojson.features)) {
               for (const feature of geojson.features) {
-                if (feature.type === "Feature" && feature.geometry?.type === "Polygon") {
+                if (feature.type === "Feature" && feature.properties?.type === "parcel" && feature.geometry?.type === "Polygon") {
+                  const rings = (feature.geometry.coordinates as number[][][]).map((ring) => {
+                    const pts = ring as Array<[number, number]>;
+                    const simplified = simplifyPolygonDouglasPeucker(pts, PARCEL_GEO_EPSILON);
+                    return simplified.length >= 3 ? simplified : pts;
+                  });
                   consolidatedFeatures.push({
                     type: "Feature",
-                    properties: {},
-                    geometry: {
-                      type: "Polygon",
-                      coordinates: feature.geometry.coordinates,
-                    },
+                    properties: { type: "parcel" },
+                    geometry: { type: "Polygon", coordinates: rings },
                   });
                 }
               }

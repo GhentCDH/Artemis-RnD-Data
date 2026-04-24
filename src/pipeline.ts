@@ -1885,6 +1885,7 @@ async function main() {
 
     // Generate <mapId>_geomaps.json — pre-linked bundle with manifests, canvases, info, and georefs
     const geomaps: any[] = [];
+    const georeferencedMapsByCanvasAllmapsId: Record<string, any> = {};
     for (const entry of mapEntries) {
       if (!entry.manifestAllmapsId) continue;  // Only include georeferenced manifests
       if (!entry.compiledManifestPath) continue;
@@ -1907,6 +1908,9 @@ async function main() {
             const pruneResult = pruneGeoreferencedMap(raw);
             georeferencedMap = pruneResult.map;
             totalSvgMaskPointsPruned += pruneResult.maskPointsPruned;
+            if (georeferencedMap && !georeferencedMapsByCanvasAllmapsId[canvasAllmapsId]) {
+              georeferencedMapsByCanvasAllmapsId[canvasAllmapsId] = georeferencedMap;
+            }
           } catch {
             // Canvas has no annotation, skip it
             continue;
@@ -2094,6 +2098,16 @@ async function main() {
         maps: geomaps
       };
       await writeFile(`build/IIIF/${mapId}_geomaps.json`, JSON.stringify(geomapsBundle, null, 2), "utf-8");
+
+      // Also publish a single Allmaps georeference bundle containing only the (pruned) georeferenced maps.
+      // This is a simpler artifact for consumers that don't need manifests/info sprites, only georefs.
+      const georefBundle = {
+        generatedAt: geomapsBundle.generatedAt,
+        mapId,
+        georeferencedMapsByCanvasAllmapsId
+      };
+      await writeFile(`build/IIIF/${mapId}_allmaps_georefs.json`, JSON.stringify(georefBundle, null, 2), "utf-8");
+
       console.log(`  Generated geomaps bundle for ${mapId}: ${geomaps.length} georeferenced maps, ${geomaps.reduce((sum, m) => sum + m.canvases.length, 0)} canvases`);
     }
   }

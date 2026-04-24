@@ -3,7 +3,7 @@
  * Pluggable architecture for mask point reduction algorithms
  */
 
-export type SimplificationAlgorithm = "douglas-peucker" | "greedy-batching";
+export type SimplificationAlgorithm = "none" | "douglas-peucker" | "greedy-batching";
 
 export interface SimplifierConfig {
   algorithm: SimplificationAlgorithm;
@@ -218,6 +218,10 @@ export function createSimplifier(config: SimplifierConfig) {
     width?: number,
     height?: number
   ): Array<[number, number]> => {
+    if (config.algorithm === "none") {
+      return points;
+    }
+
     if (config.algorithm === "douglas-peucker") {
       const epsilon = config.epsilon ?? 2.0;
       return simplifyPolygonDouglasPeucker(points, epsilon);

@@ -60,6 +60,12 @@ bun run crawl:all
 
 # build toponym search indices only
 bun run buildSearch   # alias: bun run toponyms
+
+# recommended: keep masks as-is (no simplification)
+MASK_SIMPLIFY_ALGORITHM=none bun run crawl
+
+# recommended: Douglas–Peucker simplification (epsilon 5.5)
+MASK_SIMPLIFY_ALGORITHM=douglas-peucker MASK_SIMPLIFY_EPSILON=5.5 bun run crawl
 ```
 
 ## Inputs

@@ -21,6 +21,7 @@ build/
 │   ├── PrimitiefKadaster_manifests.json       # Compiled IIIF manifest objects
 │   ├── PrimitiefKadaster_info.json            # IIIF Image API info.json responses by service URL
 │   ├── PrimitiefKadaster_geomaps.json         # Georeferenced maps + bundle-level sprite metadata
+│   ├── PrimitiefKadaster_allmaps_georefs.json # Pruned Allmaps georeferenced maps by canvasAllmapsId (masks simplified)
 │   ├── PrimitiefKadaster/
 │   │   └── sprites/
 │   │       ├── sprites.jpg                    # Shared spritesheet for the map bundle
@@ -28,6 +29,7 @@ build/
 │   ├── GereduceerdeKadaster_manifests.json
 │   ├── GereduceerdeKadaster_info.json
 │   ├── GereduceerdeKadaster_geomaps.json
+│   ├── GereduceerdeKadaster_allmaps_georefs.json
 │   └── georef/
 │       ├── PrimitiefKadaster.json             # Consolidated georeferencing by canvas ID
 │       └── GereduceerdeKadaster.json

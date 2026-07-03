@@ -1,0 +1,19 @@
+services:
+  artemis-data:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: artemis-data:dev
+    container_name: artemis-data
+    working_dir: /app
+    volumes:
+      - ./:/app                          # live source
+      - artemis-node-modules:/app/node_modules  # keep container-built deps (sharp, etc.)
+    stdin_open: true
+    tty: true
+    # Default to an interactive shell for development; override to run the CLI:
+    #   docker compose run --rm artemis-data bun run src/index.ts build
+    entrypoint: /bin/bash
+
+volumes:
+  artemis-node-modules:

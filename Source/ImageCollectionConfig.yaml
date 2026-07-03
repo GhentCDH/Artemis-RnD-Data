@@ -1,0 +1,92 @@
+# ImageCollectionConfig.yaml
+#
+# Non-georeferenced image collections (photographs, drawings, …) shown as
+# browsable sets / located pins rather than warped map layers. Sits alongside
+# `layers/`.
+#
+# Each collection names a reusable source `adapter` (the only part that is code)
+# plus a declarative `map` (field paths + named transforms). A new collection on
+# a known adapter needs no new code; a genuinely new source API needs one new
+# adapter conforming to the adapter interface — never a bespoke per-collection
+# scraper.
+#
+# Adapters (code, reusable):
+#   iiif-collection — a static IIIF Collection URL (trivial case, no scraping)
+#   primo-api       — Ex Libris Primo search API (the Massart case below)
+#   (future: oai-pmh, csv, contentdm, manifest-list …)
+#
+# Transforms (config, reusable, parameterised):
+#   title-clean   — strip catalog suffix noise (keepColon avoids truncating titles)
+#   year-regex    — extract a 4-digit year from a date string
+#   pick-subject  — choose a geographic/subject term from a list
+#   dms           — parse degrees-minutes-seconds coordinates from text
+
+collections:
+  - id: massart
+    label: Jean Massart photographs
+    provider: Universiteit Gent
+    description: |
+      Gedigitaliseerde landschapsfoto's van Jean Massart uit de
+      UGent-bibliotheekcatalogus — historische opnames van het Belgische
+      landschap in het begin van de 20e eeuw.
+    attribution:
+      credit: "Universiteit Gent — Ghent Centre for Digital Humanities"
+      logos: [logo_Ugent.png]
+      rights: https://lib.ugent.be/   # TODO: verify exact rights statement
+
+    source:
+      adapter: primo-api
+      catalogBaseUrl: https://libcatalog.ugent.be/primaws/rest/pub
+      search:
+        endpoint: /pnxs
+        query:
+          q: "creator,contains,Massart, Jean"
+          multiFacets: "facet_rtype,include,images"
+          inst: "32RUG_INST"
+          vid: "32RUG_INST:32RUG_INST"
+          lang: en
+      pagination:
+        style: offset-limit
+        limit: 10
+        recordsPath: docs
+        totalPath: info.total
+      # Two-step id resolution: record id → directLink → repId → manifest URL
+      resolveManifest:
+        step:
+          endpoint: /directLink/{recordId}
+          method: POST
+          pick: redirect_to
+          extract: '/(\d+)$'
+          as: repId
+        template: https://libcatalog.ugent.be/view/iiif/presentation/32RUG_INST/{repId}/manifest?iiifVersion=2
+
+    # Raw record → normalized item (field path + optional named transforms)
+    map:
+      recordId:
+        path: pnx.control.recordid.0
+      label:
+        path: pnx.display.title.0
+        transforms:
+          - title-clean: { stripAfter: [" : ", " / "], keepColon: true }
+      year:
+        path: pnx.display.creationdate
+        transform: { year-regex: {} }
+      location:
+        path: pnx.display.subject
+        transform:
+          pick-subject:
+            prefix: "België "
+            drop: [Landscapes, Photographs, Catalogs, "Exhibition catalogs"]
+      coordinates:
+        from: label                    # Massart embeds DMS in the title
+        transform: { dms: { lat: [NB, ZB], lon: [OL, WL] } }
+
+# Example of adding a static IIIF image collection later — pure config, no code,
+# because `iiif-collection` and the `field` coordinate strategy already exist:
+#
+#  - id: some-photo-set
+#    label: …
+#    source: { adapter: iiif-collection, url: https://…/collection.json }
+#    map:
+#      label:       { path: label }
+#      coordinates: { from: field, lat: { path: navPlace.lat }, lon: { path: navPlace.lon } }

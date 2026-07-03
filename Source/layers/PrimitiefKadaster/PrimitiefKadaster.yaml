@@ -1,0 +1,53 @@
+id: PrimitiefKadaster
+label: Primitief kadaster
+timeframe:
+  startYear: 1808
+  endYear: 1834
+
+sublayers:
+  # ── Georeferenced IIIF collection (our compiled build) ─────────────────────
+  - id: PrimitiefKadaster-iiif
+    name: IIIF collection
+    kind: iiif
+    source:
+      type: remote
+      url: "https://iiif.ghentcdh.ugent.be/iiif/collections/primitief_kadaster"
+    description: |
+      Het 'primitief kadaster' is de eerste systematische inventarisatie van
+      alle Belgische percelen, gronden en gebouwen, aangelegd met het oog op een
+      rechtvaardige grondbelasting. De opmaak startte omstreeks 1800 onder Frans
+      bewind en werd voor het grootste deel van België bekrachtigd in 1834; voor
+      Limburg en Luxemburg pas in 1844. De collectie omvat ruim 23.000
+      kadastrale plannen en meer dan 61.000 processen-verbaal van
+      gemeentegrensafpalingen. Digitaal raadpleegbaar via het Rijksarchief
+      (search.arch.be) en geografisch via cartesius.be.
+    attribution:
+      credit: "Rijksarchief België"
+      logos: [logo_Rijksarchief.png]
+      rights: https://creativecommons.org/licenses/by/4.0/
+    citation:
+      authors: ["Rijksarchief België"]
+      title: "Primitief kadaster"
+      year: 1834
+      publisher: "Rijksarchief België"
+      url: https://search.arch.be
+
+  # ── Vectorised parcel boundaries (built by us → parcels.pmtiles) ───────────
+  - id: PrimitiefKadaster-parcels
+    name: Parcels
+    kind: geojson
+    source:
+      type: planned   # TODO
+    description: |
+      Gevectoriseerde perceelsgrenzen afgeleid van de primitieve
+      kadasterplannen, klikbaar en gekoppeld aan de bijhorende leggergegevens.
+
+  # ── Reconstructed land use for this period ─────────────────────────────────
+  - id: PrimitiefKadaster-landusage
+    name: Land usage
+    kind: geojson
+    source:
+      type: planned   # TODO
+    description: |
+      Historisch landgebruik afgeleid van het primitief kadaster (bestemming per
+      perceel: akker, weide, bos, bebouwing, water).

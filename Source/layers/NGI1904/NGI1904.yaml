@@ -1,0 +1,31 @@
+# Simplest case: a single-sublayer basemap. Even here the description /
+# attribution / citation sit on the sublayer, not the main layer.
+id: NGI1904
+label: NGI Basemap 1904
+timeframe:
+  startYear: 1904
+  endYear: 1914
+
+sublayers:
+  - id: NGI1904-wmts
+    name: Map
+    kind: wmts
+    source:
+      type: remote
+      url: "https://wmts.ngi.be/arcgis/rest/services/seamless_carto__default__3857__450/MapServer/tile/{z}/{y}/{x}"
+    description: |
+      Topografische basiskaart van België uit 1904, uitgegeven door het
+      Nationaal Geografisch Instituut (NGI) of zijn voorloper het Militair
+      Cartografisch Instituut (MCI). Onderdeel van de reeks historische
+      stafkaarten die België systematisch in kaart brachten na de oprichting van
+      het MCI in 1878. Raadpleegbaar via cartesius.be.
+    attribution:
+      credit: "Nationaal Geografisch Instituut (NGI)"
+      logos: [logo_NGI.png]
+      rights: https://www.ngi.be/website/gebruiksvoorwaarden/
+    citation:
+      authors: ["Nationaal Geografisch Instituut (NGI)"]
+      title: "Topografische basiskaart van België, 1904"
+      year: 1904
+      publisher: "Nationaal Geografisch Instituut (NGI)"
+      url: https://www.cartesius.be

@@ -1,0 +1,34 @@
+id: Villaret
+label: Villaret
+timeframe:
+  startYear: 1745
+  endYear: 1748
+
+sublayers:
+  # id kept as `Villaret-wmts` to match the existing viewer sublayer key,
+  # even though the source is served as WMS.
+  - id: Villaret-wmts
+    name: Map
+    kind: wms
+    source:
+      type: remote
+      url: "https://geo.api.vlaanderen.be/HISTCART/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=Villaret&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=TRUE&CRS=EPSG%3A3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256"
+    description: |
+      De Villaretkaart (officieel: Carte topographique de la partie de la
+      Belgique comprise entre Gand et Tournay, Maestricht et Liège) is de oudste
+      grootschalige topografische kaart van een groot deel van het huidige
+      Belgische grondgebied. Ze werd opgesteld tussen 1745 en 1748 in opdracht
+      van de Franse koning Lodewijk XV. Jean Villaret karteerde het gebied op
+      schaal 1:14.400 in meer dan 80 kaartbladen. De originelen liggen in het
+      Institut national de l'information géographique et forestière (IGN) in
+      Parijs; als open data beschikbaar via geopunt.be.
+    attribution:
+      credit: "IGN France — via geopunt.be (Digitaal Vlaanderen)"
+      logos: []   # no IGN France logo asset registered
+      rights: https://www.geopunt.be/gebruiksvoorwaarden
+    citation:
+      authors: ["Villaret, Jean"]
+      title: "Carte topographique de la partie de la Belgique comprise entre Gand et Tournay, Maestricht et Liège"
+      year: 1748
+      publisher: "Institut national de l'information géographique et forestière (IGN)"
+      url: https://www.geopunt.be

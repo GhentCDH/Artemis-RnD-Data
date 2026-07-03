@@ -1,0 +1,31 @@
+id: Popp
+label: Poppkaart
+timeframe:
+  startYear: 1842
+  endYear: 1879
+
+sublayers:
+  - id: Popp-wmts
+    name: Map
+    kind: wmts
+    source:
+      type: remote
+      url: "https://geo.api.vlaanderen.be/HISTCART/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=popp&STYLE=&FORMAT=image/png&TILEMATRIXSET=GoogleMapsVL&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
+    description: |
+      De Atlas Cadastral Parcellaire de la Belgique, uitgegeven door de Brugse
+      drukker-uitgever Philippe Chrétien Popp (1805–1879) tussen 1842 en 1879.
+      Een gecommercialiseerde versie van het officieel kadaster van België,
+      gedrukt via lithografie. De atlas omvat meer dan 2.000 kaarten en 30.000
+      registerbladen en dekt zo'n 1.700 Belgische gemeenten. De bijhorende
+      leggers vermelden per perceel de eigenaar, de oppervlakte, de bestemming en
+      de belastbare waarde. Digitaal raadpleegbaar via geopunt.be en de KBR.
+    attribution:
+      credit: "Koninklijke Bibliotheek van België (KBR) — via geopunt.be (Digitaal Vlaanderen)"
+      logos: [logo_KRB.png]
+      rights: https://www.geopunt.be/gebruiksvoorwaarden
+    citation:
+      authors: ["Popp, Philippe Chrétien"]
+      title: "Atlas cadastral parcellaire de la Belgique"
+      year: 1860
+      publisher: "Koninklijke Bibliotheek van België (KBR)"
+      url: https://www.geopunt.be

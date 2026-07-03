@@ -35,7 +35,8 @@ export async function buildXyzTiles(geotiffs: string[], workDir: string, workers
   ];
   if (format === "webp") args.push("--webp-quality", String(rasterWebpQuality()));
   args.push(vrtPath, xyzDir);
-  await runCommand("gdal2tiles.py", args);
+  // Stream gdal2tiles' native progress bar so the long tiling step isn't silent.
+  await runCommand("gdal2tiles.py", args, { stdio: "inherit" });
 
   return { xyzDir, minZoom, maxZoom, format };
 }

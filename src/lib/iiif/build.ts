@@ -172,6 +172,7 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
   const outDir = layerOutDir(group.layer.id);
   await ensureDir(outDir);
   const spriteSources = processed.flatMap((manifest) => manifest.canvases.flatMap((canvas) => canvas.sprite ? [canvas.sprite] : []));
+  log.info(`    ${group.layer.id}: packing ${spriteSources.length} sprites + geomaps`);
   const spritesMeta = await writeSpriteArtifacts(group.layer.id, outDir, spriteSources);
   await writeJsonWithBrotli(join(outDir, "geomaps.json"), buildCompactGeomaps(group.layer.id, processed), true);
   const maskStats = maskSimplificationStats(processed);
@@ -190,13 +191,16 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
     const maskFeatures = processed.flatMap((manifest) => manifest.canvases.flatMap((canvas) => canvas.maskFeature ? [canvas.maskFeature] : []));
     warpedCanvases = geotiffs.length;
     if (geotiffs.length > 0) {
+      log.step(`${group.layer.id}: mosaicking ${geotiffs.length} canvases → XYZ tiles (gdal2tiles)`);
       const tiles = await buildXyzTiles(geotiffs, rasterWorkDir, options.concurrency);
       if (tiles) {
         const target = join(outDir, "raster.pmtiles");
+        log.info(`    ${group.layer.id}: packing raster.pmtiles`);
         await buildRasterPmtiles({ inputTilesDir: tiles.xyzDir, outputPmtiles: target, name: group.layer.id });
         rasterPmtilesPath = target;
       }
       const masksTarget = join(outDir, "masks.pmtiles");
+      log.info(`    ${group.layer.id}: building masks.pmtiles (${maskFeatures.length} features)`);
       masks = await buildMasksPmtiles(maskFeatures, rasterWorkDir, masksTarget);
       if (masks > 0) masksPmtilesPath = masksTarget;
     }

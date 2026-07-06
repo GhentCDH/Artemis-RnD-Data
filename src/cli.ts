@@ -3,37 +3,38 @@ import { buildParcels } from "./lib/parcels/build";
 import { buildToponyms } from "./lib/toponyms/build";
 import { buildIiif } from "./lib/iiif/build";
 import { discoverLayers } from "./lib/layers/discovery";
+import { publishLayers } from "./lib/layers/publish";
 import { log } from "./lib/log";
 import { cpus } from "node:os";
 import { BuildLog } from "./lib/build/buildLog";
-import { buildRasterPmtiles } from "./lib/pmtiles/raster";
-import { layerOutDir } from "./lib/paths";
-import { join } from "node:path";
+import { HashRegistry, buildForceEnabled } from "./lib/build/hashRegistry";
 
 const COMMANDS = {
   build: "Build everything (or the given layer ids) into build/",
   iiif: "Build IIIF geomaps and sprites",
   toponyms: "Build Brotli-compressed toponym search JSON",
   parcels: "Build parcel PMTiles",
-  "pack-raster": "Pack an existing XYZ raster tile directory into Layers/<layerId>/raster.pmtiles",
   layers: "Merge Source/layers/* into build/layers.yaml",
   help: "Show this help",
 } as const;
 
 function concurrency(): number {
   const parsed = Number.parseInt(process.env.BUILD_CONCURRENCY ?? "", 10);
+  // An explicit BUILD_CONCURRENCY is honored as-is (uncapped). The auto-default
+  // is capped at 8: the work is mostly I/O-bound (remote IIIF fetches), so more
+  // workers mainly add load on the upstream server, and each raster worker holds
+  // a sharp/GDAL job in memory. Conservative ceiling — raise via env if needed.
   return Number.isFinite(parsed) && parsed > 0 ? parsed : Math.max(1, Math.min(8, cpus().length || 4));
 }
 
 function help(): void {
-  console.log("artemis-data (v2)\n\nUsage:\n  bun run src/index.ts <command> [layerId...] [--no-raster]\n\nCommands:");
+  console.log("artemis-data (v2)\n\nUsage:\n  bun run src/cli.ts <command> [layerId...] [--no-raster] [--force]\n\nCommands:");
   for (const [name, desc] of Object.entries(COMMANDS)) {
     console.log(`  ${name.padEnd(8)} ${desc}`);
   }
   console.log("\nFlags:");
   console.log("  --no-raster                Skip the raster warp (geomaps + sprites only) for build/iiif");
-  console.log("\nManual raster packing (pack an existing XYZ tile tree):");
-  console.log("  bun run src/index.ts pack-raster <layerId> <xyzTilesDir>");
+  console.log("  --force                    Rebuild everything, bypassing the incremental build cache");
   console.log("\nEnvironment:");
   console.log("  BUILD_CONCURRENCY          Concurrent manifest/source workers (default: CPU-capped at 8)");
   console.log("  PARCEL_SIMPLIFY_EPSILON    Parcel Douglas-Peucker epsilon; pixels when pixel_geometry exists (default: 5)");
@@ -47,6 +48,7 @@ function help(): void {
   console.log("  RASTER_MIN_ZOOM/MAX_ZOOM   Raster tile zoom range (default: 8-13; raise fetch width for z14+)");
   console.log("  RASTER_WEBP_QUALITY        WEBP tile quality 1-100 (default: 75)");
   console.log("  WRITE_PLAIN_JSON           Also write uncompressed .json next to .json.br (default: false)");
+  console.log("  BUILD_FORCE                Set to 1/true/yes to bypass the incremental build cache (same as --force)");
 }
 
 function iiifLimit(): number | undefined {
@@ -64,7 +66,10 @@ async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   const selectedLayerIds = args.filter((arg) => !arg.startsWith("-"));
   const raster = rasterEnabled(args);
+  const force = args.includes("--force") || buildForceEnabled();
   const buildLog = new BuildLog();
+  const registry = new HashRegistry(force);
+  if (force) log.info("  ! --force: rebuilding everything (incremental cache bypassed)");
 
   switch (command) {
     case "build": {
@@ -72,18 +77,22 @@ async function main(): Promise<void> {
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
       log.step(`Building data artifacts (${workerCount} workers)`);
-      await buildLog.fields({ workers: workerCount, raster: raster ? "yes" : "no" });
-      await buildLog.timed("iiif", () => buildIiif({ layers, concurrency: workerCount, limit: iiifLimit(), raster, buildLog }));
-      await buildLog.timed("toponyms", () => buildToponyms({ layers, concurrency: workerCount, buildLog }));
-      await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog }));
+      await buildLog.fields({ workers: workerCount, raster: raster ? "yes" : "no", force: force ? "yes" : "no" });
+      await buildLog.timed("iiif", () => buildIiif({ layers, concurrency: workerCount, limit: iiifLimit(), raster, buildLog, registry }));
+      await buildLog.timed("toponyms", () => buildToponyms({ layers, concurrency: workerCount, buildLog, registry }));
+      await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog, registry }));
+      // Registry last: it scans build/Layers/<id>/ for each layer's produced artifacts.
+      await buildLog.timed("layers", () => publishLayers({ buildLog, force }));
+      await registry.flushAll();
       break;
     }
     case "iiif": {
       await buildLog.reset("iiif", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
-      await buildLog.fields({ workers: workerCount, limit: iiifLimit(), raster: raster ? "yes" : "no" });
-      await buildLog.timed("iiif", () => buildIiif({ layers, concurrency: workerCount, limit: iiifLimit(), raster, buildLog }));
+      await buildLog.fields({ workers: workerCount, limit: iiifLimit(), raster: raster ? "yes" : "no", force: force ? "yes" : "no" });
+      await buildLog.timed("iiif", () => buildIiif({ layers, concurrency: workerCount, limit: iiifLimit(), raster, buildLog, registry }));
+      await registry.flushAll();
       break;
     }
     case "toponyms": {
@@ -91,7 +100,8 @@ async function main(): Promise<void> {
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
       await buildLog.fields({ workers: workerCount });
-      await buildLog.timed("toponyms", () => buildToponyms({ layers, concurrency: workerCount, buildLog }));
+      await buildLog.timed("toponyms", () => buildToponyms({ layers, concurrency: workerCount, buildLog, registry }));
+      await registry.flushAll();
       break;
     }
     case "parcels": {
@@ -99,25 +109,16 @@ async function main(): Promise<void> {
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
       await buildLog.fields({ workers: workerCount });
-      await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog }));
+      await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog, registry }));
+      await registry.flushAll();
       break;
     }
-    case "pack-raster": {
-      const [layerId, tilesDir] = selectedLayerIds;
-      if (!layerId || !tilesDir) {
-        console.error("Usage: bun run src/index.ts pack-raster <layerId> <xyzTilesDir>");
-        process.exit(1);
-      }
-      await buildLog.reset("pack-raster", selectedLayerIds);
-      const outputPmtiles = join(layerOutDir(layerId), "raster.pmtiles");
-      await buildLog.timed("pack-raster", () => buildRasterPmtiles({ inputTilesDir: tilesDir, outputPmtiles }));
-      await buildLog.fields({ layer: layerId, input: tilesDir, output: outputPmtiles });
-      log.ok(`${layerId}: packed raster PMTiles -> ${outputPmtiles}`);
+    case "layers": {
+      await buildLog.reset("layers", selectedLayerIds);
+      if (selectedLayerIds.length > 0) log.warn("layers publishes the full registry; ignoring layer id filter");
+      await buildLog.timed("layers", () => publishLayers({ buildLog, force }));
       break;
     }
-    case "layers":
-      console.log("[layers] TODO — enumerate Source/layers/*, resolve logos, emit build/layers.yaml");
-      break;
     case undefined:
     case "help":
     case "--help":

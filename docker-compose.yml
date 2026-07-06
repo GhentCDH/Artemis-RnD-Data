@@ -1,0 +1,25 @@
+services:
+  artemis-data:
+    # `docker compose build` builds locally; `docker compose pull` fetches the
+    # published image (ghcr.io/ghentcdh/artemis-data) without compiling tippecanoe.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/ghentcdh/artemis-data:latest
+    container_name: artemis-data
+    working_dir: /app
+    volumes:
+      - ./:/app                          # live source
+      - artemis-node-modules:/app/node_modules  # keep container-built deps (sharp, etc.)
+    stdin_open: true
+    tty: true
+    # Long-running dev container: start once, exec into it as often as you like.
+    #   docker compose up -d                            # start (stays running)
+    #   docker compose exec artemis-data bash           # <- your dev terminal
+    #   docker compose exec artemis-data bun run src/cli.ts build
+    #   docker compose down                             # stop when done
+    # (overrides the image's `bun` entrypoint so the container just stays alive)
+    entrypoint: ["sleep", "infinity"]
+
+volumes:
+  artemis-node-modules:

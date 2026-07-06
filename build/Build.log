@@ -1,0 +1,150 @@
+Artemis Data Build Log
+======================
+
+Started  2026-07-06T14:56:11.557Z
+Command  build
+  workers        8
+  raster         yes
+  force          no
+  source         .build-cache/zenodo-source/21219182/Source
+  zenodo record  21219182
+IIIF: GereduceerdeKadaster
+--------------------------
+  manifests           103
+  canvases            222
+  sprites             222
+  analysis warnings   0
+  analysis fixes      0
+  simplified masks    0
+  mask points before  0
+  mask points after   0
+  warped canvases     222
+  raster              build/Layers/GereduceerdeKadaster/raster.pmtiles
+  masks               222 (build/Layers/GereduceerdeKadaster/masks.pmtiles)
+  geomaps             build/Layers/GereduceerdeKadaster/geomaps.json
+  iiif:GereduceerdeKadaster duration  5m 49.4s
+
+IIIF: PrimitiefKadaster
+-----------------------
+  manifests           169
+  canvases            457
+  sprites             457
+  analysis warnings   16
+  analysis fixes      33
+  simplified masks    32
+  mask points before  4997
+  mask points after   3955
+  warped canvases     455
+  raster              build/Layers/PrimitiefKadaster/raster.pmtiles
+  masks               455 (build/Layers/PrimitiefKadaster/masks.pmtiles)
+  warning details     build/IIIFWarnings.log
+  geomaps             build/Layers/PrimitiefKadaster/geomaps.json
+  iiif:PrimitiefKadaster duration  5m 45.8s
+
+IIIF Summary
+------------
+  layers              2
+  manifests           272
+  canvases            679
+  sprites             679
+  analysis warnings   16
+  analysis fixes      33
+  simplified masks    32
+  mask points before  4997
+  mask points after   3955
+  warped canvases     677
+  mask features       677
+  warning details     build/IIIFWarnings.log
+  iiif duration  11m 37.4s
+
+Toponyms: Ferraris
+------------------
+  source files  411
+  items         21079
+  output        build/Layers/Ferraris/toponyms.json
+  toponyms:Ferraris duration  920ms
+  toponyms:Frickx duration  0ms
+
+Toponyms: GereduceerdeKadaster
+------------------------------
+  source files  1
+  items         3537
+  output        build/Layers/GereduceerdeKadaster/toponyms.json
+  toponyms:GereduceerdeKadaster duration  33ms
+  toponyms:HanddrawnCollection duration  0ms
+  toponyms:NGI1873 duration  0ms
+  toponyms:NGI1904 duration  0ms
+  toponyms:Popp duration  0ms
+
+Toponyms: PrimitiefKadaster
+---------------------------
+  source files  68
+  items         2514
+  output        build/Layers/PrimitiefKadaster/toponyms.json
+  toponyms:PrimitiefKadaster duration  198ms
+  toponyms:Vandermaelen duration  0ms
+  toponyms:Villaret duration  0ms
+
+Toponyms Summary
+----------------
+  layers  3
+  items   27130
+  toponyms duration  1.15s
+  parcels:GereduceerdeKadaster-parcels duration  5ms
+  parcels:HanddrawnCollection-parcels duration  0ms
+
+Parcels: PrimitiefKadaster-parcels
+----------------------------------
+  layer         PrimitiefKadaster
+  sublayer      PrimitiefKadaster-parcels
+  source        parcels/*.geojson
+  source files  39
+  polygons      8538
+  output        build/Layers/PrimitiefKadaster/parcels.pmtiles
+
+Douglas-Peucker: PrimitiefKadaster-parcels
+------------------------------------------
+  layer                       PrimitiefKadaster
+  sublayer                    PrimitiefKadaster-parcels
+  epsilon                     5
+  input points                282874
+  output points               90998
+  removed points              191876
+  rings simplified            8529
+  features simplified         8529
+  pixel reference rings       8538
+  coordinate reference rings  0
+  parcels:PrimitiefKadaster-parcels duration  2.76s
+
+Parcels Summary
+---------------
+  layers          1
+  polygons        8538
+  input points    282874
+  output points   90998
+  removed points  191876
+  parcels duration  2.77s
+  imagecollection:massart duration  47.15s
+
+Image Collection: massart
+-------------------------
+  items             60
+  with coordinates  60
+  index             build/Image collections/massart/massart_index.json
+  sprites           build/Image collections/massart/massart_sprites.webp
+
+Image Collections Summary
+-------------------------
+  collections       1
+  items             60
+  with coordinates  60
+  output            build/imagecollection.yaml
+  imagecollections duration  47.17s
+
+Layers
+------
+  layers          10
+  sublayers       22
+  logos resolved  13
+  output          build/layers.yaml
+  layers duration  33ms

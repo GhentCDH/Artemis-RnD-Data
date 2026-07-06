@@ -1,0 +1,201 @@
+name: Run data pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Pipeline command"
+        required: true
+        default: "build"
+        type: choice
+        options:
+          - build
+          - iiif
+          - toponyms
+          - parcels
+          - imagecollections
+          - layers
+          - source:sync
+      zenodo_record:
+        description: "Pinned Zenodo record id used as the source version"
+        required: true
+        default: "21219182"
+        type: string
+      targets:
+        description: "Optional layer/collection ids, separated by spaces"
+        required: false
+        default: ""
+        type: string
+      no_raster:
+        description: "Skip raster warp for build/iiif"
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: "Bypass incremental cache"
+        required: false
+        default: false
+        type: boolean
+      timeout_minutes:
+        description: "Kill the pipeline command after this many minutes"
+        required: true
+        default: "180"
+        type: choice
+        options:
+          - "30"
+          - "60"
+          - "120"
+          - "180"
+          - "240"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-pipeline-${{ github.ref }}-${{ inputs.command }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/ghentcdh/artemis-data:latest
+  OUTPUT_BRANCH: GHCI-testing
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pull pipeline container
+        run: docker pull "$IMAGE"
+
+      - name: Cache Bun dependencies and pipeline cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            .build-cache
+          key: pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ inputs.zenodo_record }}
+          restore-keys: |
+            pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            pipeline-${{ runner.os }}-
+
+      - name: Run selected pipeline command
+        env:
+          COMMAND: ${{ inputs.command }}
+          ZENODO_RECORD: ${{ inputs.zenodo_record }}
+          TARGETS: ${{ inputs.targets }}
+          NO_RASTER: ${{ inputs.no_raster }}
+          FORCE: ${{ inputs.force }}
+          TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+        run: |
+          set -euo pipefail
+
+          docker run --rm \
+            --entrypoint bash \
+            -v "$PWD:/app" \
+            -w /app \
+            -e COMMAND \
+            -e ZENODO_RECORD \
+            -e TARGETS \
+            -e NO_RASTER \
+            -e FORCE \
+            -e TIMEOUT_MINUTES \
+            "$IMAGE" \
+            -lc '
+              set -euo pipefail
+
+              TMPDIR=/tmp bun install --frozen-lockfile
+
+              cmd=(bun run src/cli.ts "$COMMAND" "$ZENODO_RECORD")
+
+              if [ -n "$TARGETS" ]; then
+                read -r -a targets <<< "$TARGETS"
+                cmd+=("${targets[@]}")
+              fi
+
+              if [ "$NO_RASTER" = "true" ]; then
+                cmd+=(--no-raster)
+              fi
+
+              if [ "$FORCE" = "true" ]; then
+                cmd+=(--force)
+              fi
+
+              echo "Running with timeout ${TIMEOUT_MINUTES}m:"
+              printf "  %q" "${cmd[@]}"
+              echo
+
+              timeout --preserve-status "${TIMEOUT_MINUTES}m" "${cmd[@]}"
+            '
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-logs-${{ inputs.command }}-${{ github.run_id }}
+          path: |
+            build/Build.log
+            build/IIIFWarnings.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Commit build state to source branch
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add build
+          if [ -d static ]; then git add static; fi
+
+          if git diff --cached --quiet; then
+            echo "No build state changes to commit."
+            exit 0
+          fi
+
+          git commit -m "ci: update pipeline build state ($GITHUB_RUN_ID)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Push build output to test branch
+        run: |
+          set -euo pipefail
+
+          if [ ! -d build ]; then
+            echo "No build/ directory produced; nothing to push."
+            exit 0
+          fi
+
+          tmpdir="$(mktemp -d)"
+          cp -a build "$tmpdir/build"
+          if [ -d static ]; then cp -a static "$tmpdir/static"; fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin "$OUTPUT_BRANCH" >/dev/null 2>&1; then
+            git checkout -B "$OUTPUT_BRANCH" "origin/$OUTPUT_BRANCH"
+          else
+            git checkout --orphan "$OUTPUT_BRANCH"
+          fi
+
+          git rm -r . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+
+          cp -a "$tmpdir/build" ./build
+          if [ -d "$tmpdir/static" ]; then cp -a "$tmpdir/static" ./static; fi
+
+          git add build
+          if [ -d static ]; then git add static; fi
+
+          if git diff --cached --quiet; then
+            echo "No build output changes to push."
+            exit 0
+          fi
+
+          git commit -m "ci: update pipeline build output ($GITHUB_RUN_ID)"
+          git push origin "$OUTPUT_BRANCH"

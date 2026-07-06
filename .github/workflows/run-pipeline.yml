@@ -95,6 +95,7 @@ jobs:
           set -euo pipefail
 
           docker run --rm \
+            --user "$(id -u):$(id -g)" \
             --entrypoint bash \
             -v "$PWD:/app" \
             -w /app \
@@ -184,7 +185,11 @@ jobs:
           fi
 
           git rm -r . 2>/dev/null || true
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git \
+            ! -name .build-cache \
+            ! -name node_modules \
+            -exec rm -rf {} +
 
           cp -a "$tmpdir/build" ./build
           if [ -d "$tmpdir/static" ]; then cp -a "$tmpdir/static" ./static; fi

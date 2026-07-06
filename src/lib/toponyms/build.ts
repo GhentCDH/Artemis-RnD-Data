@@ -3,15 +3,21 @@ import type { FeatureCollection } from "../geojson/types";
 import type { LayerRef } from "../layers/discovery";
 import { layerOutDir, toponymsSrcDir } from "../paths";
 import { runPool } from "../concurrency";
-import { ensureDir, listFiles, readJsonFile, writeJsonBrotliOnly } from "../utils/files";
+import { ensureDir, fileExists, hashFile, listFiles, readJsonFile, writeJsonBrotliOnly } from "../utils/files";
+import { contentHash } from "../utils/hash";
 import { log } from "../log";
 import { toponymItemsFromFeatureCollection, type ToponymItem } from "./normalize";
 import type { BuildLog } from "../build/buildLog";
+import type { HashRegistry } from "../build/hashRegistry";
+
+/** Bump to invalidate cached toponym outputs when the normalization changes. */
+const TOPONYMS_RECIPE = 1;
 
 export type BuildToponymsOptions = {
   layers: LayerRef[];
   concurrency: number;
   buildLog?: BuildLog;
+  registry?: HashRegistry;
 };
 
 export type ToponymBuildResult = {
@@ -19,12 +25,23 @@ export type ToponymBuildResult = {
   sourceFiles: number;
   items: number;
   brotliPath?: string;
+  cached?: boolean;
 };
 
 async function buildLayerToponyms(layer: LayerRef, options: BuildToponymsOptions): Promise<ToponymBuildResult> {
   const sourceDir = toponymsSrcDir(layer.id);
   const files = await listFiles(sourceDir, /\.(geojson|json)$/i);
   if (files.length === 0) return { layerId: layer.id, sourceFiles: 0, items: 0 };
+
+  const outPath = `${join(layerOutDir(layer.id), "toponyms.json")}.br`;
+  const hashes = options.registry ? await options.registry.layer(layer.id) : undefined;
+  const entries: Array<[string, string]> = [["@toponyms", contentHash("toponyms", TOPONYMS_RECIPE)]];
+  for (const file of files) entries.push([file.replace(/\\/g, "/"), await hashFile(file)]);
+  const unchanged = hashes?.categoryUnchanged("toponyms", entries) ?? false;
+  if (!options.registry?.force && unchanged && await fileExists(outPath)) {
+    log.ok(`${layer.id}: toponyms unchanged — skipped`);
+    return { layerId: layer.id, sourceFiles: files.length, items: 0, brotliPath: outPath, cached: true };
+  }
 
   const items: ToponymItem[] = [];
   await runPool(files, options.concurrency, async (file) => {

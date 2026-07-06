@@ -6,15 +6,21 @@ import type { LayerRef } from "../layers/discovery";
 import { buildVectorPmtiles } from "../pmtiles/vector";
 import { BUILD_TMP_DIR, layerOutDir, parcelsSrcDir } from "../paths";
 import { runPool } from "../concurrency";
-import { ensureDir, listFiles, readJsonFile, writeJson } from "../utils/files";
+import { ensureDir, fileExists, hashFile, listFiles, readJsonFile, writeJson } from "../utils/files";
+import { contentHash } from "../utils/hash";
 import { log } from "../log";
 import type { BuildLog } from "../build/buildLog";
+import type { HashRegistry } from "../build/hashRegistry";
+
+/** Bump to invalidate cached parcel PMTiles when the simplify/tiling changes. */
+const PARCELS_RECIPE = 1;
 
 export type BuildParcelsOptions = {
   layers: LayerRef[];
   concurrency: number;
   writeGeojson?: boolean;
   buildLog?: BuildLog;
+  registry?: HashRegistry;
 };
 
 export type ParcelBuildResult = {
@@ -25,6 +31,7 @@ export type ParcelBuildResult = {
   simplification: ParcelSimplificationStats;
   geojsonPath?: string;
   pmtilesPath?: string;
+  cached?: boolean;
 };
 
 export type ParcelSimplificationStats = {
@@ -146,6 +153,16 @@ async function buildLayerParcels(layer: LayerRef, options: BuildParcelsOptions):
   const files = await listFiles(sourceDir, /\.geojson$/i);
   if (files.length === 0) return { layerId: layer.id, sublayerId: sublayer?.id, sourceFiles: 0, features: 0, simplification: emptySimplificationStats() };
 
+  const pmtilesPath = join(layerOutDir(layer.id), "parcels.pmtiles");
+  const hashes = options.registry ? await options.registry.layer(layer.id) : undefined;
+  const entries: Array<[string, string]> = [["@parcels", contentHash("parcels", PARCELS_RECIPE, parcelEpsilon())]];
+  for (const file of files) entries.push([file.replace(/\\/g, "/"), await hashFile(file)]);
+  const unchanged = hashes?.categoryUnchanged("parcels", entries) ?? false;
+  if (!options.registry?.force && unchanged && await fileExists(pmtilesPath)) {
+    log.ok(`${layer.id}: parcels unchanged — skipped`);
+    return { layerId: layer.id, sublayerId: sublayer?.id, sourceFiles: files.length, features: 0, simplification: emptySimplificationStats(), pmtilesPath, cached: true };
+  }
+
   const features: Array<Feature<Record<string, unknown>, PolygonGeometry>> = [];
   const simplification = emptySimplificationStats();
   await runPool(files, options.concurrency, async (file) => {
@@ -169,7 +186,6 @@ async function buildLayerParcels(layer: LayerRef, options: BuildParcelsOptions):
     features,
   };
   const tmpGeojsonPath = join(BUILD_TMP_DIR, layer.id, "parcels.geojson");
-  const pmtilesPath = join(outDir, "parcels.pmtiles");
 
   await ensureDir(outDir);
   await writeJson(tmpGeojsonPath, featureCollection);

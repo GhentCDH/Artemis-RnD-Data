@@ -9,7 +9,7 @@ import type { MaskFeature } from "./warp";
  * Build masks.pmtiles from the per-canvas geo footprints recovered during warp.
  * One polygon per canvas with `imageId` + `manifestUrl`, in a `masks` layer.
  */
-export async function buildMasksPmtiles(features: MaskFeature[], workDir: string, outputPmtiles: string): Promise<number> {
+export async function buildMasksPmtiles(features: MaskFeature[], workDir: string, outputPmtiles: string, buffer?: number): Promise<number> {
   if (features.length === 0) return 0;
   await ensureDir(workDir);
   const geojsonPath = join(workDir, "masks.geojson");
@@ -22,6 +22,7 @@ export async function buildMasksPmtiles(features: MaskFeature[], workDir: string
     layerName: "masks",
     minZoom: rasterMinZoom(),
     maxZoom: rasterMaxZoom(),
+    buffer,
   });
   await rm(geojsonPath, { force: true });
   return features.length;

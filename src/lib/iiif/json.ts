@@ -16,14 +16,41 @@ export async function pathExists(path: string): Promise<boolean> {
   }
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function retryDelayMs(res: Response, attempt: number): number {
+  const retryAfter = res.headers.get("retry-after");
+  if (retryAfter) {
+    const seconds = Number.parseFloat(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, 30_000);
+    const date = Date.parse(retryAfter);
+    if (Number.isFinite(date)) return Math.min(Math.max(0, date - Date.now()), 30_000);
+  }
+  return Math.min(1000 * 2 ** attempt, 15_000);
+}
+
+function shouldRetryStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
 export async function fetchJson(url: string): Promise<unknown> {
   if (!/^https?:\/\//i.test(url)) {
     return JSON.parse(await readFile(url.replace(/^file:\/\//i, ""), "utf-8")) as unknown;
   }
 
-  const res = await fetch(url, { redirect: "follow", headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`Fetch failed (${res.status}) for ${url}`);
-  return res.json();
+  let lastStatus: number | undefined;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await fetch(url, { redirect: "follow", headers: { Accept: "application/json" } });
+    if (res.ok) return res.json();
+    lastStatus = res.status;
+    if (!shouldRetryStatus(res.status) || attempt === 4) {
+      throw new Error(`Fetch failed (${res.status}) for ${url}`);
+    }
+    await sleep(retryDelayMs(res, attempt));
+  }
+  throw new Error(`Fetch failed (${lastStatus ?? "unknown"}) for ${url}`);
 }
 
 export async function cachedJson(url: string, cacheDir: string): Promise<unknown> {

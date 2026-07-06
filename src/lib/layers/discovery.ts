@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import YAML from "yaml";
-import { SOURCE_LAYERS_DIR } from "../paths";
+import { sourceLayersDir } from "../paths";
 
 export type LayerConfig = {
   id: string;
@@ -38,7 +38,8 @@ function isLayerConfig(value: unknown): value is LayerConfig {
 
 export async function discoverLayers(layerIds?: string[]): Promise<LayerRef[]> {
   const wanted = new Set((layerIds ?? []).filter(Boolean));
-  const entries = await readdir(SOURCE_LAYERS_DIR, { withFileTypes: true });
+  const root = sourceLayersDir();
+  const entries = await readdir(root, { withFileTypes: true });
   const dirs = entries
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
     .map((entry) => entry.name)
@@ -47,7 +48,7 @@ export async function discoverLayers(layerIds?: string[]): Promise<LayerRef[]> {
 
   const layers: LayerRef[] = [];
   for (const dirName of dirs) {
-    const dir = join(SOURCE_LAYERS_DIR, dirName);
+    const dir = join(root, dirName);
     const configPath = join(dir, `${dirName}.yaml`);
     const config = YAML.parse(await readFile(configPath, "utf-8")) as unknown;
     if (!isLayerConfig(config)) throw new Error(`${configPath} is not a valid layer config`);
@@ -56,4 +57,3 @@ export async function discoverLayers(layerIds?: string[]): Promise<LayerRef[]> {
 
   return layers;
 }
-

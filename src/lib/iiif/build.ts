@@ -5,15 +5,17 @@ import { BuildLog, IIIF_WARNINGS_LOG_PATH } from "../build/buildLog";
 import { runPool } from "../concurrency";
 import { log } from "../log";
 import { allmapsCanvasCacheDir, iiifCacheDir, layerOutDir, layerTmpDir, warpTifCacheDir } from "../paths";
-import { ensureDir, fileExists, writeJsonWithBrotli } from "../utils/files";
+import { ensureDir, fileExists, writeJson } from "../utils/files";
 import { contentHash } from "../utils/hash";
 import { buildRasterPmtiles } from "../pmtiles/raster";
+import { vectorTileBuffer } from "../pmtiles/vector";
 import { buildMasksPmtiles } from "../raster/masks";
 import { rasterConfigSignature } from "../raster/config";
 import { buildXyzTiles } from "../raster/tiles";
 import { annotationTransformationType, warpCanvas, warpSignature } from "../raster/warp";
 import { analyzeAndSanitize, normalizeAnnotationPage, writeAnalysisLog, writeWarpFailureLog, type WarpFailure } from "./analysis";
 import { buildCompactGeomaps } from "./geomaps";
+import { buildIiifSearchIndex } from "./search";
 import { revalidatedJson } from "./json";
 import {
   canvasId,
@@ -185,7 +187,8 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
   const spriteSources = processed.flatMap((manifest) => manifest.canvases.flatMap((canvas) => canvas.sprite ? [canvas.sprite] : []));
   log.info(`    ${group.layer.id}: packing ${spriteSources.length} sprites + geomaps`);
   const spritesMeta = await writeSpriteArtifacts(group.layer.id, outDir, spriteSources);
-  await writeJsonWithBrotli(join(outDir, "geomaps.json"), buildCompactGeomaps(group.layer.id, processed), true);
+  await writeJson(join(outDir, "geomaps.json"), buildCompactGeomaps(group.layer.id, processed), true);
+  await writeJson(join(outDir, "search.json"), buildIiifSearchIndex(group.layer.id, group.layer.label, processed), true);
   const maskStats = maskSimplificationStats(processed);
   const analysisErrors = processed.reduce((sum, manifest) => sum + manifest.canvases.reduce((inner, canvas) => inner + canvas.analysis.after.errors.length, 0), 0);
   const analysisWarnings = processed.reduce((sum, manifest) => sum + manifest.canvases.reduce((inner, canvas) => inner + canvas.analysis.after.warnings.length, 0), 0);
@@ -203,9 +206,10 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
     const rasterTarget = join(outDir, "raster.pmtiles");
     const masksTarget = join(outDir, "masks.pmtiles");
     const rasterCanvases = processed.flatMap((manifest) => manifest.canvases.filter((canvas) => canvas.warpSig));
+    const maskTileBuffer = vectorTileBuffer();
     // Raster is fresh when both the canvas georeferences (canvasUnchanged, above)
     // and the raster tiling config (@raster) match the committed registry.
-    const rasterParamHash = contentHash("raster", RASTER_RECIPE, rasterConfigSignature());
+    const rasterParamHash = contentHash("raster", RASTER_RECIPE, rasterConfigSignature(maskTileBuffer));
     const rasterParamUnchanged = hashes?.categoryUnchanged("raster", [["@raster", rasterParamHash]]) ?? false;
     const rasterFresh = !options.registry?.force && canvasUnchanged && rasterParamUnchanged && (await fileExists(rasterTarget));
 
@@ -274,7 +278,7 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
           rasterPmtilesPath = rasterTarget;
         }
         log.info(`    ${group.layer.id}: building masks.pmtiles (${maskFeatures.length} features)`);
-        masks = await buildMasksPmtiles(maskFeatures, rasterWorkDir, masksTarget);
+        masks = await buildMasksPmtiles(maskFeatures, rasterWorkDir, masksTarget, maskTileBuffer);
         if (masks > 0) masksPmtilesPath = masksTarget;
       }
       await rm(rasterWorkDir, { recursive: true, force: true });
@@ -304,8 +308,9 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
     masks,
     warningLogPath: analysisErrors > 0 || analysisWarnings > 0 || fixedMaps > 0 ? IIIF_WARNINGS_LOG_PATH : undefined,
     geomapsPath: join(outDir, "geomaps.json"),
+    searchPath: join(outDir, "search.json"),
     spritesJsonPath: spritesMeta ? join(outDir, "sprites.json") : undefined,
-    spritesImagePath: spritesMeta ? join(outDir, "sprites.jpg") : undefined,
+    spritesImagePath: spritesMeta ? join(outDir, "sprites.webp") : undefined,
     rasterPmtilesPath,
     masksPmtilesPath,
   };

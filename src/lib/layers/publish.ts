@@ -2,14 +2,14 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import YAML from "yaml";
 import { discoverLayers } from "./discovery";
-import { BUILD_LAYERS_YAML_PATH, LOGOS_REGISTRY_PATH, layerOutDir } from "../paths";
+import { BUILD_LAYERS_YAML_PATH, layerOutDir, logosRegistryPath } from "../paths";
 import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
 import { log } from "../log";
 import type { BuildLog } from "../build/buildLog";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
-const LAYERS_RECIPE = 3;
+const LAYERS_RECIPE = 5;
 
 /**
  * Published per-layer artifact filenames → the registry key the viewer looks up.
@@ -17,14 +17,15 @@ const LAYERS_RECIPE = 3;
  * paths in layers.yaml are relative to the deploy root, i.e. `Layers/<id>/<file>`.
  */
 const ARTIFACT_KEYS: Record<string, string> = {
-  "geomaps.json.br": "geomaps",
+  "geomaps.json": "geomaps",
+  "search.json": "search",
   "raster.pmtiles": "raster",
   "masks.pmtiles": "masks",
   "parcels.pmtiles": "parcels",
   "sprites.jpg": "sprites",
   "sprites.webp": "sprites",
-  "sprites.json.br": "spritesIndex",
-  "toponyms.json.br": "toponyms",
+  "sprites.json": "spritesIndex",
+  "toponyms.json": "toponyms",
 };
 
 export type PublishLayersOptions = {
@@ -47,15 +48,16 @@ export type PublishLayersResult = {
  * each filename to `{ file, href }` so the viewer needs no second lookup.
  */
 async function loadLogoRegistry(): Promise<Map<string, string>> {
+  const registryPath = logosRegistryPath();
   try {
-    const parsed = YAML.parse(await readFile(LOGOS_REGISTRY_PATH, "utf-8")) as Record<string, unknown> | null;
+    const parsed = YAML.parse(await readFile(registryPath, "utf-8")) as Record<string, unknown> | null;
     const registry = new Map<string, string>();
     for (const [file, href] of Object.entries(parsed ?? {})) {
       if (typeof href === "string") registry.set(file, href);
     }
     return registry;
   } catch {
-    log.warn(`no logo registry at ${LOGOS_REGISTRY_PATH}; leaving logo filenames unresolved`);
+    log.warn(`no logo registry at ${registryPath}; leaving logo filenames unresolved`);
     return new Map();
   }
 }
@@ -74,7 +76,7 @@ type MutableLayer = {
 };
 
 /** IIIF sublayers own the georeferenced/raster artifacts; each is a single build output. */
-const IIIF_ARTIFACT_KEYS = ["geomaps", "raster", "masks", "sprites", "spritesIndex"];
+const IIIF_ARTIFACT_KEYS = ["geomaps", "search", "raster", "masks", "sprites", "spritesIndex"];
 
 /**
  * Which registry keys a sublayer produces, by kind/source — so artifacts attach
@@ -187,7 +189,8 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   await writeFile(BUILD_LAYERS_YAML_PATH, `${header}${body}`, "utf-8");
 
   log.ok(`layers: ${layers.length} layers, ${sublayers} sublayers → ${BUILD_LAYERS_YAML_PATH}`);
-  for (const file of unknownLogos) log.warn(`unknown logo '${file}' not in ${LOGOS_REGISTRY_PATH}`);
+  const registryPath = logosRegistryPath();
+  for (const file of unknownLogos) log.warn(`unknown logo '${file}' not in ${registryPath}`);
 
   await options.buildLog?.section("Layers");
   await options.buildLog?.fields({

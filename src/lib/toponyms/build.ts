@@ -3,7 +3,7 @@ import type { FeatureCollection } from "../geojson/types";
 import type { LayerRef } from "../layers/discovery";
 import { layerOutDir, toponymsSrcDir } from "../paths";
 import { runPool } from "../concurrency";
-import { ensureDir, fileExists, hashFile, listFiles, readJsonFile, writeJsonBrotliOnly } from "../utils/files";
+import { ensureDir, fileExists, hashFile, listFiles, readJsonFile, writeJson } from "../utils/files";
 import { contentHash } from "../utils/hash";
 import { log } from "../log";
 import { toponymItemsFromFeatureCollection, type ToponymItem } from "./normalize";
@@ -11,7 +11,7 @@ import type { BuildLog } from "../build/buildLog";
 import type { HashRegistry } from "../build/hashRegistry";
 
 /** Bump to invalidate cached toponym outputs when the normalization changes. */
-const TOPONYMS_RECIPE = 1;
+const TOPONYMS_RECIPE = 2;
 
 export type BuildToponymsOptions = {
   layers: LayerRef[];
@@ -24,7 +24,7 @@ export type ToponymBuildResult = {
   layerId: string;
   sourceFiles: number;
   items: number;
-  brotliPath?: string;
+  jsonPath?: string;
   cached?: boolean;
 };
 
@@ -33,14 +33,14 @@ async function buildLayerToponyms(layer: LayerRef, options: BuildToponymsOptions
   const files = await listFiles(sourceDir, /\.(geojson|json)$/i);
   if (files.length === 0) return { layerId: layer.id, sourceFiles: 0, items: 0 };
 
-  const outPath = `${join(layerOutDir(layer.id), "toponyms.json")}.br`;
+  const outPath = join(layerOutDir(layer.id), "toponyms.json");
   const hashes = options.registry ? await options.registry.layer(layer.id) : undefined;
   const entries: Array<[string, string]> = [["@toponyms", contentHash("toponyms", TOPONYMS_RECIPE)]];
   for (const file of files) entries.push([file.replace(/\\/g, "/"), await hashFile(file)]);
   const unchanged = hashes?.categoryUnchanged("toponyms", entries) ?? false;
   if (!options.registry?.force && unchanged && await fileExists(outPath)) {
     log.ok(`${layer.id}: toponyms unchanged — skipped`);
-    return { layerId: layer.id, sourceFiles: files.length, items: 0, brotliPath: outPath, cached: true };
+    return { layerId: layer.id, sourceFiles: files.length, items: 0, jsonPath: outPath, cached: true };
   }
 
   const items: ToponymItem[] = [];
@@ -59,7 +59,7 @@ async function buildLayerToponyms(layer: LayerRef, options: BuildToponymsOptions
   await ensureDir(outDir);
 
   const jsonPath = join(outDir, "toponyms.json");
-  await writeJsonBrotliOnly(
+  await writeJson(
     jsonPath,
     {
       generatedAt: new Date().toISOString(),
@@ -76,9 +76,9 @@ async function buildLayerToponyms(layer: LayerRef, options: BuildToponymsOptions
   await options.buildLog?.fields({
     "source files": files.length,
     items: items.length,
-    output: `${jsonPath}.br`,
+    output: jsonPath,
   });
-  return { layerId: layer.id, sourceFiles: files.length, items: items.length, brotliPath: `${jsonPath}.br` };
+  return { layerId: layer.id, sourceFiles: files.length, items: items.length, jsonPath };
 }
 
 export async function buildToponyms(options: BuildToponymsOptions): Promise<ToponymBuildResult[]> {

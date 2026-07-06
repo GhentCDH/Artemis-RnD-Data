@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { Image } from "@allmaps/iiif-parser";
 import sharp from "sharp";
 import { iiifCacheDir } from "../paths";
-import { ensureDir, writeJsonWithBrotli } from "../utils/files";
+import { ensureDir, writeJson } from "../utils/files";
 import { spriteMaxSize, SPRITESHEET_MAX_WIDTH } from "./config";
 import { pathExists } from "./json";
 import type { SpritePlacement, SpriteSource } from "./types";
@@ -54,7 +54,7 @@ export async function fetchSprite(serviceUrl: string, info: Record<string, unkno
   throw new Error(`Sprite fetch failed: ${errors.slice(-3).join(" | ")}`);
 }
 
-function packSprites(sprites: SpriteSource[]): { width: number; height: number; placements: SpritePlacement[] } {
+export function packSprites(sprites: SpriteSource[]): { width: number; height: number; placements: SpritePlacement[] } {
   if (sprites.length === 0) return { width: 0, height: 0, placements: [] };
   const totalArea = sprites.reduce((sum, sprite) => sum + sprite.spriteWidth * sprite.spriteHeight, 0);
   const widest = sprites.reduce((max, sprite) => Math.max(max, sprite.spriteWidth), 0);
@@ -85,8 +85,8 @@ export async function writeSpriteArtifacts(layerId: string, outDir: string, spri
   await sharp({
     create: { width: packed.width, height: packed.height, channels: 3, background: { r: 255, g: 255, b: 255 } },
   }).composite(packed.placements.map((placement) => ({ input: placement.buffer, left: placement.x, top: placement.y })))
-    .jpeg({ quality: 65 })
-    .toFile(join(outDir, "sprites.jpg"));
+    .webp({ quality: 75 })
+    .toFile(join(outDir, "sprites.webp"));
 
   const spritesJson: Record<string, unknown> = {};
   for (const placement of packed.placements) {
@@ -100,8 +100,8 @@ export async function writeSpriteArtifacts(layerId: string, outDir: string, spri
       height: placement.spriteHeight,
     };
   }
-  await writeJsonWithBrotli(join(outDir, "sprites.json"), spritesJson, true);
-  return { image: `Layers/${layerId}/sprites.jpg`, json: `Layers/${layerId}/sprites.json`, imageSize: [packed.width, packed.height], count: packed.placements.length };
+  await writeJson(join(outDir, "sprites.json"), spritesJson, true);
+  return { image: `Layers/${layerId}/sprites.webp`, json: `Layers/${layerId}/sprites.json`, imageSize: [packed.width, packed.height], count: packed.placements.length };
 }
 
 export function spriteCachePath(layerId: string, canvasAllmapsId: string, size: { width: number; height: number }): string {

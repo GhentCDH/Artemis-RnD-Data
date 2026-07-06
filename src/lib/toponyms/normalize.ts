@@ -12,6 +12,10 @@ export type ToponymItem = {
   sheet?: string;
 };
 
+function roundCoordinate(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
+}
+
 function cleanToponymText(value: unknown): string | null {
   let text = String(value ?? "").replace(/\s+/g, " ").trim();
   if (text.length < 2) return null;
@@ -56,8 +60,8 @@ export function toponymItemsFromFeatureCollection(
     items.push({
       id,
       text,
-      lon: center[0],
-      lat: center[1],
+      lon: roundCoordinate(center[0]),
+      lat: roundCoordinate(center[1]),
       map: mapId,
       ...(sheet ? { sheet } : {}),
     });
@@ -80,4 +84,3 @@ export function toponymPointFeatures(items: ToponymItem[]): FeatureCollection<Re
 
   return { type: "FeatureCollection", features };
 }
-

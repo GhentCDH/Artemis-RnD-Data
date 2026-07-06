@@ -3,7 +3,7 @@ import type { Feature, FeatureCollection, PolygonGeometry, Position } from "../g
 import { isPolygonGeometry } from "../geojson/geometry";
 import { simplifyRing, simplifyRingByReference } from "../geojson/simplify";
 import type { LayerRef } from "../layers/discovery";
-import { buildVectorPmtiles } from "../pmtiles/vector";
+import { buildVectorPmtiles, vectorTileBuffer } from "../pmtiles/vector";
 import { BUILD_TMP_DIR, layerOutDir, parcelsSrcDir } from "../paths";
 import { runPool } from "../concurrency";
 import { ensureDir, fileExists, hashFile, listFiles, readJsonFile, writeJson } from "../utils/files";
@@ -155,7 +155,8 @@ async function buildLayerParcels(layer: LayerRef, options: BuildParcelsOptions):
 
   const pmtilesPath = join(layerOutDir(layer.id), "parcels.pmtiles");
   const hashes = options.registry ? await options.registry.layer(layer.id) : undefined;
-  const entries: Array<[string, string]> = [["@parcels", contentHash("parcels", PARCELS_RECIPE, parcelEpsilon())]];
+  const tileBuffer = vectorTileBuffer();
+  const entries: Array<[string, string]> = [["@parcels", contentHash("parcels", PARCELS_RECIPE, parcelEpsilon(), tileBuffer)]];
   for (const file of files) entries.push([file.replace(/\\/g, "/"), await hashFile(file)]);
   const unchanged = hashes?.categoryUnchanged("parcels", entries) ?? false;
   if (!options.registry?.force && unchanged && await fileExists(pmtilesPath)) {
@@ -196,6 +197,7 @@ async function buildLayerParcels(layer: LayerRef, options: BuildParcelsOptions):
     layerName: "parcels",
     minZoom: 10,
     maxZoom: 15,
+    buffer: tileBuffer,
   });
 
   let geojsonPath: string | undefined;

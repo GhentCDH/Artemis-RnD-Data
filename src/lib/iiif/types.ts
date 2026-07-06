@@ -91,6 +91,7 @@ export type IiifBuildResult = {
   masks: number;
   warningLogPath?: string;
   geomapsPath?: string;
+  searchPath?: string;
   spritesJsonPath?: string;
   spritesImagePath?: string;
   rasterPmtilesPath?: string;

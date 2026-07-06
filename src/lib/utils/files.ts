@@ -1,11 +1,6 @@
 import { createHash } from "node:crypto";
-import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { brotliBuffer } from "./compress";
-
-export function writePlainJsonEnabled(): boolean {
-  return /^(1|true|yes)$/i.test(process.env.WRITE_PLAIN_JSON ?? "");
-}
 
 export async function pathExists(path: string): Promise<boolean> {
   try {
@@ -44,20 +39,7 @@ export async function allExist(paths: string[]): Promise<boolean> {
 export async function writeJson(path: string, value: unknown, pretty = false): Promise<void> {
   await ensureDir(dirname(path));
   await writeFile(path, `${JSON.stringify(value, null, pretty ? 2 : 0)}\n`, "utf-8");
-}
-
-export async function writeJsonWithBrotli(path: string, value: unknown, pretty = false): Promise<void> {
-  await ensureDir(dirname(path));
-  const content = `${JSON.stringify(value, null, pretty ? 2 : 0)}\n`;
-  await writeFile(`${path}.br`, await brotliBuffer(content));
-  if (writePlainJsonEnabled()) await writeFile(path, content, "utf-8");
-  else await Bun.file(path).delete().catch(() => {});
-}
-
-export async function writeJsonBrotliOnly(path: string, value: unknown, pretty = false): Promise<void> {
-  await ensureDir(dirname(path));
-  const content = `${JSON.stringify(value, null, pretty ? 2 : 0)}\n`;
-  await writeFile(`${path}.br`, await brotliBuffer(content));
+  await rm(`${path}.br`, { force: true });
 }
 
 export async function readJsonFile<T>(path: string): Promise<T> {

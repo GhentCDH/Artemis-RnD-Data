@@ -1,0 +1,9 @@
+.git
+node_modules
+build
+.build-cache
+cache
+logs
+*.log
+# Raw geodata is bind-mounted in dev; never bake it into the image
+Source/**/*.geojson

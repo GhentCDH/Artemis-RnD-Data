@@ -7,6 +7,12 @@ on:
   push:
     branches: [main, pipeline-v2]
     tags: ["v*"]
+    paths:
+      - "Dockerfile"
+      - "package.json"
+      - "bun.lock"
+      - "src/**"
+      - ".dockerignore"
   workflow_dispatch:
 
 env:

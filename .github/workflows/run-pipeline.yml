@@ -132,6 +132,7 @@ jobs:
           retention-days: 14
 
       - name: Stage pipeline outputs
+        if: ${{ success() }}
         run: |
           set -euo pipefail
 
@@ -142,6 +143,7 @@ jobs:
           if [ -d static ]; then cp -a static "$output_dir/static"; fi
 
       - name: Push build state branch
+        if: ${{ success() }}
         run: |
           set -euo pipefail
 
@@ -179,6 +181,7 @@ jobs:
           git push origin "$BUILD_STATE_BRANCH"
 
       - name: Push build output to test branch
+        if: ${{ success() }}
         run: |
           set -euo pipefail
 

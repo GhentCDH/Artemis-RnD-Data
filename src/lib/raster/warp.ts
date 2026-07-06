@@ -1,4 +1,4 @@
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import sharp from "sharp";
 import { ensureDir, fileExists } from "../utils/files";
@@ -97,6 +97,15 @@ async function runGdal(tool: string, args: string[]): Promise<void> {
     await runCommand(tool, args);
   } catch (err) {
     throw new Error(`${tool}: ${conciseGdalError(err instanceof Error ? err.message : String(err))}`);
+  }
+}
+
+async function validGeoTiff(path: string): Promise<boolean> {
+  try {
+    await runCommand("gdalinfo", ["-checksum", path]);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -216,7 +225,13 @@ export async function warpCanvas(params: {
   // Cache hit: an identical warp signature already produced this GeoTIFF, so skip
   // the source fetch and GDAL entirely and recover the mask from its sidecar.
   if (params.reuseCache && (await fileExists(params.outputTifPath))) {
-    return { geotiffPath: params.outputTifPath, maskFeature: await readMaskSidecar(params.maskSidecarPath) };
+    if (await validGeoTiff(params.outputTifPath)) {
+      return { geotiffPath: params.outputTifPath, maskFeature: await readMaskSidecar(params.maskSidecarPath) };
+    }
+    await Promise.all([
+      rm(params.outputTifPath, { force: true }),
+      rm(params.maskSidecarPath, { force: true }),
+    ]);
   }
 
   const resource = params.georeferencedMap.resource as Record<string, unknown> | undefined;
@@ -244,6 +259,7 @@ export async function warpCanvas(params: {
   const gcpPath = join(params.workDir, `${params.key}_gcp.tif`);
   const cutlinePath = join(params.workDir, `${params.key}_cutline.geojson`);
   const geotiffPath = params.outputTifPath;
+  const tmpGeotiffPath = `${params.outputTifPath}.tmp-${process.pid}-${params.key}.tif`;
   const transformArgs = gdalTransformArgs(params.transformationType);
 
   // Decode to a clean opaque PNG (no alpha, no black exterior) for warping.
@@ -279,14 +295,16 @@ export async function warpCanvas(params: {
       "-co", "COMPRESS=DEFLATE",
       "-overwrite",
       gcpPath,
-      geotiffPath,
+      tmpGeotiffPath,
     ]);
+    if (!await validGeoTiff(tmpGeotiffPath)) throw new Error("warped GeoTIFF failed validation");
+    await rename(tmpGeotiffPath, geotiffPath);
 
     // Persist the mask sidecar next to the cached GeoTIFF so a later cache hit
     // can rebuild masks.pmtiles without re-warping.
     await writeFile(params.maskSidecarPath, JSON.stringify(maskFeature));
     return { geotiffPath, maskFeature };
   } finally {
-    await Promise.all([rm(srcPath, { force: true }), rm(gcpPath, { force: true }), rm(cutlinePath, { force: true })]);
+    await Promise.all([rm(srcPath, { force: true }), rm(gcpPath, { force: true }), rm(cutlinePath, { force: true }), rm(tmpGeotiffPath, { force: true })]);
   }
 }

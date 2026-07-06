@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import sharp from "sharp";
@@ -255,11 +256,12 @@ export async function warpCanvas(params: {
 
   await ensureDir(params.workDir);
   await ensureDir(dirname(params.outputTifPath));
-  const srcPath = join(params.workDir, `${params.key}_src.png`);
-  const gcpPath = join(params.workDir, `${params.key}_gcp.tif`);
-  const cutlinePath = join(params.workDir, `${params.key}_cutline.geojson`);
+  const scratchKey = `${params.key}_${randomUUID()}`;
+  const srcPath = join(params.workDir, `${scratchKey}_src.png`);
+  const gcpPath = join(params.workDir, `${scratchKey}_gcp.tif`);
+  const cutlinePath = join(params.workDir, `${scratchKey}_cutline.geojson`);
   const geotiffPath = params.outputTifPath;
-  const tmpGeotiffPath = `${params.outputTifPath}.tmp-${process.pid}-${params.key}.tif`;
+  const tmpGeotiffPath = `${params.outputTifPath}.tmp-${scratchKey}.tif`;
   const transformArgs = gdalTransformArgs(params.transformationType);
 
   // Decode to a clean opaque PNG (no alpha, no black exterior) for warping.

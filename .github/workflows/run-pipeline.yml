@@ -155,6 +155,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          git reset --hard HEAD
+
           if git ls-remote --exit-code --heads origin "$BUILD_STATE_BRANCH" >/dev/null 2>&1; then
             git checkout -B "$BUILD_STATE_BRANCH" "origin/$BUILD_STATE_BRANCH"
           else
@@ -192,6 +194,8 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git reset --hard HEAD
 
           if git ls-remote --exit-code --heads origin "$OUTPUT_BRANCH" >/dev/null 2>&1; then
             git checkout -B "$OUTPUT_BRANCH" "origin/$OUTPUT_BRANCH"

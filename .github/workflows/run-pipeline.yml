@@ -8,6 +8,14 @@ on:
         required: false
         default: false
         type: boolean
+      workers:
+        description: "Pipeline worker count"
+        required: true
+        default: "4"
+        type: choice
+        options:
+          - "4"
+          - "8"
 
 permissions:
   contents: write
@@ -37,12 +45,21 @@ jobs:
       - name: Pull pipeline container
         run: docker pull "$IMAGE"
 
+      - name: Cache Zenodo source mirror
+        uses: actions/cache@v4
+        with:
+          path: .build-cache/zenodo-source
+          key: zenodo-source-${{ env.ZENODO_RECORD }}
+
       - name: Cache Bun dependencies and pipeline cache
         uses: actions/cache@v4
         with:
           path: |
             node_modules
-            .build-cache
+            .build-cache/allmaps
+            .build-cache/iiif
+            .build-cache/image-collections
+            .build-cache/warp-tif
           key: pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ env.ZENODO_RECORD }}
           restore-keys: |
             pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
@@ -70,6 +87,7 @@ jobs:
       - name: Run selected pipeline command
         env:
           FORCE: ${{ inputs.force }}
+          BUILD_CONCURRENCY: ${{ inputs.workers }}
         run: |
           set -euo pipefail
 
@@ -82,6 +100,7 @@ jobs:
             -e ZENODO_RECORD \
             -e FORCE \
             -e TIMEOUT_MINUTES \
+            -e BUILD_CONCURRENCY \
             "$IMAGE" \
             -lc '
               set -euo pipefail

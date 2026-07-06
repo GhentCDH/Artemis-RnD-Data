@@ -227,6 +227,17 @@ export function analyzeAndSanitize(georeferencedMap: Record<string, unknown>): {
   return { map: sanitized.map, analysis: { before, after: analyzeMap(sanitized.map), fixes: sanitized.fixes } };
 }
 
+export type WarpFailure = { canvasId: string; manifestUrl?: string; reason: string };
+
+/** Append per-canvas warp failures (with the concrete reason) to IIIFWarnings.log. */
+export async function writeWarpFailureLog(buildLog: BuildLog | undefined, layerId: string, failures: WarpFailure[]): Promise<void> {
+  if (!buildLog || failures.length === 0) return;
+  await buildLog.section(`IIIF Warp Failures: ${layerId}`);
+  for (const failure of failures) {
+    await buildLog.info(`  ${failure.canvasId}  —  ${failure.reason}${failure.manifestUrl ? `  (${failure.manifestUrl})` : ""}`);
+  }
+}
+
 export function summarizeAnalysisItems(items: AnalysisItem[]): string {
   return [...new Set(items.map((item) => item.code))].join(", ");
 }

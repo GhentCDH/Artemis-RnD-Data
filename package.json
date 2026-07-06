@@ -1,7 +1,7 @@
 {
   "name": "artemis-data",
   "version": "2.0.0-dev",
-  "module": "src/index.ts",
+  "module": "src/cli.ts",
   "type": "module",
   "private": true,
   "devDependencies": {
@@ -12,6 +12,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@allmaps/analyze": "^1.0.0-beta.13",
     "@allmaps/annotation": "^1.0.0-beta.36",
     "@allmaps/id": "^1.0.0-beta.37",
     "@allmaps/iiif-parser": "^1.0.0-beta.47",
@@ -19,7 +20,11 @@
     "yaml": "^2.5.0"
   },
   "scripts": {
-    "build": "bun run src/index.ts build",
-    "dev": "bun run src/index.ts"
+    "build": "bun run src/cli.ts build",
+    "dev": "bun run src/cli.ts",
+    "iiif": "bun run src/cli.ts iiif",
+    "parcels": "bun run src/cli.ts parcels",
+    "toponyms": "bun run src/cli.ts toponyms",
+    "typecheck": "tsc --noEmit"
   }
 }

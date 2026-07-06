@@ -35,6 +35,26 @@ export async function cachedJson(url: string, cacheDir: string): Promise<unknown
   return json;
 }
 
+/**
+ * Like {@link cachedJson} but always re-fetches so upstream changes are detected
+ * (the incremental build hashes this content to decide what to rebuild). The
+ * on-disk copy is refreshed on success and used as an offline fallback when the
+ * fetch fails. Used for cheap-to-fetch, mutable resources: IIIF collections,
+ * manifests, and georeference annotations.
+ */
+export async function revalidatedJson(url: string, cacheDir: string): Promise<unknown> {
+  await ensureDir(cacheDir);
+  const path = join(cacheDir, `${sha1(url)}.json`);
+  try {
+    const json = await fetchJson(url);
+    await writeFile(path, JSON.stringify(json, null, 2), "utf-8");
+    return json;
+  } catch (err) {
+    if (await pathExists(path)) return JSON.parse(await readFile(path, "utf-8")) as unknown;
+    throw err;
+  }
+}
+
 export function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
   if (value && typeof value === "object") {

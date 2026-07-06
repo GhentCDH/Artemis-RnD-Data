@@ -5,7 +5,7 @@ import type { LayerRef } from "../layers/discovery";
 import { allmapsCanvasCacheDir, iiifCacheDir } from "../paths";
 import { ensureDir } from "../utils/files";
 import { ANNOTATIONS_API, SKIP_MANIFEST_TERMS } from "./config";
-import { cachedJson, fetchJson, pathExists, sha1 } from "./json";
+import { fetchJson, pathExists, revalidatedJson, sha1 } from "./json";
 import type { IiifSublayer, ManifestRef } from "./types";
 
 export function textValues(value: unknown): string[] {
@@ -41,7 +41,7 @@ export function shouldSkipManifest(value: Record<string, unknown>): boolean {
 }
 
 export async function resolveIiifResource(url: string): Promise<{ label: string; refs: ManifestRef[] }> {
-  const json = await cachedJson(url, iiifCacheDir("collections"));
+  const json = await revalidatedJson(url, iiifCacheDir("collections"));
   if (!json || typeof json !== "object") throw new Error(`${url} did not resolve to an object`);
   const data = json as Record<string, unknown>;
   const type = resourceType(data);
@@ -106,15 +106,20 @@ export function canvasImageService(canvas: Record<string, unknown>): string {
 }
 
 export async function mirrorCanvasAnnotation(canvasAllmapsId: string): Promise<Record<string, unknown> | null> {
+  // Re-fetch each run so an upstream re-georeference is detected; the on-disk
+  // mirror is a write-through cache used only as an offline fallback.
   const path = join(allmapsCanvasCacheDir(), `${canvasAllmapsId}.json`);
-  if (await pathExists(path)) return JSON.parse(await readFile(path, "utf-8")) as Record<string, unknown>;
-
-  const res = await fetch(`${ANNOTATIONS_API}/canvases/${canvasAllmapsId}`, { redirect: "follow" });
-  if (res.status !== 200) return null;
-  const json = await res.json() as Record<string, unknown>;
-  await ensureDir(dirname(path));
-  await writeFile(path, JSON.stringify(json, null, 2), "utf-8");
-  return json;
+  try {
+    const res = await fetch(`${ANNOTATIONS_API}/canvases/${canvasAllmapsId}`, { redirect: "follow" });
+    if (res.status !== 200) return null;
+    const json = await res.json() as Record<string, unknown>;
+    await ensureDir(dirname(path));
+    await writeFile(path, JSON.stringify(json, null, 2), "utf-8");
+    return json;
+  } catch (err) {
+    if (await pathExists(path)) return JSON.parse(await readFile(path, "utf-8")) as Record<string, unknown>;
+    throw err;
+  }
 }
 
 export async function fetchManifestAnnotation(manifestAllmapsId: string): Promise<Record<string, unknown> | null> {
@@ -129,10 +134,16 @@ export async function extractManifestCanvasAnnotation(
   serviceUrl: string,
   manifestAnnotation?: Record<string, unknown> | null,
 ): Promise<Record<string, unknown> | null> {
+  // Always re-derive from the (freshly fetched) manifest annotation page so
+  // upstream georeference edits propagate; only fall back to the cached copy
+  // when the manifest annotation can't be fetched at all.
   const path = join(allmapsCanvasCacheDir(), `${canvasAllmapsId}.json`);
-  if (await pathExists(path)) return JSON.parse(await readFile(path, "utf-8")) as Record<string, unknown>;
-  const page = manifestAnnotation ?? await fetchManifestAnnotation(manifestAllmapsId);
-  const items = Array.isArray(page?.items) ? page.items as Array<Record<string, unknown>> : [];
+  const page = manifestAnnotation ?? await fetchManifestAnnotation(manifestAllmapsId).catch(() => null);
+  if (!page) {
+    if (await pathExists(path)) return JSON.parse(await readFile(path, "utf-8")) as Record<string, unknown>;
+    return null;
+  }
+  const items = Array.isArray(page.items) ? page.items as Array<Record<string, unknown>> : [];
   const normalized = serviceUrl.replace(/\/+$/, "");
   const matching = items.filter((item) => {
     const target = item.target as Record<string, unknown> | undefined;

@@ -1,10 +1,104 @@
-import { rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import sharp from "sharp";
-import { ensureDir } from "../utils/files";
+import { ensureDir, fileExists } from "../utils/files";
+import { contentHash } from "../utils/hash";
 import { runCommand } from "../utils/run";
 import { rasterFetchWidth } from "./config";
 import { fetchWarpSource, warpSourceCachePath } from "./fetch";
+
+/**
+ * Bump when the warp algorithm/output changes (gdalwarp args, cutline logic,
+ * fetch strategy) so cached GeoTIFFs from an older recipe are invalidated even
+ * when the georeference inputs are unchanged.
+ */
+const WARP_RECIPE = 1;
+
+function round(value: unknown, decimals: number): number | null {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  const factor = 10 ** decimals;
+  return Math.round(num * factor) / factor;
+}
+
+/**
+ * Canonical GCP tuples: `[resX, resY, lon, lat]` rounded well below output
+ * resolution and sorted. GCP order does not affect the warp, and re-fetched
+ * annotations carry insignificant float/ordering noise — canonicalizing here
+ * keeps the signature stable so an unchanged sheet is not re-warped every run.
+ */
+function canonicalGcps(georeferencedMap: Record<string, unknown>): Array<[number | null, number | null, number | null, number | null]> {
+  const gcps = Array.isArray(georeferencedMap.gcps) ? georeferencedMap.gcps as Array<Record<string, unknown>> : [];
+  return gcps
+    .map((gcp) => {
+      const resource = Array.isArray(gcp.resource) ? gcp.resource : [];
+      const geo = Array.isArray(gcp.geo) ? gcp.geo : [];
+      return [round(resource[0], 2), round(resource[1], 2), round(geo[0], 9), round(geo[1], 9)] as [number | null, number | null, number | null, number | null];
+    })
+    .sort((a, b) => `${a}`.localeCompare(`${b}`));
+}
+
+/** Canonical resource-mask ring: pixel points rounded, rotated to a stable start. */
+function canonicalMask(georeferencedMap: Record<string, unknown>): Array<[number | null, number | null]> {
+  const mask = Array.isArray(georeferencedMap.resourceMask) ? georeferencedMap.resourceMask as unknown[] : [];
+  const points = mask
+    .filter((point): point is unknown[] => Array.isArray(point) && point.length >= 2)
+    .map((point) => [round(point[0], 1), round(point[1], 1)] as [number | null, number | null]);
+  if (points.length < 2) return points;
+  // Rotate the ring so its lexicographically smallest point is first: the polygon
+  // is identical under rotation, but a re-fetch may report a different start point.
+  let start = 0;
+  for (let i = 1; i < points.length; i++) {
+    if (`${points[i]}`.localeCompare(`${points[start]}`) < 0) start = i;
+  }
+  return [...points.slice(start), ...points.slice(0, start)];
+}
+
+/**
+ * Content signature of everything that determines a canvas's warped GeoTIFF:
+ * the resolved GCPs and resource mask, the transformation model, the capped
+ * fetch width, and the source dimensions — plus the recipe version. Computable
+ * from metadata alone (no image fetch), so the caller can decide whether a
+ * re-warp is needed before touching the network or GDAL. Inputs are canonicalized
+ * (rounded/sorted) so insignificant fetch-to-fetch noise does not bust the cache.
+ */
+export function warpSignature(georeferencedMap: Record<string, unknown>, transformationType: string | undefined): string {
+  const resource = georeferencedMap.resource as Record<string, unknown> | undefined;
+  return contentHash(
+    "warp",
+    WARP_RECIPE,
+    rasterFetchWidth(),
+    transformationType ?? "",
+    round(resource?.width, 0),
+    round(resource?.height, 0),
+    canonicalGcps(georeferencedMap),
+    canonicalMask(georeferencedMap),
+  );
+}
+
+async function readMaskSidecar(path: string): Promise<MaskFeature | null> {
+  try {
+    const parsed = JSON.parse(await readFile(path, "utf-8")) as MaskFeature | null;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The most informative single line of a GDAL failure (prefer its ERROR line). */
+function conciseGdalError(message: string): string {
+  const lines = message.split("\n").map((line) => line.trim()).filter(Boolean);
+  return lines.find((line) => /^ERROR\b/i.test(line)) ?? lines[lines.length - 1] ?? "failed";
+}
+
+/** Run a GDAL command, re-throwing failures as a short `tool: <error>` message. */
+async function runGdal(tool: string, args: string[]): Promise<void> {
+  try {
+    await runCommand(tool, args);
+  } catch (err) {
+    throw new Error(`${tool}: ${conciseGdalError(err instanceof Error ? err.message : String(err))}`);
+  }
+}
 
 export type MaskFeature = {
   type: "Feature";
@@ -100,7 +194,8 @@ async function pixelRingToGeo(gcpTif: string, transformArgs: string[], ring: Pos
  * transparent-black exterior, resampling never bleeds black into the map edge;
  * the transparent background is initialised white so gdal2tiles overviews don't
  * darken the border either. The cutline doubles as the masks.pmtiles feature.
- * Returns null on any fetch/warp failure so the caller can skip the canvas.
+ * Throws a concise Error on any fetch/warp failure; the caller logs the reason
+ * and skips the canvas.
  */
 export async function warpCanvas(params: {
   key: string;
@@ -111,29 +206,44 @@ export async function warpCanvas(params: {
   manifestUrl: string;
   transformationType: string | undefined;
   workDir: string;
-}): Promise<WarpResult | null> {
+  /** Persistent cache destination for the warped GeoTIFF (keyed by warp signature). */
+  outputTifPath: string;
+  /** Persistent cache destination for the derived mask feature (sidecar JSON). */
+  maskSidecarPath: string;
+  /** Reuse an existing cached GeoTIFF instead of re-fetching + re-warping. */
+  reuseCache: boolean;
+}): Promise<WarpResult> {
+  // Cache hit: an identical warp signature already produced this GeoTIFF, so skip
+  // the source fetch and GDAL entirely and recover the mask from its sidecar.
+  if (params.reuseCache && (await fileExists(params.outputTifPath))) {
+    return { geotiffPath: params.outputTifPath, maskFeature: await readMaskSidecar(params.maskSidecarPath) };
+  }
+
   const resource = params.georeferencedMap.resource as Record<string, unknown> | undefined;
   const fullWidth = Number(resource?.width ?? params.info?.width);
   const fullHeight = Number(resource?.height ?? params.info?.height);
-  if (!Number.isFinite(fullWidth) || !Number.isFinite(fullHeight) || fullWidth <= 0 || fullHeight <= 0) return null;
+  if (!Number.isFinite(fullWidth) || !Number.isFinite(fullHeight) || fullWidth <= 0 || fullHeight <= 0) {
+    throw new Error(`invalid source dimensions (${fullWidth}x${fullHeight})`);
+  }
 
   const width = rasterFetchWidth();
   const buffer = await fetchWarpSource(params.serviceId, params.info, width, warpSourceCachePath(params.serviceId, width));
   const meta = await sharp(buffer).metadata();
   const fetchW = meta.width ?? 0;
   const fetchH = meta.height ?? 0;
-  if (fetchW <= 0 || fetchH <= 0) return null;
+  if (fetchW <= 0 || fetchH <= 0) throw new Error("fetched warp source has no dimensions");
 
   const scaleX = fetchW / fullWidth;
   const scaleY = fetchH / fullHeight;
   const gcps = gcpArgs(params.georeferencedMap, scaleX, scaleY);
-  if (gcps.length < 3) return null;
+  if (gcps.length < 3) throw new Error(`insufficient GCPs (${gcps.length} of 3 required)`);
 
   await ensureDir(params.workDir);
+  await ensureDir(dirname(params.outputTifPath));
   const srcPath = join(params.workDir, `${params.key}_src.png`);
   const gcpPath = join(params.workDir, `${params.key}_gcp.tif`);
   const cutlinePath = join(params.workDir, `${params.key}_cutline.geojson`);
-  const geotiffPath = join(params.workDir, `${params.key}.tif`);
+  const geotiffPath = params.outputTifPath;
   const transformArgs = gdalTransformArgs(params.transformationType);
 
   // Decode to a clean opaque PNG (no alpha, no black exterior) for warping.
@@ -141,7 +251,7 @@ export async function warpCanvas(params: {
 
   try {
     // 1. Attach GCPs (source pixel -> lon/lat) to the opaque image.
-    await runCommand("gdal_translate", ["-of", "GTiff", "-a_srs", "EPSG:4326", ...gcps, srcPath, gcpPath]);
+    await runGdal("gdal_translate", ["-of", "GTiff", "-a_srs", "EPSG:4326", ...gcps, srcPath, gcpPath]);
 
     // 2. Project the resource mask into geo space to use as a cutline / footprint.
     const ring = maskRingPixels(params.georeferencedMap, scaleX, scaleY);
@@ -159,7 +269,7 @@ export async function warpCanvas(params: {
 
     // 3. Warp to WebMercator with the map's real transformation model. Opaque
     //    source + white transparent background keeps map edges clean at every zoom.
-    await runCommand("gdalwarp", [
+    await runGdal("gdalwarp", [
       ...transformArgs,
       "-t_srs", "EPSG:3857",
       "-r", "lanczos",
@@ -172,6 +282,9 @@ export async function warpCanvas(params: {
       geotiffPath,
     ]);
 
+    // Persist the mask sidecar next to the cached GeoTIFF so a later cache hit
+    // can rebuild masks.pmtiles without re-warping.
+    await writeFile(params.maskSidecarPath, JSON.stringify(maskFeature));
     return { geotiffPath, maskFeature };
   } finally {
     await Promise.all([rm(srcPath, { force: true }), rm(gcpPath, { force: true }), rm(cutlinePath, { force: true })]);

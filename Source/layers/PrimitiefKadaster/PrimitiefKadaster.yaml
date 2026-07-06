@@ -37,10 +37,32 @@ sublayers:
     name: Parcels
     kind: geojson
     source:
-      type: planned   # TODO
+      type: generated
+      rawInput: parcels/*.geojson
     description: |
       Gevectoriseerde perceelsgrenzen afgeleid van de primitieve
       kadasterplannen, klikbaar en gekoppeld aan de bijhorende leggergegevens.
+
+  # ── Toponyms extracted from this map (searchable, built by us) ─────────────
+  - id: PrimitiefKadaster-toponyms
+    name: Toponyms
+    kind: searchable
+    source:
+      type: generated
+      rawInput: toponyms/*.geojson
+    description: |
+      Toponiemen getranscribeerd uit de primitieve kadasterplannen,
+      doorzoekbaar en als labels op de kaart weer te geven.
+    attribution:
+      credit: "Rijksarchief België"
+      logos: [logo_Rijksarchief.png]
+      rights: https://creativecommons.org/licenses/by/4.0/
+    citation:
+      authors: ["Rijksarchief België"]
+      title: "Primitief kadaster — getranscribeerde toponiemen"
+      year: 1834
+      publisher: "Rijksarchief België"
+      url: https://search.arch.be
 
   # ── Reconstructed land use for this period ─────────────────────────────────
   - id: PrimitiefKadaster-landusage

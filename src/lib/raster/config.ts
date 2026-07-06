@@ -49,6 +49,22 @@ export function rasterWebpQuality(): number {
   return Math.min(100, Math.max(1, quality));
 }
 
+/**
+ * Signature of every knob that affects the tiled raster output. Folded into the
+ * per-layer raster signature so a zoom/format/quality change invalidates the
+ * cached raster.pmtiles even when the georeference inputs are unchanged.
+ */
+export function rasterConfigSignature(): string {
+  return [
+    rasterFetchWidth(),
+    rasterTileSize(),
+    rasterTileFormat(),
+    rasterMinZoom(),
+    rasterMaxZoom(),
+    rasterWebpQuality(),
+  ].join(":");
+}
+
 /** gdal2tiles --tiledriver expects an uppercase driver name. */
 export function gdal2tilesDriver(format: "webp" | "png" | "jpeg"): string {
   return { webp: "WEBP", png: "PNG", jpeg: "JPEG" }[format];

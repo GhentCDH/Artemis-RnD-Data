@@ -1,13 +1,10 @@
 # Artemis data pipeline (v2) image.
 #
 # Runtime = Bun (the one app language). Docker exists to carry the geo binary
-# toolchain — GDAL, tippecanoe, dezoomify-rs, pmtiles — not a second language.
+# toolchain — GDAL, tippecanoe, pmtiles — not a second language.
 # See DataRepoPlanning/RuntimeConsolidation.md for why we consolidate on TS/Bun.
-
-# --- dezoomify-rs (Rust): full-res IIIF tile fetch ---
-FROM rust:1-slim AS dezoomify-builder
-ARG DEZOOMIFY_RS_VERSION=2.9.4
-RUN cargo install --locked --version ${DEZOOMIFY_RS_VERSION} dezoomify-rs
+# Full-resolution raster tiling happens elsewhere (locally); this repo never
+# builds full-res tiles, so no dezoomify-rs.
 
 # --- tippecanoe (C++): geojson -> vector tiles / PMTiles ---
 FROM debian:bookworm-slim AS tippecanoe-builder
@@ -20,7 +17,7 @@ RUN git clone --depth 1 https://github.com/felt/tippecanoe.git /tippecanoe \
 # --- go-pmtiles CLI: raster/vector XYZ -> single .pmtiles archive ---
 FROM debian:bookworm-slim AS pmtiles-builder
 # NOTE: verify/bump against https://github.com/protomaps/go-pmtiles/releases
-ARG PMTILES_VERSION=1.22.1
+ARG PMTILES_VERSION=1.30.3
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL "https://github.com/protomaps/go-pmtiles/releases/download/v${PMTILES_VERSION}/go-pmtiles_${PMTILES_VERSION}_Linux_x86_64.tar.gz" \
@@ -32,7 +29,6 @@ FROM oven/bun:1 AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
       gdal-bin proj-bin libsqlite3-0 zlib1g curl jq ca-certificates \
  && rm -rf /var/lib/apt/lists/*
-COPY --from=dezoomify-builder /usr/local/cargo/bin/dezoomify-rs /usr/local/bin/dezoomify-rs
 COPY --from=tippecanoe-builder /tippecanoe/tippecanoe /usr/local/bin/tippecanoe
 COPY --from=pmtiles-builder /usr/local/bin/pmtiles /usr/local/bin/pmtiles
 
@@ -44,4 +40,4 @@ RUN bun install
 COPY . .
 
 ENTRYPOINT ["bun"]
-CMD ["run", "src/index.ts", "--help"]
+CMD ["run", "src/cli.ts", "--help"]

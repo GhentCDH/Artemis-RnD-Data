@@ -1,5 +1,6 @@
 import type { AnalysisItem } from "@allmaps/analyze";
 import type { BuildLog } from "../build/buildLog";
+import type { HashRegistry } from "../build/hashRegistry";
 import type { LayerRef } from "../layers/discovery";
 import type { MaskFeature } from "../raster/warp";
 
@@ -10,6 +11,8 @@ export type IiifBuildOptions = {
   /** Warp canvases into raster.pmtiles + masks.pmtiles (default on; --no-raster skips). */
   raster?: boolean;
   buildLog?: BuildLog;
+  /** Committed source-hash registry; when set, unchanged stages are skipped. */
+  registry?: HashRegistry;
 };
 
 export type IiifSublayer = {
@@ -46,6 +49,12 @@ export type ProcessedCanvas = {
   serviceId: string;
   analysis: MapAnalysis;
   sprite?: SpriteSource;
+  /** Warp inputs carried from the metadata phase into the (gated) raster phase. */
+  imageId?: string;
+  manifestUrl?: string;
+  transformationType?: string;
+  /** Content signature of this canvas's warp inputs; drives the warp cache. */
+  warpSig?: string;
   /** Warped EPSG:3857 GeoTIFF path (raster stage only, kept until tiling). */
   geotiffPath?: string;
   /** Canvas geo footprint for masks.pmtiles (raster stage only). */

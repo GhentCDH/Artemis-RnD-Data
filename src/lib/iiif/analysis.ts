@@ -14,6 +14,12 @@ const FIXABLE_ANALYSIS_CODES = new Set([
   "maskpointoutsidefullmask",
 ]);
 
+const IGNORED_ANALYSIS_WARNING_CODES = new Set([
+  // Non-actionable for this dataset: resource masks are used as cutlines, so a
+  // GCP outside that mask can still be valid and should not pollute build logs.
+  "gcpoutsidemask",
+]);
+
 export function parseSvgPolygonPoints(svg: string): Array<[number, number]> {
   const match = svg.match(/<polygon[^>]*points="([^"]*)"/);
   if (!match) return [];
@@ -140,7 +146,8 @@ export function normalizeAnnotationPage(raw: Record<string, unknown>): Record<st
 
 function analyzeMap(georeferencedMap: Record<string, unknown>): AnalysisSummary {
   const analysis = new Analyzer(georeferencedMap as never).analyze();
-  return { info: analysis.info, warnings: analysis.warnings, errors: analysis.errors };
+  const warnings = analysis.warnings.filter((item) => !IGNORED_ANALYSIS_WARNING_CODES.has(item.code.toLowerCase()));
+  return { info: analysis.info, warnings, errors: analysis.errors };
 }
 
 function hasFixableIssue(summary: AnalysisSummary): boolean {

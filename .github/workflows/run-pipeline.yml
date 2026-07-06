@@ -29,8 +29,8 @@ env:
   COMMAND: build
   ZENODO_RECORD: "21219182"
   TIMEOUT_MINUTES: "180"
-  BUILD_STATE_BRANCH: GHCI-build-state
-  OUTPUT_BRANCH: GHCI-testing
+  BUILD_STATE_BRANCH: build-cache
+  OUTPUT_BRANCH: live
 
 jobs:
   run:

@@ -3,60 +3,25 @@ name: Run data pipeline
 on:
   workflow_dispatch:
     inputs:
-      command:
-        description: "Pipeline command"
-        required: true
-        default: "build"
-        type: choice
-        options:
-          - build
-          - iiif
-          - toponyms
-          - parcels
-          - imagecollections
-          - layers
-          - source:sync
-      zenodo_record:
-        description: "Pinned Zenodo record id used as the source version"
-        required: true
-        default: "21219182"
-        type: string
-      targets:
-        description: "Optional layer/collection ids, separated by spaces"
-        required: false
-        default: ""
-        type: string
-      no_raster:
-        description: "Skip raster warp for build/iiif"
-        required: false
-        default: false
-        type: boolean
       force:
         description: "Bypass incremental cache"
         required: false
         default: false
         type: boolean
-      timeout_minutes:
-        description: "Kill the pipeline command after this many minutes"
-        required: true
-        default: "180"
-        type: choice
-        options:
-          - "30"
-          - "60"
-          - "120"
-          - "180"
-          - "240"
 
 permissions:
   contents: write
 
 concurrency:
-  group: data-pipeline-${{ github.ref }}-${{ inputs.command }}
+  group: data-pipeline-${{ github.ref }}
   cancel-in-progress: false
 
 env:
   IMAGE: ghcr.io/ghentcdh/artemis-data:pipeline-v2
+  COMMAND: build
+  ZENODO_RECORD: "21219182"
+  TIMEOUT_MINUTES: "180"
+  BUILD_STATE_BRANCH: GHCI-build-state
   OUTPUT_BRANCH: GHCI-testing
 
 jobs:
@@ -78,19 +43,33 @@ jobs:
           path: |
             node_modules
             .build-cache
-          key: pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ inputs.zenodo_record }}
+          key: pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ env.ZENODO_RECORD }}
           restore-keys: |
             pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
             pipeline-${{ runner.os }}-
 
+      - name: Restore build state
+        run: |
+          set -euo pipefail
+
+          if git ls-remote --exit-code --heads origin "$BUILD_STATE_BRANCH" >/dev/null 2>&1; then
+            tmpdir="$(mktemp -d)"
+            git fetch --depth=1 origin "$BUILD_STATE_BRANCH"
+            git archive "origin/$BUILD_STATE_BRANCH" build 2>/dev/null | tar -x -C "$tmpdir" || true
+            if [ -d "$tmpdir/build" ]; then
+              rm -rf build
+              cp -a "$tmpdir/build" ./build
+              echo "Restored build state from $BUILD_STATE_BRANCH."
+            else
+              echo "$BUILD_STATE_BRANCH has no build/ directory yet."
+            fi
+          else
+            echo "No $BUILD_STATE_BRANCH branch yet; starting without restored build state."
+          fi
+
       - name: Run selected pipeline command
         env:
-          COMMAND: ${{ inputs.command }}
-          ZENODO_RECORD: ${{ inputs.zenodo_record }}
-          TARGETS: ${{ inputs.targets }}
-          NO_RASTER: ${{ inputs.no_raster }}
           FORCE: ${{ inputs.force }}
-          TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
         run: |
           set -euo pipefail
 
@@ -101,8 +80,6 @@ jobs:
             -w /app \
             -e COMMAND \
             -e ZENODO_RECORD \
-            -e TARGETS \
-            -e NO_RASTER \
             -e FORCE \
             -e TIMEOUT_MINUTES \
             "$IMAGE" \
@@ -112,15 +89,6 @@ jobs:
               TMPDIR=/tmp bun install --frozen-lockfile
 
               cmd=(bun run src/cli.ts "$COMMAND" "$ZENODO_RECORD")
-
-              if [ -n "$TARGETS" ]; then
-                read -r -a targets <<< "$TARGETS"
-                cmd+=("${targets[@]}")
-              fi
-
-              if [ "$NO_RASTER" = "true" ]; then
-                cmd+=(--no-raster)
-              fi
 
               if [ "$FORCE" = "true" ]; then
                 cmd+=(--force)
@@ -137,43 +105,68 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pipeline-logs-${{ inputs.command }}-${{ github.run_id }}
+          name: pipeline-logs-build-${{ github.run_id }}
           path: |
             build/Build.log
             build/IIIFWarnings.log
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Commit build state to source branch
+      - name: Stage pipeline outputs
         run: |
           set -euo pipefail
+
+          output_dir="$(mktemp -d)"
+          echo "PIPELINE_OUTPUT_DIR=$output_dir" >> "$GITHUB_ENV"
+
+          if [ -d build ]; then cp -a build "$output_dir/build"; fi
+          if [ -d static ]; then cp -a static "$output_dir/static"; fi
+
+      - name: Push build state branch
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "$PIPELINE_OUTPUT_DIR/build" ]; then
+            echo "No build/ directory produced; no build state to push."
+            exit 0
+          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          if git ls-remote --exit-code --heads origin "$BUILD_STATE_BRANCH" >/dev/null 2>&1; then
+            git checkout -B "$BUILD_STATE_BRANCH" "origin/$BUILD_STATE_BRANCH"
+          else
+            git checkout --orphan "$BUILD_STATE_BRANCH"
+          fi
+
+          git rm -r . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git \
+            ! -name .build-cache \
+            ! -name node_modules \
+            -exec rm -rf {} +
+
+          cp -a "$PIPELINE_OUTPUT_DIR/build" ./build
+
           git add build
-          if [ -d static ]; then git add static; fi
 
           if git diff --cached --quiet; then
-            echo "No build state changes to commit."
+            echo "No build state changes to push."
             exit 0
           fi
 
           git commit -m "ci: update pipeline build state ($GITHUB_RUN_ID)"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "$BUILD_STATE_BRANCH"
 
       - name: Push build output to test branch
         run: |
           set -euo pipefail
 
-          if [ ! -d build ]; then
+          if [ ! -d "$PIPELINE_OUTPUT_DIR/build" ]; then
             echo "No build/ directory produced; nothing to push."
             exit 0
           fi
-
-          tmpdir="$(mktemp -d)"
-          cp -a build "$tmpdir/build"
-          if [ -d static ]; then cp -a static "$tmpdir/static"; fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -191,8 +184,8 @@ jobs:
             ! -name node_modules \
             -exec rm -rf {} +
 
-          cp -a "$tmpdir/build" ./build
-          if [ -d "$tmpdir/static" ]; then cp -a "$tmpdir/static" ./static; fi
+          cp -a "$PIPELINE_OUTPUT_DIR/build" ./build
+          if [ -d "$PIPELINE_OUTPUT_DIR/static" ]; then cp -a "$PIPELINE_OUTPUT_DIR/static" ./static; fi
 
           git add build
           if [ -d static ]; then git add static; fi

@@ -241,7 +241,11 @@ export async function writeWarpFailureLog(buildLog: BuildLog | undefined, layerI
   if (!buildLog || failures.length === 0) return;
   await buildLog.section(`IIIF Warp Failures: ${layerId}`);
   for (const failure of failures) {
-    await buildLog.info(`  ${failure.canvasId}  —  ${failure.reason}${failure.manifestUrl ? `  (${failure.manifestUrl})` : ""}`);
+    await buildLog.fields({
+      "manifest url": failure.manifestUrl,
+      canvas: failure.canvasId,
+      reason: failure.reason,
+    });
   }
 }
 
@@ -280,7 +284,9 @@ export async function writeAnalysisLog(
 
   await buildLog.section(`IIIF Analysis: ${params.layerId}`);
   await buildLog.fields({
-    "canvas url": params.canvasId,
+    "manifest url": params.manifestUrl,
+    manifest: params.manifestLabel,
+    canvas: params.canvasId,
     skipped: params.skipped ? "yes" : "no",
     warnings: issues.length > 0 ? formatAnalysisItems(issues) : undefined,
     "possible fix": possibleFix(params.analysis, params.skipped),

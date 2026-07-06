@@ -131,6 +131,39 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Surface pipeline warnings
+        if: always()
+        run: |
+          set -euo pipefail
+
+          if [ -s build/IIIFWarnings.log ]; then
+            line_count="$(wc -l < build/IIIFWarnings.log | tr -d ' ')"
+            echo "::warning title=IIIF warnings::Pipeline produced IIIF warnings ($line_count log lines). See the job summary or uploaded logs artifact."
+          fi
+
+          {
+            echo "## Pipeline logs"
+            echo
+            if [ -s build/IIIFWarnings.log ]; then
+              echo "### IIIF warnings"
+              echo
+              echo "\`build/IIIFWarnings.log\` contains $line_count lines."
+              echo
+              echo "<details><summary>First 200 lines</summary>"
+              echo
+              echo '```text'
+              sed -n '1,200p' build/IIIFWarnings.log
+              if [ "$line_count" -gt 200 ]; then
+                echo
+                echo "... truncated; download the logs artifact for the full file."
+              fi
+              echo '```'
+              echo "</details>"
+            else
+              echo "No IIIF warning log produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish build outputs
         if: ${{ success() }}
         run: |

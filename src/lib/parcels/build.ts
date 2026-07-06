@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { Feature, FeatureCollection, PolygonGeometry, Position } from "../geojson/types";
 import { isPolygonGeometry } from "../geojson/geometry";
@@ -186,19 +187,24 @@ async function buildLayerParcels(layer: LayerRef, options: BuildParcelsOptions):
     type: "FeatureCollection",
     features,
   };
-  const tmpGeojsonPath = join(BUILD_TMP_DIR, layer.id, "parcels.geojson");
+  const tmpDir = join(BUILD_TMP_DIR, layer.id);
+  const tmpGeojsonPath = join(tmpDir, "parcels.geojson");
 
   await ensureDir(outDir);
-  await writeJson(tmpGeojsonPath, featureCollection);
-  await buildVectorPmtiles({
-    inputGeojson: tmpGeojsonPath,
-    outputPmtiles: pmtilesPath,
-    tmpDir: join(BUILD_TMP_DIR, layer.id),
-    layerName: "parcels",
-    minZoom: 10,
-    maxZoom: 15,
-    buffer: tileBuffer,
-  });
+  try {
+    await writeJson(tmpGeojsonPath, featureCollection);
+    await buildVectorPmtiles({
+      inputGeojson: tmpGeojsonPath,
+      outputPmtiles: pmtilesPath,
+      tmpDir,
+      layerName: "parcels",
+      minZoom: 10,
+      maxZoom: 15,
+      buffer: tileBuffer,
+    });
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
 
   let geojsonPath: string | undefined;
   if (options.writeGeojson) {

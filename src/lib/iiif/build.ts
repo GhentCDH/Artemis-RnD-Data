@@ -4,15 +4,17 @@ import { generateId } from "@allmaps/id";
 import { BuildLog, IIIF_WARNINGS_LOG_PATH } from "../build/buildLog";
 import { runPool } from "../concurrency";
 import { log } from "../log";
-import { allmapsCanvasCacheDir, iiifCacheDir, layerOutDir, layerTmpDir } from "../paths";
-import { ensureDir, writeJsonWithBrotli } from "../utils/files";
+import { allmapsCanvasCacheDir, iiifCacheDir, layerOutDir, layerTmpDir, warpTifCacheDir } from "../paths";
+import { ensureDir, fileExists, writeJsonWithBrotli } from "../utils/files";
+import { contentHash } from "../utils/hash";
 import { buildRasterPmtiles } from "../pmtiles/raster";
 import { buildMasksPmtiles } from "../raster/masks";
+import { rasterConfigSignature } from "../raster/config";
 import { buildXyzTiles } from "../raster/tiles";
-import { annotationTransformationType, warpCanvas } from "../raster/warp";
-import { analyzeAndSanitize, normalizeAnnotationPage, writeAnalysisLog } from "./analysis";
+import { annotationTransformationType, warpCanvas, warpSignature } from "../raster/warp";
+import { analyzeAndSanitize, normalizeAnnotationPage, writeAnalysisLog, writeWarpFailureLog, type WarpFailure } from "./analysis";
 import { buildCompactGeomaps } from "./geomaps";
-import { cachedJson } from "./json";
+import { revalidatedJson } from "./json";
 import {
   canvasId,
   canvasImageService,
@@ -30,6 +32,9 @@ import {
 } from "./iiif";
 import { calculateSpriteSize, fetchSprite, spriteCachePath, writeSpriteArtifacts } from "./sprites";
 import type { IiifBuildOptions, IiifBuildResult, ProcessedCanvas, ProcessedManifest, SourceGroup } from "./types";
+
+/** Bump to invalidate cached raster.pmtiles when the assembly recipe changes. */
+const RASTER_RECIPE = 1;
 
 function maskSimplificationStats(processed: ProcessedManifest[]): { masks: number; before: number; after: number } {
   const stats = { masks: 0, before: 0, after: 0 };
@@ -49,8 +54,8 @@ function maskSimplificationStats(processed: ProcessedManifest[]): { masks: numbe
 
 type LayerStats = { skipped: number; warnings: number; fixed: number; spriteFailed: number; warpFailed: number };
 
-async function processManifest(group: SourceGroup, ref: { url: string; label: string }, options: IiifBuildOptions, stats: LayerStats, warningLog?: BuildLog, rasterWorkDir?: string): Promise<ProcessedManifest | null> {
-  const manifest = await cachedJson(ref.url, iiifCacheDir("manifests")) as Record<string, unknown>;
+async function processManifest(group: SourceGroup, ref: { url: string; label: string }, options: IiifBuildOptions, stats: LayerStats, warningLog?: BuildLog): Promise<ProcessedManifest | null> {
+  const manifest = await revalidatedJson(ref.url, iiifCacheDir("manifests")) as Record<string, unknown>;
   const manifestAllmapsId = await generateId(ref.url);
   const manifestAnnotation = await fetchManifestAnnotation(manifestAllmapsId).catch(() => null);
   const manifestLabel = iiifLabel(manifest.label) || ref.label;
@@ -98,28 +103,14 @@ async function processManifest(group: SourceGroup, ref: { url: string; label: st
       }
     }
 
-    if (options.raster && rasterWorkDir) {
-      try {
-        const warp = await warpCanvas({
-          key: canvasAllmapsId,
-          georeferencedMap: analyzed.map,
-          serviceId,
-          info,
-          imageId,
-          manifestUrl: ref.url,
-          transformationType: annotationTransformationType(rawAnnotation),
-          workDir: rasterWorkDir,
-        });
-        if (warp) {
-          processedCanvas.geotiffPath = warp.geotiffPath;
-          if (warp.maskFeature) processedCanvas.maskFeature = warp.maskFeature;
-        } else {
-          stats.warpFailed++;
-        }
-      } catch {
-        stats.warpFailed++;
-      }
-    }
+    // Warping is deferred to the (gated) raster phase; here we only carry the
+    // inputs and a content signature of the canvas's georeference. Computed for
+    // every build (cheap, metadata-only) so change detection and the live
+    // "changed" counter work even without the raster stage.
+    processedCanvas.imageId = imageId;
+    processedCanvas.manifestUrl = ref.url;
+    processedCanvas.transformationType = annotationTransformationType(rawAnnotation);
+    processedCanvas.warpSig = warpSignature(analyzed.map, processedCanvas.transformationType);
     processed.push(processedCanvas);
   }
 
@@ -135,28 +126,48 @@ async function processManifest(group: SourceGroup, ref: { url: string; label: st
 
 async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, warningLog?: BuildLog): Promise<IiifBuildResult> {
   const refs = typeof options.limit === "number" ? group.refs.slice(0, options.limit) : group.refs;
-  const rasterWorkDir = layerTmpDir(group.layer.id, "raster");
-  if (options.raster) await rm(rasterWorkDir, { recursive: true, force: true });
 
-  // Manifests are independent; warping dominates runtime, so process them with a
-  // bounded pool (BUILD_CONCURRENCY). Results are written by index to keep the
-  // geomaps/sprite order deterministic regardless of completion order.
+  // Phase 1 (always): fetch + analyze every manifest/canvas. Cheap and needed to
+  // detect change; the expensive warp is deferred to the gated raster phase.
+  // Manifests are independent, so process them with a bounded pool
+  // (BUILD_CONCURRENCY); results are stored by index to keep geomaps/sprite order
+  // deterministic regardless of completion order.
+  // Previous build's per-canvas signatures, to report how many changed live.
+  const hashes = options.registry ? await options.registry.layer(group.layer.id) : undefined;
+  const hadPrevBuild = hashes?.hasCategory("canvas") ?? false;
+
   const stats: LayerStats = { skipped: 0, warnings: 0, fixed: 0, spriteFailed: 0, warpFailed: 0 };
   const ordered: (ProcessedManifest | null)[] = new Array(refs.length).fill(null);
   let done = 0;
-  let warpedSoFar = 0;
+  let seenCanvases = 0;
+  let changedCanvases = 0;
   const step = Math.max(1, Math.round(refs.length / 10)); // ~10 progress lines per layer
-  log.step(`${group.layer.id}: ${options.raster ? "warping" : "processing"} ${refs.length} IIIF manifests (${options.concurrency} workers)`);
+  log.step(`${group.layer.id}: processing ${refs.length} IIIF manifests (${options.concurrency} workers)`);
   await runPool(refs, options.concurrency, async (ref, index) => {
-    const item = await processManifest(group, ref, options, stats, warningLog, rasterWorkDir);
+    const item = await processManifest(group, ref, options, stats, warningLog);
     ordered[index] = item;
-    if (item && options.raster) warpedSoFar += item.canvases.filter((canvas) => canvas.geotiffPath).length;
+    for (const canvas of item?.canvases ?? []) {
+      seenCanvases++;
+      if (hashes?.prevHash(canvas.id) !== canvas.warpSig) changedCanvases++;
+    }
     done++;
     if (done % step === 0 || done === refs.length) {
-      log.info(`    ${group.layer.id}: ${done}/${refs.length} manifests${options.raster ? `, ${warpedSoFar} canvases warped` : ""}`);
+      const changed = hadPrevBuild ? `, ${changedCanvases}/${seenCanvases} changed` : `, ${seenCanvases} canvases (no cache)`;
+      log.info(`    ${group.layer.id}: ${done}/${refs.length} manifests${changed}`);
     }
   });
   const processed = ordered.filter((item): item is ProcessedManifest => item !== null);
+
+  // Canvas hashes (source URL → warp signature) recorded for this layer. Records
+  // the "canvas" category so it is written even on --no-raster / metadata-only
+  // runs; `canvasUnchanged` also drives the raster skip below.
+  const canvasEntries: Array<[string, string]> = processed.flatMap((manifest) =>
+    manifest.canvases.flatMap((canvas) => (canvas.warpSig ? [[canvas.id, canvas.warpSig] as [string, string]] : [])),
+  );
+  const canvasUnchanged = hashes?.categoryUnchanged("canvas", canvasEntries) ?? false;
+  log.ok(hadPrevBuild
+    ? `${group.layer.id}: ${changedCanvases} of ${seenCanvases} canvases changed since last build`
+    : `${group.layer.id}: ${seenCanvases} canvases, no cache — building all`);
 
   if (stats.skipped + stats.warnings + stats.fixed + stats.spriteFailed + stats.warpFailed > 0) {
     const parts = [
@@ -180,32 +191,103 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
   const analysisWarnings = processed.reduce((sum, manifest) => sum + manifest.canvases.reduce((inner, canvas) => inner + canvas.analysis.after.warnings.length, 0), 0);
   const fixedMaps = processed.reduce((sum, manifest) => sum + manifest.canvases.filter((canvas) => canvas.analysis.fixes.length > 0).length, 0);
 
-  // Raster stage: mosaic the warped canvas GeoTIFFs into raster.pmtiles and pack
-  // their geo footprints into masks.pmtiles, then drop the scratch dir.
+  // Raster stage (gated): if no manifest or georeference annotation in this layer
+  // changed, the whole warp + mosaic + tiling + masks step is skipped. Otherwise
+  // each canvas is warped through the per-canvas GeoTIFF cache (so a single edited
+  // sheet only re-warps itself), then mosaicked into raster.pmtiles + masks.pmtiles.
   let warpedCanvases = 0;
   let rasterPmtilesPath: string | undefined;
   let masksPmtilesPath: string | undefined;
   let masks = 0;
   if (options.raster) {
-    const geotiffs = processed.flatMap((manifest) => manifest.canvases.flatMap((canvas) => canvas.geotiffPath ? [canvas.geotiffPath] : []));
-    const maskFeatures = processed.flatMap((manifest) => manifest.canvases.flatMap((canvas) => canvas.maskFeature ? [canvas.maskFeature] : []));
-    warpedCanvases = geotiffs.length;
-    if (geotiffs.length > 0) {
-      log.step(`${group.layer.id}: mosaicking ${geotiffs.length} canvases → XYZ tiles (gdal2tiles)`);
-      const tiles = await buildXyzTiles(geotiffs, rasterWorkDir, options.concurrency);
-      if (tiles) {
-        const target = join(outDir, "raster.pmtiles");
-        log.info(`    ${group.layer.id}: packing raster.pmtiles`);
-        await buildRasterPmtiles({ inputTilesDir: tiles.xyzDir, outputPmtiles: target, name: group.layer.id });
-        rasterPmtilesPath = target;
+    const rasterTarget = join(outDir, "raster.pmtiles");
+    const masksTarget = join(outDir, "masks.pmtiles");
+    const rasterCanvases = processed.flatMap((manifest) => manifest.canvases.filter((canvas) => canvas.warpSig));
+    // Raster is fresh when both the canvas georeferences (canvasUnchanged, above)
+    // and the raster tiling config (@raster) match the committed registry.
+    const rasterParamHash = contentHash("raster", RASTER_RECIPE, rasterConfigSignature());
+    const rasterParamUnchanged = hashes?.categoryUnchanged("raster", [["@raster", rasterParamHash]]) ?? false;
+    const rasterFresh = !options.registry?.force && canvasUnchanged && rasterParamUnchanged && (await fileExists(rasterTarget));
+
+    if (rasterFresh) {
+      log.ok(`${group.layer.id}: raster unchanged — skipped warp + tiling (${rasterCanvases.length} canvases)`);
+      rasterPmtilesPath = rasterTarget;
+      masksPmtilesPath = (await fileExists(masksTarget)) ? masksTarget : undefined;
+    } else {
+      const reason = !hadPrevBuild
+        ? "no cache"
+        : changedCanvases > 0
+          ? `${changedCanvases}/${seenCanvases} canvases changed`
+          : !rasterParamUnchanged
+            ? "raster config changed"
+            : "output missing";
+      log.step(`${group.layer.id}: raster rebuild (${reason})`);
+      const rasterWorkDir = layerTmpDir(group.layer.id, "raster");
+      await rm(rasterWorkDir, { recursive: true, force: true });
+      const cacheDir = warpTifCacheDir(group.layer.id);
+      const reuse = !options.registry?.force;
+
+      let warpDone = 0;
+      const warpStep = Math.max(1, Math.round(rasterCanvases.length / 10));
+      const warpFailures: WarpFailure[] = [];
+      log.step(`${group.layer.id}: warping ${rasterCanvases.length} canvases (${options.concurrency} workers)`);
+      await runPool(rasterCanvases, options.concurrency, async (canvas) => {
+        try {
+          const warp = await warpCanvas({
+            key: canvas.canvasAllmapsId,
+            georeferencedMap: canvas.georeferencedMap,
+            serviceId: canvas.serviceId,
+            info: canvas.info,
+            imageId: canvas.imageId ?? canvas.serviceId,
+            manifestUrl: canvas.manifestUrl ?? "",
+            transformationType: canvas.transformationType,
+            workDir: rasterWorkDir,
+            outputTifPath: join(cacheDir, `${canvas.canvasAllmapsId}_${canvas.warpSig}.tif`),
+            maskSidecarPath: join(cacheDir, `${canvas.canvasAllmapsId}_${canvas.warpSig}.mask.json`),
+            reuseCache: reuse,
+          });
+          canvas.geotiffPath = warp.geotiffPath;
+          if (warp.maskFeature) canvas.maskFeature = warp.maskFeature;
+        } catch (err) {
+          stats.warpFailed++;
+          warpFailures.push({ canvasId: canvas.id, manifestUrl: canvas.manifestUrl, reason: err instanceof Error ? err.message : String(err) });
+        }
+        warpDone++;
+        if (warpDone % warpStep === 0 || warpDone === rasterCanvases.length) {
+          log.info(`    ${group.layer.id}: ${warpDone}/${rasterCanvases.length} canvases warped`);
+        }
+      });
+      if (warpFailures.length > 0) {
+        log.warn(`${group.layer.id}: ${warpFailures.length} of ${rasterCanvases.length} canvases failed to warp — see ${IIIF_WARNINGS_LOG_PATH}`);
+        await writeWarpFailureLog(warningLog, group.layer.id, warpFailures);
       }
-      const masksTarget = join(outDir, "masks.pmtiles");
-      log.info(`    ${group.layer.id}: building masks.pmtiles (${maskFeatures.length} features)`);
-      masks = await buildMasksPmtiles(maskFeatures, rasterWorkDir, masksTarget);
-      if (masks > 0) masksPmtilesPath = masksTarget;
+
+      const geotiffs = rasterCanvases.flatMap((canvas) => canvas.geotiffPath ? [canvas.geotiffPath] : []);
+      const maskFeatures = rasterCanvases.flatMap((canvas) => canvas.maskFeature ? [canvas.maskFeature] : []);
+      warpedCanvases = geotiffs.length;
+      if (geotiffs.length > 0) {
+        log.step(`${group.layer.id}: mosaicking ${geotiffs.length} canvases → XYZ tiles (gdal2tiles)`);
+        const tiles = await buildXyzTiles(geotiffs, rasterWorkDir, options.concurrency);
+        if (tiles) {
+          log.info(`    ${group.layer.id}: packing raster.pmtiles`);
+          await buildRasterPmtiles({ inputTilesDir: tiles.xyzDir, outputPmtiles: rasterTarget, name: group.layer.id });
+          rasterPmtilesPath = rasterTarget;
+        }
+        log.info(`    ${group.layer.id}: building masks.pmtiles (${maskFeatures.length} features)`);
+        masks = await buildMasksPmtiles(maskFeatures, rasterWorkDir, masksTarget);
+        if (masks > 0) masksPmtilesPath = masksTarget;
+      }
+      await rm(rasterWorkDir, { recursive: true, force: true });
+      if (rasterCanvases.length > 0 && !rasterPmtilesPath) {
+        log.warn(`${group.layer.id}: produced no raster output (all ${rasterCanvases.length} canvases failed to warp)`);
+      }
     }
-    await rm(rasterWorkDir, { recursive: true, force: true });
   }
+
+  // Registry entries recorded above (canvas + raster categories) are only written
+  // to the committed hashes.txt by registry.flushAll() at the very end of the
+  // build — so a cancel or throw mid-build never advances the baseline, and the
+  // fileExists guard on the raster gate re-runs anything left incomplete.
 
   const result: IiifBuildResult = {
     layerId: group.layer.id,

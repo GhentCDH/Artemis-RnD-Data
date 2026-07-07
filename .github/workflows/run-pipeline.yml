@@ -9,17 +9,17 @@ on:
         default: false
         type: boolean
       zenodo_record:
-        description: "Zenodo record ID to pull source data from. Also used to look up the current draft when 'Use draft' is checked below (GitHub can't grey out fields based on other inputs, so this stays enabled either way)."
+        description: "Zenodo record ID"
         required: true
         default: "21219182"
         type: string
       build_from_draft:
-        description: "Use draft: read Source.zip from the record's unpublished draft instead of its published files"
+        description: "Use draft"
         required: false
         default: false
         type: boolean
       publish_branch:
-        description: "Branch to publish the build output to"
+        description: "Publish branch"
         required: true
         default: "live"
         type: choice

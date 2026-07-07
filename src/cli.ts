@@ -10,7 +10,7 @@ import { cpus } from "node:os";
 import { BuildLog } from "./lib/build/buildLog";
 import { HashRegistry, buildForceEnabled } from "./lib/build/hashRegistry";
 import { setSourceDir, sourceDir } from "./lib/paths";
-import { syncZenodoSource } from "./lib/source/zenodo";
+import { listDraftFiles, syncZenodoSource } from "./lib/source/zenodo";
 
 const DEFAULT_ZENODO_RECORD = "21219182";
 
@@ -22,6 +22,7 @@ const COMMANDS = {
   imagecollections: "Build non-georeferenced image collections",
   layers: "Merge Source/layers/* into build/layers.yaml",
   "source:sync": "Download and extract Source.zip from a Zenodo record into the local source mirror cache",
+  "source:draft-files": "List the files Zenodo reports for a record's current unpublished draft (requires ZENODO_TOKEN)",
   help: "Show this help",
 } as const;
 
@@ -207,6 +208,21 @@ async function main(): Promise<void> {
     case "source:sync": {
       const recordId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
       await syncZenodoSource(recordId);
+      break;
+    }
+    case "source:draft-files": {
+      const recordId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
+      const token = process.env.ZENODO_TOKEN;
+      if (!token) throw new Error("ZENODO_TOKEN is required to list draft files");
+      const { draftId, files } = await listDraftFiles(recordId, token);
+      log.ok(`record ${recordId} -> draft ${draftId}`);
+      if (files.length === 0) {
+        log.warn("  (no files in this draft)");
+      } else {
+        for (const file of files) {
+          log.info(`  ${file.key}  ${(file.size ?? 0).toLocaleString()} bytes  ${file.checksum ?? "no checksum"}`);
+        }
+      }
       break;
     }
     case undefined:

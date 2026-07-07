@@ -250,9 +250,11 @@ jobs:
             gh release delete "$TAG" --yes --cleanup-tag
           fi
 
+          NOTES="Automated data-pipeline build from [Zenodo record $ZENODO_RECORD](https://zenodo.org/records/$ZENODO_RECORD).
+
+          Published to \`$OUTPUT_BRANCH\` @ \`$COMMIT_SHA\`."
+
           gh release create "$TAG" \
             --target "$COMMIT_SHA" \
             --title "Zenodo record $ZENODO_RECORD" \
-            --notes "Automated data-pipeline build from [Zenodo record $ZENODO_RECORD](https://zenodo.org/records/$ZENODO_RECORD).
-
-Published to \`$OUTPUT_BRANCH\` @ \`$COMMIT_SHA\`."
+            --notes "$NOTES"

@@ -8,24 +8,24 @@ on:
         required: false
         default: false
         type: boolean
-      workers:
-        description: "Pipeline worker count"
-        required: true
-        default: "8"
-        type: choice
-        options:
-          - "4"
-          - "8"
       zenodo_record:
-        description: "Zenodo record ID to pull source data from"
+        description: "Zenodo record ID to pull source data from. Also used to look up the current draft when 'Use draft' is checked below (GitHub can't grey out fields based on other inputs, so this stays enabled either way)."
         required: true
         default: "21219182"
         type: string
-      raster_fetch_width:
-        description: "Override RASTER_FETCH_WIDTH (long edge px of the capped IIIF fetch before warping); blank uses the pipeline default (1024)"
+      build_from_draft:
+        description: "Use draft: read Source.zip from the record's unpublished draft instead of its published files"
         required: false
-        default: ""
-        type: string
+        default: false
+        type: boolean
+      publish_branch:
+        description: "Branch to publish the build output to"
+        required: true
+        default: "live"
+        type: choice
+        options:
+          - "live"
+          - "draft"
 
 permissions:
   contents: write
@@ -38,10 +38,10 @@ env:
   IMAGE: ghcr.io/ghentcdh/artemis-data:pipeline-v2
   COMMAND: build
   ZENODO_RECORD: ${{ inputs.zenodo_record }}
-  RASTER_FETCH_WIDTH: ${{ inputs.raster_fetch_width }}
+  ZENODO_USE_DRAFT: ${{ inputs.build_from_draft }}
   TIMEOUT_MINUTES: "180"
   BUILD_STATE_BRANCH: build-cache
-  OUTPUT_BRANCH: live
+  OUTPUT_BRANCH: ${{ inputs.publish_branch }}
 
 jobs:
   run:
@@ -98,7 +98,8 @@ jobs:
       - name: Run selected pipeline command
         env:
           FORCE: ${{ inputs.force }}
-          BUILD_CONCURRENCY: ${{ inputs.workers }}
+          BUILD_CONCURRENCY: "8"
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -109,7 +110,8 @@ jobs:
             -w /app \
             -e COMMAND \
             -e ZENODO_RECORD \
-            -e RASTER_FETCH_WIDTH \
+            -e ZENODO_USE_DRAFT \
+            -e ZENODO_TOKEN \
             -e FORCE \
             -e TIMEOUT_MINUTES \
             -e BUILD_CONCURRENCY \
@@ -241,27 +243,45 @@ jobs:
           echo "published=true" >> "$GITHUB_OUTPUT"
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Tag Zenodo release
+      - name: Tag build
         if: ${{ success() && steps.publish.outputs.published == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ZENODO_RECORD: ${{ inputs.zenodo_record }}
+          BUILD_FROM_DRAFT: ${{ inputs.build_from_draft }}
+          PUBLISH_BRANCH: ${{ inputs.publish_branch }}
           COMMIT_SHA: ${{ steps.publish.outputs.commit }}
         run: |
           set -euo pipefail
 
+          # Tag reflects source draft-ness (was Source.zip read from an unpublished
+          # draft?), independent of which branch the build was published to.
           TAG="zenodo-$ZENODO_RECORD"
-
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; replacing it to point at the latest build."
-            gh release delete "$TAG" --yes --cleanup-tag
+          TITLE_SUFFIX=""
+          NOTES_SUFFIX=""
+          if [ "$BUILD_FROM_DRAFT" = "true" ]; then
+            TAG="${TAG}-draft"
+            TITLE_SUFFIX=" (draft source)"
+            NOTES_SUFFIX=" (unpublished draft)"
           fi
 
-          NOTES="Automated data-pipeline build from [Zenodo record $ZENODO_RECORD](https://zenodo.org/records/$ZENODO_RECORD).
+          if [ "$PUBLISH_BRANCH" = "live" ]; then
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "Release $TAG already exists; replacing it to point at the latest build."
+              gh release delete "$TAG" --yes --cleanup-tag
+            fi
 
-          Published to \`$OUTPUT_BRANCH\` @ \`$COMMIT_SHA\`."
+            NOTES="Automated data-pipeline build from [Zenodo record $ZENODO_RECORD](https://zenodo.org/records/$ZENODO_RECORD)$NOTES_SUFFIX.
 
-          gh release create "$TAG" \
-            --target "$COMMIT_SHA" \
-            --title "Zenodo record $ZENODO_RECORD" \
-            --notes "$NOTES"
+          Published to \`$PUBLISH_BRANCH\` @ \`$COMMIT_SHA\`."
+
+            gh release create "$TAG" \
+              --target "$COMMIT_SHA" \
+              --title "Zenodo record $ZENODO_RECORD$TITLE_SUFFIX" \
+              --notes "$NOTES"
+          else
+            # Non-live publish target: traceable tag on the branch, no public Release.
+            git tag -f "$TAG" "$COMMIT_SHA"
+            git push --force origin "refs/tags/$TAG"
+            echo "Tagged $COMMIT_SHA as $TAG (pushed to $PUBLISH_BRANCH; no GitHub Release created)."
+          fi

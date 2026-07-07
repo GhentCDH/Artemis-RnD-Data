@@ -47,6 +47,8 @@ function help(): void {
   console.log("\nEnvironment:");
   console.log("  ARTEMIS_SOURCE_DIR         Local source root used with --local-source (default: Source)");
   console.log(`  ZENODO_RECORD              Default source record id (default: ${DEFAULT_ZENODO_RECORD})`);
+  console.log("  ZENODO_USE_DRAFT           Set to 1/true/yes to read Source.zip from the record's unpublished draft");
+  console.log("  ZENODO_TOKEN               Zenodo personal access token; required when ZENODO_USE_DRAFT is set");
   console.log("  BUILD_CONCURRENCY          Concurrent manifest/source workers (default: CPU-capped at 8)");
   console.log("  PARCEL_SIMPLIFY_EPSILON    Parcel Douglas-Peucker epsilon; pixels when pixel_geometry exists (default: 5)");
   console.log("  IIIF_LIMIT                 Process first N IIIF manifests per source for test runs");
@@ -113,7 +115,8 @@ async function applyZenodoSource(args: string[]): Promise<string | undefined> {
     return undefined;
   }
   const recordId = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
-  const synced = await syncZenodoSource(recordId);
+  const isDraft = /^(1|true|yes)$/i.test(process.env.ZENODO_USE_DRAFT ?? "");
+  const synced = await syncZenodoSource(recordId, { isDraft, token: process.env.ZENODO_TOKEN });
   setSourceDir(synced.sourceDir);
   return recordId;
 }

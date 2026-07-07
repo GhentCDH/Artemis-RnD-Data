@@ -11,11 +11,16 @@ on:
       workers:
         description: "Pipeline worker count"
         required: true
-        default: "4"
+        default: "8"
         type: choice
         options:
           - "4"
           - "8"
+      zenodo_record:
+        description: "Zenodo record ID to pull source data from"
+        required: true
+        default: "21219182"
+        type: string
 
 permissions:
   contents: write
@@ -27,7 +32,7 @@ concurrency:
 env:
   IMAGE: ghcr.io/ghentcdh/artemis-data:pipeline-v2
   COMMAND: build
-  ZENODO_RECORD: "21219182"
+  ZENODO_RECORD: ${{ inputs.zenodo_record }}
   TIMEOUT_MINUTES: "180"
   BUILD_STATE_BRANCH: build-cache
   OUTPUT_BRANCH: live
@@ -165,12 +170,14 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish build outputs
+        id: publish
         if: ${{ success() }}
         run: |
           set -euo pipefail
 
           if [ ! -d build ]; then
             echo "No build/ directory produced; nothing to publish."
+            echo "published=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -223,3 +230,29 @@ jobs:
 
           publish_branch "$BUILD_STATE_BRANCH" "build state" "false"
           publish_branch "$OUTPUT_BRANCH" "build output" "true"
+
+          echo "published=true" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Tag Zenodo release
+        if: ${{ success() && steps.publish.outputs.published == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZENODO_RECORD: ${{ inputs.zenodo_record }}
+          COMMIT_SHA: ${{ steps.publish.outputs.commit }}
+        run: |
+          set -euo pipefail
+
+          TAG="zenodo-$ZENODO_RECORD"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; replacing it to point at the latest build."
+            gh release delete "$TAG" --yes --cleanup-tag
+          fi
+
+          gh release create "$TAG" \
+            --target "$COMMIT_SHA" \
+            --title "Zenodo record $ZENODO_RECORD" \
+            --notes "Automated data-pipeline build from [Zenodo record $ZENODO_RECORD](https://zenodo.org/records/$ZENODO_RECORD).
+
+Published to \`$OUTPUT_BRANCH\` @ \`$COMMIT_SHA\`."

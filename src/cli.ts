@@ -22,7 +22,7 @@ const COMMANDS = {
   imagecollections: "Build non-georeferenced image collections",
   layers: "Merge Source/layers/* into build/layers.yaml",
   "source:sync": "Download and extract Source.zip from a Zenodo record into the local source mirror cache",
-  "source:draft-files": "List the files Zenodo reports for a record's current unpublished draft (requires ZENODO_TOKEN)",
+  "source:draft-files": "List the files Zenodo reports for an unpublished draft, given the draft's own record id (requires ZENODO_TOKEN)",
   help: "Show this help",
 } as const;
 
@@ -48,7 +48,7 @@ function help(): void {
   console.log("\nEnvironment:");
   console.log("  ARTEMIS_SOURCE_DIR         Local source root used with --local-source (default: Source)");
   console.log(`  ZENODO_RECORD              Default source record id (default: ${DEFAULT_ZENODO_RECORD})`);
-  console.log("  ZENODO_USE_DRAFT           Set to 1/true/yes to read Source.zip from the record's unpublished draft");
+  console.log("  ZENODO_USE_DRAFT           Set to 1/true/yes to treat ZENODO_RECORD as an unpublished draft's own id");
   console.log("  ZENODO_TOKEN               Zenodo personal access token; required when ZENODO_USE_DRAFT is set");
   console.log("  BUILD_CONCURRENCY          Concurrent manifest/source workers (default: CPU-capped at 8)");
   console.log("  PARCEL_SIMPLIFY_EPSILON    Parcel Douglas-Peucker epsilon; pixels when pixel_geometry exists (default: 5)");
@@ -211,11 +211,11 @@ async function main(): Promise<void> {
       break;
     }
     case "source:draft-files": {
-      const recordId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
+      const draftId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
       const token = process.env.ZENODO_TOKEN;
       if (!token) throw new Error("ZENODO_TOKEN is required to list draft files");
-      const { draftId, files } = await listDraftFiles(recordId, token);
-      log.ok(`record ${recordId} -> draft ${draftId}`);
+      const files = await listDraftFiles(draftId, token);
+      log.ok(`draft ${draftId}`);
       if (files.length === 0) {
         log.warn("  (no files in this draft)");
       } else {

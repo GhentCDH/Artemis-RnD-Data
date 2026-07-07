@@ -18,27 +18,16 @@ type ZenodoRecord = {
   }>;
 };
 
-// Zenodo runs on InvenioRDM: each version (published or draft) is its own
-// record with its own numeric id, sharing one version history. There is no
-// single "latest_draft" field on a published record - the current draft (if
-// any) has to be found by listing `.../versions` (works directly against any
-// version id in the family, no separate parent lookup needed) and picking the
-// entry that isn't published yet. Confirmed against the live API: this
-// deployment's per-version fields are `status`/`submitted`, not the generic
-// InvenioRDM doc's `is_published`/`versions.is_latest_draft`. (The older
-// `/api/deposit/depositions` API still exists but does not reliably resolve
-// drafts created through the current web UI - it was observed returning the
-// published record's own id as its "draft".)
-type ZenodoRdmRecord = {
-  id: number;
-  status?: string;
-  submitted?: boolean;
-};
-
-type ZenodoVersionsList = {
-  hits?: { hits?: ZenodoRdmRecord[] };
-};
-
+// Zenodo runs on InvenioRDM: a "new version" draft (Zenodo's "New version"
+// button, as opposed to "Edit") is a genuinely separate record with its own
+// numeric id (visible in its zenodo.org/uploads/<id> URL) - there is no
+// reliable, documented way to discover that id starting only from the
+// published record id. Verified live: `/api/records/<publishedId>/draft`
+// returns an in-place *metadata-edit* draft of that same id (unrelated,
+// unchanged files), and `/api/records/<publishedId>/versions` only indexes
+// published versions, never the pending draft. So callers must pass the
+// draft's own id directly (isDraft just changes which API/auth is used to
+// read it), not the id of whatever it was versioned from.
 type ZenodoDraftFileEntry = {
   key: string;
   size?: number;
@@ -58,7 +47,7 @@ export type ZenodoSourceSyncResult = {
 };
 
 export type ZenodoSourceOptions = {
-  /** Read from the record's current unpublished draft instead of its published files. */
+  /** Treat recordId as an unpublished draft's own id (not a published record id) and read it via the draft API. */
   isDraft?: boolean;
   /** Required when isDraft is true - viewing an unpublished draft requires ownership auth. */
   token?: string;
@@ -94,27 +83,10 @@ async function downloadFile(url: string, path: string, token?: string): Promise<
   await Bun.write(path, body);
 }
 
-/**
- * Resolve a record's current unpublished draft id. `recordId` can be any
- * version in the family (published or draft) - `.../versions` lists every
- * version of the family directly, no separate parent lookup needed.
- */
-export async function resolveDraftId(recordId: string, token: string): Promise<string> {
-  const versions = await fetchJson<ZenodoVersionsList>(`https://zenodo.org/api/records/${recordId}/versions`, token);
-  const hits = versions.hits?.hits ?? [];
-  const draft = hits.find((hit) => hit.submitted === false || (hit.status !== undefined && hit.status !== "published"));
-  if (!draft) {
-    const summary = hits.map((hit) => `${hit.id} (status=${hit.status ?? "?"}, submitted=${hit.submitted ?? "?"})`).join(", ");
-    throw new Error(`Zenodo record ${recordId} has no unpublished draft among its ${hits.length} version(s): ${summary || "none found"}`);
-  }
-  return String(draft.id);
-}
-
-/** List the files in a record's current unpublished draft (see resolveDraftId). */
-export async function listDraftFiles(recordId: string, token: string): Promise<{ draftId: string; files: ZenodoDraftFileEntry[] }> {
-  const draftId = await resolveDraftId(recordId, token);
+/** List the files in an unpublished draft, given the draft's own record id. */
+export async function listDraftFiles(draftId: string, token: string): Promise<ZenodoDraftFileEntry[]> {
   const listing = await fetchJson<ZenodoDraftFiles>(`https://zenodo.org/api/records/${draftId}/draft/files`, token);
-  return { draftId, files: listing.entries ?? [] };
+  return listing.entries ?? [];
 }
 
 function zenodoDraftFileContentUrl(draftId: string, fileName: string): string {
@@ -149,11 +121,10 @@ export async function syncZenodoSource(
 
   if (isDraft) {
     if (!token) throw new Error("ZENODO_TOKEN is required to read from an unpublished draft");
-    const { draftId, files } = await listDraftFiles(recordId, token);
-    log.info(`  resolved draft: record ${recordId} -> draft ${draftId}`);
+    const files = await listDraftFiles(recordId, token);
     const file = files.find((item) => item.key === fileName);
-    if (!file) throw new Error(`Zenodo draft ${draftId} (from record ${recordId}) does not contain ${fileName}`);
-    downloadUrl = zenodoDraftFileContentUrl(draftId, fileName);
+    if (!file) throw new Error(`Zenodo draft ${recordId} does not contain ${fileName}`);
+    downloadUrl = zenodoDraftFileContentUrl(recordId, fileName);
     size = file.size ?? 0;
     checksum = file.checksum;
   } else {

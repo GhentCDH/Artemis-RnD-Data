@@ -21,6 +21,11 @@ on:
         required: true
         default: "21219182"
         type: string
+      raster_fetch_width:
+        description: "Override RASTER_FETCH_WIDTH (long edge px of the capped IIIF fetch before warping); blank uses the pipeline default (1024)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -33,6 +38,7 @@ env:
   IMAGE: ghcr.io/ghentcdh/artemis-data:pipeline-v2
   COMMAND: build
   ZENODO_RECORD: ${{ inputs.zenodo_record }}
+  RASTER_FETCH_WIDTH: ${{ inputs.raster_fetch_width }}
   TIMEOUT_MINUTES: "180"
   BUILD_STATE_BRANCH: build-cache
   OUTPUT_BRANCH: live
@@ -103,6 +109,7 @@ jobs:
             -w /app \
             -e COMMAND \
             -e ZENODO_RECORD \
+            -e RASTER_FETCH_WIDTH \
             -e FORCE \
             -e TIMEOUT_MINUTES \
             -e BUILD_CONCURRENCY \

@@ -18,26 +18,32 @@ type ZenodoRecord = {
   }>;
 };
 
-// Zenodo's deposit API has been observed returning file entries in both the
-// legacy shape (filename/filesize/links.download) and the newer bucket-API
-// shape (key/size/links.self) depending on endpoint/era - accept either.
-type ZenodoDepositionFile = {
-  filename?: string;
-  key?: string;
-  filesize?: number;
-  size?: number;
-  checksum?: string;
-  links?: {
-    download?: string;
-    self?: string;
-  };
+// Zenodo runs on InvenioRDM: each version (published or draft) is its own
+// record with its own numeric id, grouped under a shared `parent.id`. There is
+// no single "latest_draft" field on a published record - the current draft (if
+// any) has to be found by listing the parent's versions and picking the
+// unpublished one. (The older `/api/deposit/depositions` API still exists but
+// does not reliably resolve drafts created through the current web UI/API -
+// it was observed returning the published record's own id as its "draft".)
+type ZenodoRdmRecord = {
+  id: string;
+  is_published?: boolean;
+  parent?: { id: string };
+  versions?: { index?: number; is_latest?: boolean; is_latest_draft?: boolean };
 };
 
-type ZenodoDeposition = {
-  id: number;
-  links?: {
-    latest_draft?: string;
-  };
+type ZenodoVersionsList = {
+  hits?: { hits?: ZenodoRdmRecord[] };
+};
+
+type ZenodoDraftFileEntry = {
+  key: string;
+  size?: number;
+  checksum?: string;
+};
+
+type ZenodoDraftFiles = {
+  entries?: ZenodoDraftFileEntry[];
 };
 
 export type ZenodoSourceSyncResult = {
@@ -51,7 +57,7 @@ export type ZenodoSourceSyncResult = {
 export type ZenodoSourceOptions = {
   /** Read from the record's current unpublished draft instead of its published files. */
   isDraft?: boolean;
-  /** Required when isDraft is true - the deposit API has no read-only scope. */
+  /** Required when isDraft is true - viewing an unpublished draft requires ownership auth. */
   token?: string;
 };
 
@@ -61,11 +67,6 @@ const MIRROR_MANIFEST = ".zenodo-source.json";
 function zenodoRecordApiUrl(recordId: string): string {
   if (!/^\d+$/.test(recordId)) throw new Error(`Zenodo record id must be numeric, got '${recordId}'`);
   return `https://zenodo.org/api/records/${recordId}`;
-}
-
-function zenodoDepositionApiUrl(recordId: string): string {
-  if (!/^\d+$/.test(recordId)) throw new Error(`Zenodo record id must be numeric, got '${recordId}'`);
-  return `https://zenodo.org/api/deposit/depositions/${recordId}`;
 }
 
 function md5File(path: string): Promise<string> {
@@ -90,14 +91,32 @@ async function downloadFile(url: string, path: string, token?: string): Promise<
   await Bun.write(path, body);
 }
 
-/** Resolve a published record's current unpublished draft deposition id via `.links.latest_draft`. */
-async function resolveDraftId(recordId: string, token: string): Promise<string> {
-  const deposition = await fetchJson<ZenodoDeposition>(zenodoDepositionApiUrl(recordId), token);
-  const draftUrl = deposition.links?.latest_draft;
-  if (!draftUrl) throw new Error(`Zenodo record ${recordId} has no unpublished draft (links.latest_draft missing)`);
-  const match = draftUrl.match(/(\d+)\/?$/);
-  if (!match) throw new Error(`Could not parse a draft id from latest_draft URL: ${draftUrl}`);
-  return match[1]!;
+/**
+ * Resolve a record's current unpublished draft id. `recordId` can be any version
+ * in the family (published or draft) - we look up its `parent.id` (constant
+ * across versions) then list that parent's versions to find the unpublished one.
+ */
+export async function resolveDraftId(recordId: string, token: string): Promise<string> {
+  const record = await fetchJson<ZenodoRdmRecord>(zenodoRecordApiUrl(recordId), token);
+  const parentId = record.parent?.id;
+  if (!parentId) throw new Error(`Zenodo record ${recordId} has no parent.id (unexpected API response shape)`);
+
+  const versions = await fetchJson<ZenodoVersionsList>(`https://zenodo.org/api/records/${parentId}/versions`, token);
+  const hits = versions.hits?.hits ?? [];
+  const draft = hits.find((hit) => hit.is_published === false || hit.versions?.is_latest_draft === true);
+  if (!draft) throw new Error(`Zenodo record ${recordId} (parent ${parentId}) has no unpublished draft`);
+  return draft.id;
+}
+
+/** List the files in a record's current unpublished draft (see resolveDraftId). */
+export async function listDraftFiles(recordId: string, token: string): Promise<{ draftId: string; files: ZenodoDraftFileEntry[] }> {
+  const draftId = await resolveDraftId(recordId, token);
+  const listing = await fetchJson<ZenodoDraftFiles>(`https://zenodo.org/api/records/${draftId}/draft/files`, token);
+  return { draftId, files: listing.entries ?? [] };
+}
+
+function zenodoDraftFileContentUrl(draftId: string, fileName: string): string {
+  return `https://zenodo.org/api/records/${draftId}/draft/files/${encodeURIComponent(fileName)}/content`;
 }
 
 async function extractZip(zipPath: string, destination: string): Promise<void> {
@@ -128,15 +147,12 @@ export async function syncZenodoSource(
 
   if (isDraft) {
     if (!token) throw new Error("ZENODO_TOKEN is required to read from an unpublished draft");
-    const draftId = await resolveDraftId(recordId, token);
-    log.info(`  resolved draft: record ${recordId} -> deposition ${draftId}`);
-    const files = await fetchJson<ZenodoDepositionFile[]>(`${zenodoDepositionApiUrl(draftId)}/files`, token);
-    const file = files.find((item) => (item.filename ?? item.key) === fileName);
+    const { draftId, files } = await listDraftFiles(recordId, token);
+    log.info(`  resolved draft: record ${recordId} -> draft ${draftId}`);
+    const file = files.find((item) => item.key === fileName);
     if (!file) throw new Error(`Zenodo draft ${draftId} (from record ${recordId}) does not contain ${fileName}`);
-    const url = file.links?.download ?? file.links?.self;
-    if (!url) throw new Error(`Zenodo draft ${draftId} file ${fileName} has no download URL`);
-    downloadUrl = url;
-    size = file.filesize ?? file.size ?? 0;
+    downloadUrl = zenodoDraftFileContentUrl(draftId, fileName);
+    size = file.size ?? 0;
     checksum = file.checksum;
   } else {
     const record = await fetchJson<ZenodoRecord>(zenodoRecordApiUrl(recordId));

@@ -1,7 +1,7 @@
 Artemis Data Build Log
 ======================
 
-Started  2026-07-07T10:03:36.533Z
+Started  2026-07-07T14:27:41.228Z
 Command  build
   workers        8
   raster         yes
@@ -22,7 +22,7 @@ IIIF: GereduceerdeKadaster
   raster              build/Layers/GereduceerdeKadaster/raster.pmtiles
   masks               0 (build/Layers/GereduceerdeKadaster/masks.pmtiles)
   geomaps             build/Layers/GereduceerdeKadaster/geomaps.json
-  iiif:GereduceerdeKadaster duration  1m 47.3s
+  iiif:GereduceerdeKadaster duration  1m 43.7s
 
 IIIF: PrimitiefKadaster
 -----------------------
@@ -39,7 +39,7 @@ IIIF: PrimitiefKadaster
   masks               0 (build/Layers/PrimitiefKadaster/masks.pmtiles)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster/geomaps.json
-  iiif:PrimitiefKadaster duration  2m 18.4s
+  iiif:PrimitiefKadaster duration  2m 16.6s
 
 IIIF Summary
 ------------
@@ -55,15 +55,15 @@ IIIF Summary
   warped canvases     0
   mask features       0
   warning details     build/IIIFWarnings.log
-  iiif duration  4m 8.1s
-  toponyms:Ferraris duration  183ms
+  iiif duration  4m 2.5s
+  toponyms:Ferraris duration  170ms
   toponyms:Frickx duration  0ms
   toponyms:GereduceerdeKadaster duration  1ms
   toponyms:HanddrawnCollection duration  0ms
   toponyms:NGI1873 duration  0ms
   toponyms:NGI1904 duration  0ms
   toponyms:Popp duration  0ms
-  toponyms:PrimitiefKadaster duration  62ms
+  toponyms:PrimitiefKadaster duration  65ms
   toponyms:Vandermaelen duration  0ms
   toponyms:Villaret duration  0ms
 
@@ -71,10 +71,10 @@ Toponyms Summary
 ----------------
   layers  3
   items   0
-  toponyms duration  250ms
-  parcels:GereduceerdeKadaster-parcels duration  2ms
+  toponyms duration  240ms
+  parcels:GereduceerdeKadaster-parcels duration  1ms
   parcels:HanddrawnCollection-parcels duration  0ms
-  parcels:PrimitiefKadaster-parcels duration  273ms
+  parcels:PrimitiefKadaster-parcels duration  254ms
 
 Parcels Summary
 ---------------
@@ -83,8 +83,8 @@ Parcels Summary
   input points    0
   output points   0
   removed points  0
-  parcels duration  276ms
-  imagecollection:massart duration  26.15s
+  parcels duration  256ms
+  imagecollection:massart duration  33.77s
 
 Image Collection: massart
 -------------------------
@@ -99,5 +99,5 @@ Image Collections Summary
   items             60
   with coordinates  60
   output            build/imagecollection.yaml
-  imagecollections duration  26.16s
-  layers duration  31ms
+  imagecollections duration  33.78s
+  layers duration  42ms

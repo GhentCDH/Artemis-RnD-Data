@@ -57,6 +57,7 @@ jobs:
         run: docker pull "$IMAGE"
 
       - name: Cache Zenodo source mirror
+        if: ${{ !inputs.build_from_draft }}
         uses: actions/cache@v6.1.0
         with:
           path: .build-cache/zenodo-source

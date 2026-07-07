@@ -19,17 +19,20 @@ type ZenodoRecord = {
 };
 
 // Zenodo runs on InvenioRDM: each version (published or draft) is its own
-// record with its own numeric id, grouped under a shared `parent.id`. There is
-// no single "latest_draft" field on a published record - the current draft (if
-// any) has to be found by listing the parent's versions and picking the
-// unpublished one. (The older `/api/deposit/depositions` API still exists but
-// does not reliably resolve drafts created through the current web UI/API -
-// it was observed returning the published record's own id as its "draft".)
+// record with its own numeric id, sharing one version history. There is no
+// single "latest_draft" field on a published record - the current draft (if
+// any) has to be found by listing `.../versions` (works directly against any
+// version id in the family, no separate parent lookup needed) and picking the
+// entry that isn't published yet. Confirmed against the live API: this
+// deployment's per-version fields are `status`/`submitted`, not the generic
+// InvenioRDM doc's `is_published`/`versions.is_latest_draft`. (The older
+// `/api/deposit/depositions` API still exists but does not reliably resolve
+// drafts created through the current web UI - it was observed returning the
+// published record's own id as its "draft".)
 type ZenodoRdmRecord = {
-  id: string;
-  is_published?: boolean;
-  parent?: { id: string };
-  versions?: { index?: number; is_latest?: boolean; is_latest_draft?: boolean };
+  id: number;
+  status?: string;
+  submitted?: boolean;
 };
 
 type ZenodoVersionsList = {
@@ -92,20 +95,19 @@ async function downloadFile(url: string, path: string, token?: string): Promise<
 }
 
 /**
- * Resolve a record's current unpublished draft id. `recordId` can be any version
- * in the family (published or draft) - we look up its `parent.id` (constant
- * across versions) then list that parent's versions to find the unpublished one.
+ * Resolve a record's current unpublished draft id. `recordId` can be any
+ * version in the family (published or draft) - `.../versions` lists every
+ * version of the family directly, no separate parent lookup needed.
  */
 export async function resolveDraftId(recordId: string, token: string): Promise<string> {
-  const record = await fetchJson<ZenodoRdmRecord>(zenodoRecordApiUrl(recordId), token);
-  const parentId = record.parent?.id;
-  if (!parentId) throw new Error(`Zenodo record ${recordId} has no parent.id (unexpected API response shape)`);
-
-  const versions = await fetchJson<ZenodoVersionsList>(`https://zenodo.org/api/records/${parentId}/versions`, token);
+  const versions = await fetchJson<ZenodoVersionsList>(`https://zenodo.org/api/records/${recordId}/versions`, token);
   const hits = versions.hits?.hits ?? [];
-  const draft = hits.find((hit) => hit.is_published === false || hit.versions?.is_latest_draft === true);
-  if (!draft) throw new Error(`Zenodo record ${recordId} (parent ${parentId}) has no unpublished draft`);
-  return draft.id;
+  const draft = hits.find((hit) => hit.submitted === false || (hit.status !== undefined && hit.status !== "published"));
+  if (!draft) {
+    const summary = hits.map((hit) => `${hit.id} (status=${hit.status ?? "?"}, submitted=${hit.submitted ?? "?"})`).join(", ");
+    throw new Error(`Zenodo record ${recordId} has no unpublished draft among its ${hits.length} version(s): ${summary || "none found"}`);
+  }
+  return String(draft.id);
 }
 
 /** List the files in a record's current unpublished draft (see resolveDraftId). */

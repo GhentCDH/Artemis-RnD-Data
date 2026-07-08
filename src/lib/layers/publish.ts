@@ -6,7 +6,7 @@ import { BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir, logo
 import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
 import { log } from "../log";
-import { BuildLog, DOWNLOAD_WARNINGS_LOG_PATH } from "../build/buildLog";
+import { BUILD_ISSUES_LOG_PATH, BuildLog } from "../build/buildLog";
 import { fetchRecordFileIndex } from "../source/zenodo";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
@@ -38,16 +38,31 @@ export type PublishLayersOptions = {
   isDraft?: boolean;
 };
 
+export type MissingDownload = { sublayerId: string; file: string };
+
 export type PublishLayersResult = {
   layers: number;
   sublayers: number;
   logosResolved: number;
   unknownLogos: string[];
   downloadsResolved: number;
-  missingDownloads: string[];
+  missingDownloads: MissingDownload[];
   outputPath: string;
   cached?: boolean;
 };
+
+/**
+ * Unresolved references that must be fixed before publishing - unlike IIIF
+ * warnings (georeferencing quality notes), these mean a sublayer will render
+ * broken or a download link will 404, so callers should fail the build on
+ * these rather than merely log them.
+ */
+export function significantIssues(result: PublishLayersResult): string[] {
+  return [
+    ...result.missingDownloads.map((m) => `missing sublayer download: ${m.sublayerId} → "${m.file}" not found in the Zenodo record`),
+    ...result.unknownLogos.map((file) => `unknown attribution logo: "${file}" not in the logo registry`),
+  ];
+}
 
 /**
  * Logo registry (`logos.yaml`) is a flat `filename: click-through-url` map. A
@@ -148,9 +163,11 @@ function resolveLogos(layer: MutableLayer, registry: Map<string, string>, unknow
  * Replaces each sublayer's `download: <filename>` with `{ file, url }` in
  * place, resolving against a Zenodo record's file index. Filenames not found
  * in the record collapse to `{ file }` (no url) and are recorded in `missing`
- * so the caller can surface them; this never fails the build.
+ * so the caller can fail the build on them; when `missing` is undefined
+ * (draft/unverifiable builds), the same `{ file }` shape is used but nothing
+ * is reported, since there was nothing to check against.
  */
-function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, missing: string[] | undefined): number {
+function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, missing: MissingDownload[] | undefined): number {
   let resolved = 0;
   for (const sublayer of layer.sublayers ?? []) {
     const file = sublayer.download;
@@ -160,27 +177,40 @@ function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, m
       resolved++;
       sublayer.download = { file, url };
     } else {
-      missing?.push(`${sublayer.id ?? "(unknown sublayer)"}: could not find "${file}" in the Zenodo record`);
+      missing?.push({ sublayerId: sublayer.id ?? "(unknown sublayer)", file });
       sublayer.download = { file };
     }
   }
   return resolved;
 }
 
+/** Renders a sublayer's `download` field for the summary table: link if resolved, flagged if confirmed missing, noted if never checked. */
+function downloadCell(sublayer: MutableSublayer, missingSublayerIds: Set<string>): string {
+  const download = sublayer.download;
+  if (download === undefined || download === null || typeof download !== "object") return "—";
+  const { file, url } = download as { file?: unknown; url?: unknown };
+  if (typeof file !== "string") return "—";
+  if (typeof url === "string") return `[${file}](${url})`;
+  if (sublayer.id && missingSublayerIds.has(sublayer.id)) return `⚠️ ${file} — not found`;
+  return `${file} (unverified)`;
+}
+
 /**
- * Renders a Markdown table of every sublayer (layer, sublayer, kind, and which
- * artifacts it produced) for the CI job summary and release notes - the
- * human-facing answer to "what did this build actually contain?".
+ * Renders a Markdown table of every sublayer (layer, sublayer, kind, which
+ * artifacts it produced, and download status) for the CI job summary and
+ * release notes - the human-facing answer to "what did this build actually
+ * contain?".
  */
-function buildSublayersMarkdown(layers: MutableLayer[]): string {
+function buildSublayersMarkdown(layers: MutableLayer[], missingDownloads: MissingDownload[]): string {
+  const missingSublayerIds = new Set(missingDownloads.map((m) => m.sublayerId));
   const rows = layers.flatMap((layer) =>
     (layer.sublayers ?? []).map((sublayer) => {
       const artifactKeys = sublayer.artifacts ? Object.keys(sublayer.artifacts) : [];
-      return `| ${layer.label ?? layer.id ?? "—"} | ${sublayer.name ?? sublayer.id ?? "—"} | ${sublayer.kind ?? "—"} | ${artifactKeys.length > 0 ? artifactKeys.join(", ") : "—"} |`;
+      return `| ${layer.label ?? layer.id ?? "—"} | ${sublayer.name ?? sublayer.id ?? "—"} | ${sublayer.kind ?? "—"} | ${artifactKeys.length > 0 ? artifactKeys.join(", ") : "—"} | ${downloadCell(sublayer, missingSublayerIds)} |`;
     }),
   );
   if (rows.length === 0) return "_No sublayers found._\n";
-  return `| Layer | Sublayer | Kind | Artifacts built |\n| --- | --- | --- | --- |\n${rows.join("\n")}\n`;
+  return `| Layer | Sublayer | Kind | Artifacts built | Download |\n| --- | --- | --- | --- | --- |\n${rows.join("\n")}\n`;
 }
 
 /**
@@ -213,7 +243,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     }
   }
   let downloadsResolved = 0;
-  const missingDownloads: string[] = [];
+  const missingDownloads: MissingDownload[] = [];
 
   const layers = await Promise.all(
     refs.map(async (ref) => {
@@ -237,7 +267,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   );
 
   await ensureDir(dirname(BUILD_SUBLAYERS_SUMMARY_PATH));
-  await writeFile(BUILD_SUBLAYERS_SUMMARY_PATH, buildSublayersMarkdown(layers), "utf-8");
+  await writeFile(BUILD_SUBLAYERS_SUMMARY_PATH, buildSublayersMarkdown(layers, missingDownloads), "utf-8");
 
   if (!options.force) {
     try {
@@ -274,12 +304,22 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   const registryPath = logosRegistryPath();
   for (const file of unknownLogos) log.warn(`unknown logo '${file}' not in ${registryPath}`);
 
-  if (missingDownloads.length > 0) {
-    const warningLog = new BuildLog(DOWNLOAD_WARNINGS_LOG_PATH, "Download Warnings Log");
-    await warningLog.reset("layers", []);
-    await warningLog.section("Missing sublayer downloads");
-    for (const message of missingDownloads) await warningLog.info(message);
-    for (const message of missingDownloads) log.warn(`${message} — see ${DOWNLOAD_WARNINGS_LOG_PATH}`);
+  const result: PublishLayersResult = {
+    layers: layers.length,
+    sublayers,
+    logosResolved,
+    unknownLogos: [...unknownLogos],
+    downloadsResolved,
+    missingDownloads,
+    outputPath: BUILD_LAYERS_YAML_PATH,
+  };
+  const issues = significantIssues(result);
+  if (issues.length > 0) {
+    const issuesLog = new BuildLog(BUILD_ISSUES_LOG_PATH, "Build Issues Log");
+    await issuesLog.reset("layers", []);
+    await issuesLog.section("Unresolved references (block publishing)");
+    for (const issue of issues) await issuesLog.info(issue);
+    for (const issue of issues) log.warn(`${issue} — see ${BUILD_ISSUES_LOG_PATH}`);
   }
 
   await options.buildLog?.section("Layers");
@@ -289,17 +329,10 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     "logos resolved": logosResolved,
     "unknown logos": unknownLogos.size > 0 ? [...unknownLogos].join(", ") : undefined,
     "downloads resolved": downloadsResolved,
-    "missing downloads": missingDownloads.length > 0 ? `${missingDownloads.length} — see ${DOWNLOAD_WARNINGS_LOG_PATH}` : undefined,
+    "missing downloads": missingDownloads.length > 0 ? missingDownloads.map((m) => m.file).join(", ") : undefined,
+    "build issues": issues.length > 0 ? `${issues.length} — see ${BUILD_ISSUES_LOG_PATH}` : undefined,
     output: BUILD_LAYERS_YAML_PATH,
   });
 
-  return {
-    layers: layers.length,
-    sublayers,
-    logosResolved,
-    unknownLogos: [...unknownLogos],
-    downloadsResolved,
-    missingDownloads,
-    outputPath: BUILD_LAYERS_YAML_PATH,
-  };
+  return result;
 }

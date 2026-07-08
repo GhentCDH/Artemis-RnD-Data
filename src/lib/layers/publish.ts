@@ -198,11 +198,20 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   // Drafts have no public download URL, and without a record id there's
   // nothing to resolve against - in both cases, normalize `download:` to
   // `{ file }` without treating unresolved filenames as an error.
-  const canResolveDownloads = !options.isDraft && Boolean(options.zenodoRecordId);
+  let canResolveDownloads = !options.isDraft && Boolean(options.zenodoRecordId);
   const wantsDownloads = refs.some((ref) => (ref.config.sublayers ?? []).some((sublayer) => typeof sublayer.download === "string"));
-  const downloadIndex = wantsDownloads && canResolveDownloads && options.zenodoRecordId
-    ? await fetchRecordFileIndex(options.zenodoRecordId)
-    : new Map<string, string>();
+  let downloadIndex = new Map<string, string>();
+  if (wantsDownloads && canResolveDownloads && options.zenodoRecordId) {
+    try {
+      downloadIndex = await fetchRecordFileIndex(options.zenodoRecordId);
+    } catch (error) {
+      // A Zenodo API hiccup shouldn't fail the whole build, but we can no
+      // longer tell "missing" from "unverifiable" - treat as unresolved, same
+      // as drafts, rather than falsely reporting every download as missing.
+      canResolveDownloads = false;
+      log.warn(`could not fetch Zenodo record ${options.zenodoRecordId} file list; leaving sublayer downloads unresolved: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
   let downloadsResolved = 0;
   const missingDownloads: string[] = [];
 

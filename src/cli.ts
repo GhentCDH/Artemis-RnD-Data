@@ -112,13 +112,19 @@ function layerArgs(args: string[], consumePositionalZenodoRecord = false): strin
 
 type ZenodoSourceInfo = { recordId: string; isDraft: boolean };
 
-async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo | undefined> {
-  if (args.includes("--local-source")) {
-    log.ok(`using local source: ${sourceDir()}`);
-    return undefined;
-  }
+/**
+ * Record id/draft-ness is resolved even under --local-source: sublayer
+ * `download:` filenames are checked against the Zenodo record's published
+ * files regardless of where the geojson/source content itself is read from,
+ * so --local-source only skips the Source.zip sync, not that lookup.
+ */
+async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo> {
   const recordId = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
   const isDraft = /^(1|true|yes)$/i.test(process.env.ZENODO_USE_DRAFT ?? "");
+  if (args.includes("--local-source")) {
+    log.ok(`using local source: ${sourceDir()}`);
+    return { recordId, isDraft };
+  }
   const synced = await syncZenodoSource(recordId, { isDraft, token: process.env.ZENODO_TOKEN });
   setSourceDir(synced.sourceDir);
   return { recordId, isDraft };

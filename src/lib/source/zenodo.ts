@@ -44,12 +44,11 @@ export type ZenodoSourceSyncResult = {
   zipPath: string;
   checksum: string;
   size: number;
+  isDraft: boolean;
 };
 
 export type ZenodoSourceOptions = {
-  /** Treat recordId as an unpublished draft's own id (not a published record id) and read it via the draft API. */
-  isDraft?: boolean;
-  /** Required when isDraft is true - viewing an unpublished draft requires ownership auth. */
+  /** Required if the record turns out to be an unpublished draft - viewing a draft requires ownership auth. */
   token?: string;
 };
 
@@ -83,6 +82,30 @@ async function downloadFile(url: string, path: string, token?: string): Promise<
   await Bun.write(path, body);
 }
 
+/**
+ * Auto-detects whether a record id refers to a published record or an
+ * unpublished draft: Zenodo's public record API 404s for anything not
+ * published, so a 404 there is treated as "try the authenticated draft API
+ * next" rather than "record doesn't exist". Requires a token only in the
+ * draft case, since checking the public API needs none.
+ */
+export async function detectZenodoDraftStatus(recordId: string, token?: string): Promise<boolean> {
+  const publicUrl = zenodoRecordApiUrl(recordId);
+  const publicRes = await fetch(publicUrl, { headers: { Accept: "application/json" } });
+  if (publicRes.ok) return false;
+  if (publicRes.status !== 404) {
+    throw new Error(`Zenodo API request failed (${publicRes.status} ${publicRes.statusText}): ${publicUrl}`);
+  }
+
+  if (!token) {
+    throw new Error(`Zenodo record ${recordId} was not found as a published record; ZENODO_TOKEN is required to check whether it's an unpublished draft`);
+  }
+  const draftUrl = `${publicUrl}/draft`;
+  const draftRes = await fetch(draftUrl, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` } });
+  if (draftRes.ok) return true;
+  throw new Error(`Zenodo record ${recordId} is neither a published record nor an accessible draft (draft check: ${draftRes.status} ${draftRes.statusText})`);
+}
+
 /** List the files in an unpublished draft, given the draft's own record id. */
 export async function listDraftFiles(draftId: string, token: string): Promise<ZenodoDraftFileEntry[]> {
   const listing = await fetchJson<ZenodoDraftFiles>(`https://zenodo.org/api/records/${draftId}/draft/files`, token);
@@ -108,12 +131,36 @@ function zenodoDraftFileContentUrl(draftId: string, fileName: string): string {
   return `https://zenodo.org/api/records/${draftId}/draft/files/${encodeURIComponent(fileName)}/content`;
 }
 
+/**
+ * If every entry shares the same single first path segment (e.g. the zip was
+ * made from the parent of `Source/` instead of its contents), that segment is
+ * just wrapping - not part of the real layout - so callers should strip it.
+ */
+function commonWrappingDir(names: string[]): string | undefined {
+  if (names.length === 0) return undefined;
+  let wrapping: string | undefined;
+  for (const name of names) {
+    const clean = name.replace(/^\/+/, "");
+    const slash = clean.indexOf("/");
+    if (slash === -1) return undefined; // a bare top-level file rules out a wrapping dir
+    const first = clean.slice(0, slash);
+    if (wrapping === undefined) wrapping = first;
+    else if (wrapping !== first) return undefined;
+  }
+  return wrapping;
+}
+
 async function extractZip(zipPath: string, destination: string): Promise<void> {
   const files = unzipSync(new Uint8Array(await readFile(zipPath)));
+  const wrapping = commonWrappingDir(Object.keys(files));
+  if (wrapping) log.warn(`Source.zip wraps everything in a top-level '${wrapping}/' folder; stripping it during extraction`);
+
   const normalizedDestination = normalize(destination);
   for (const [name, content] of Object.entries(files)) {
     if (name.endsWith("/")) continue;
-    const outputPath = normalize(join(destination, name));
+    const relativeName = wrapping ? name.slice(wrapping.length + 1) : name;
+    if (!relativeName) continue;
+    const outputPath = normalize(join(destination, relativeName));
     if (outputPath !== normalizedDestination && !outputPath.startsWith(`${normalizedDestination}${sep}`)) {
       throw new Error(`Refusing to extract unsafe ZIP path: ${name}`);
     }
@@ -127,7 +174,8 @@ export async function syncZenodoSource(
   options: ZenodoSourceOptions = {},
   fileName = DEFAULT_SOURCE_ZIP,
 ): Promise<ZenodoSourceSyncResult> {
-  const { isDraft = false, token } = options;
+  const { token } = options;
+  const isDraft = await detectZenodoDraftStatus(recordId, token);
   log.step(`Syncing Zenodo source record ${recordId}${isDraft ? " (draft)" : ""}`);
 
   let downloadUrl: string;
@@ -181,6 +229,7 @@ export async function syncZenodoSource(
         zipPath,
         checksum: expectedMd5 ?? actualMd5,
         size,
+        isDraft,
       };
     }
   }
@@ -203,5 +252,6 @@ export async function syncZenodoSource(
     zipPath,
     checksum: expectedMd5 ?? actualMd5,
     size,
+    isDraft,
   };
 }

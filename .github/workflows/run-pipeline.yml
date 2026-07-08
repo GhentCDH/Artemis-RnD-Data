@@ -1,4 +1,5 @@
 name: Run data pipeline
+run-name: "Zenodo record ${{ inputs.zenodo_record }}${{ inputs.force && ' · force' || '' }} (${{ github.actor }})"
 
 on:
   workflow_dispatch:
@@ -13,19 +14,6 @@ on:
         required: true
         default: "21219182"
         type: string
-      build_from_draft:
-        description: "Use draft"
-        required: false
-        default: false
-        type: boolean
-      publish_branch:
-        description: "Publish branch"
-        required: true
-        default: "live"
-        type: choice
-        options:
-          - "live"
-          - "draft"
 
 permissions:
   contents: write
@@ -38,10 +26,8 @@ env:
   IMAGE: ghcr.io/ghentcdh/artemis-data:pipeline-v2
   COMMAND: build
   ZENODO_RECORD: ${{ inputs.zenodo_record }}
-  ZENODO_USE_DRAFT: ${{ inputs.build_from_draft }}
   TIMEOUT_MINUTES: "180"
   BUILD_STATE_BRANCH: build-cache
-  OUTPUT_BRANCH: ${{ inputs.publish_branch }}
 
 jobs:
   run:
@@ -56,8 +42,11 @@ jobs:
       - name: Pull pipeline container
         run: docker pull "$IMAGE"
 
+      # Safe to cache unconditionally, including for drafts: the pipeline
+      # re-fetches the record's file listing every run and only reuses the
+      # cached zip if its checksum still matches, so an edited draft is never
+      # served stale.
       - name: Cache Zenodo source mirror
-        if: ${{ !inputs.build_from_draft }}
         uses: actions/cache@v6.1.0
         with:
           path: .build-cache/zenodo-source
@@ -111,7 +100,6 @@ jobs:
             -w /app \
             -e COMMAND \
             -e ZENODO_RECORD \
-            -e ZENODO_USE_DRAFT \
             -e ZENODO_TOKEN \
             -e FORCE \
             -e TIMEOUT_MINUTES \
@@ -135,6 +123,35 @@ jobs:
               timeout --preserve-status "${TIMEOUT_MINUTES}m" "${cmd[@]}"
             '
 
+      # The pipeline auto-detects draft-vs-published straight from the record
+      # id (Zenodo's public API 404s for anything not published) and writes
+      # the result to build/ZenodoSource.json; this step just reads it back
+      # so later steps can route to the draft/live branch without
+      # re-implementing that detection.
+      - name: Determine publish target
+        id: zenodo_source
+        if: ${{ success() }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -s build/ZenodoSource.json ]; then
+            echo "build/ZenodoSource.json not found; the pipeline should always write it." >&2
+            exit 1
+          fi
+
+          is_draft="$(jq -r '.isDraft' build/ZenodoSource.json)"
+          record_id="$(jq -r '.recordId' build/ZenodoSource.json)"
+          branch="live"
+          if [ "$is_draft" = "true" ]; then
+            branch="draft"
+          fi
+
+          echo "is_draft=$is_draft" >> "$GITHUB_OUTPUT"
+          echo "record_id=$record_id" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+          echo "Zenodo record $record_id is $([ "$is_draft" = "true" ] && echo "an unpublished draft" || echo "published") -> publishing to '$branch'."
+
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -143,7 +160,7 @@ jobs:
           path: |
             build/Build.log
             build/IIIFWarnings.log
-            build/DownloadWarnings.log
+            build/BuildIssues.log
             build/Sublayers.md
           if-no-files-found: ignore
           retention-days: 14
@@ -151,9 +168,14 @@ jobs:
       - name: Surface pipeline warnings
         if: always()
         env:
-          BUILD_FROM_DRAFT: ${{ inputs.build_from_draft }}
+          BUILD_FROM_DRAFT: ${{ steps.zenodo_source.outputs.is_draft }}
         run: |
           set -euo pipefail
+
+          if [ -s build/BuildIssues.log ]; then
+            issues_line_count="$(wc -l < build/BuildIssues.log | tr -d ' ')"
+            echo "::error title=Build issues::Pipeline found $issues_line_count unresolved reference(s) (missing sublayer downloads / unknown logos) that block publishing. See the job summary or uploaded logs artifact."
+          fi
 
           if [ "$BUILD_FROM_DRAFT" = "true" ]; then
             echo "::warning title=Draft Zenodo source::Sublayer downloads won't work — the Zenodo record has not been published."
@@ -161,12 +183,7 @@ jobs:
 
           if [ -s build/IIIFWarnings.log ]; then
             line_count="$(wc -l < build/IIIFWarnings.log | tr -d ' ')"
-            echo "::warning title=IIIF warnings::Pipeline produced IIIF warnings ($line_count log lines). See the job summary or uploaded logs artifact."
-          fi
-
-          if [ -s build/DownloadWarnings.log ]; then
-            download_line_count="$(wc -l < build/DownloadWarnings.log | tr -d ' ')"
-            echo "::warning title=Missing sublayer downloads::Pipeline could not resolve $download_line_count sublayer download(s) against the Zenodo record. See the job summary or uploaded logs artifact."
+            echo "::warning title=IIIF warnings (non-blocking)::Pipeline produced IIIF warnings ($line_count log lines). Georeferencing quality notes only; does not block publishing."
           fi
 
           {
@@ -177,17 +194,31 @@ jobs:
             else
               echo "_No sublayer summary produced._"
             fi
+
             echo
-            echo "## Pipeline logs"
+            echo "## Build issues"
+            echo
+            if [ -s build/BuildIssues.log ]; then
+              echo "> **🛑 This build FAILED to publish.** \`build/BuildIssues.log\` lists $issues_line_count unresolved reference(s) — missing sublayer downloads and/or unknown attribution logos — that must be fixed before this can publish."
+              echo
+              echo '```text'
+              cat build/BuildIssues.log
+              echo '```'
+            else
+              echo "✅ No blocking issues."
+            fi
             echo
             if [ "$BUILD_FROM_DRAFT" = "true" ]; then
-              echo "> **⚠️ Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs — end users will not be able to download data via those links until this record is published."
+              echo "> **⚠️ Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
               echo
             fi
+
+            echo "## Pipeline logs (non-blocking)"
+            echo
             if [ -s build/IIIFWarnings.log ]; then
               echo "### IIIF warnings"
               echo
-              echo "\`build/IIIFWarnings.log\` contains $line_count lines."
+              echo "\`build/IIIFWarnings.log\` contains $line_count lines. Georeferencing quality notes only — informational, does not block publishing."
               echo
               echo "<details><summary>First 200 lines</summary>"
               echo
@@ -202,24 +233,13 @@ jobs:
             else
               echo "No IIIF warning log produced."
             fi
-
-            echo
-            if [ -s build/DownloadWarnings.log ]; then
-              echo "### Missing sublayer downloads"
-              echo
-              echo "\`build/DownloadWarnings.log\` contains $download_line_count lines."
-              echo
-              echo '```text'
-              cat build/DownloadWarnings.log
-              echo '```'
-            else
-              echo "No missing sublayer downloads."
-            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish build outputs
         id: publish
         if: ${{ success() }}
+        env:
+          OUTPUT_BRANCH: ${{ steps.zenodo_source.outputs.branch }}
         run: |
           set -euo pipefail
 
@@ -287,8 +307,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ZENODO_RECORD: ${{ inputs.zenodo_record }}
-          BUILD_FROM_DRAFT: ${{ inputs.build_from_draft }}
-          PUBLISH_BRANCH: ${{ inputs.publish_branch }}
+          BUILD_FROM_DRAFT: ${{ steps.zenodo_source.outputs.is_draft }}
+          PUBLISH_BRANCH: ${{ steps.zenodo_source.outputs.branch }}
           COMMIT_SHA: ${{ steps.publish.outputs.commit }}
         run: |
           set -euo pipefail

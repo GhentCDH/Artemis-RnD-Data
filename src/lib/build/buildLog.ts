@@ -3,8 +3,10 @@ import { dirname } from "node:path";
 import { ensureDir } from "../utils/files";
 
 export const BUILD_LOG_PATH = "build/Build.log";
+/** Non-fatal, informational: georeferencing quality notes, not build-breaking. */
 export const IIIF_WARNINGS_LOG_PATH = "build/IIIFWarnings.log";
-export const DOWNLOAD_WARNINGS_LOG_PATH = "build/DownloadWarnings.log";
+/** Fatal: unresolved references (missing sublayer downloads, unknown attribution logos) that block publishing. */
+export const BUILD_ISSUES_LOG_PATH = "build/BuildIssues.log";
 
 export class BuildLog {
   private sectionOpen = false;

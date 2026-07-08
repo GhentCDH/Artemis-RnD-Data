@@ -34,6 +34,9 @@ export const BUILD_LAYERS_YAML_PATH = join(BUILD_DIR, "layers.yaml");
 /** Human-readable Markdown table of every sublayer + kind, for the CI job summary / release notes. */
 export const BUILD_SUBLAYERS_SUMMARY_PATH = join(BUILD_DIR, "Sublayers.md");
 
+/** Which Zenodo record this build synced from and whether it was a draft - read by CI to route the output branch/release. */
+export const BUILD_ZENODO_SOURCE_PATH = join(BUILD_DIR, "ZenodoSource.json");
+
 /** Published, per-layer output. */
 export const BUILD_LAYERS_DIR = join(BUILD_DIR, "Layers");
 

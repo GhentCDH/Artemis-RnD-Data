@@ -4,13 +4,14 @@ import { buildToponyms } from "./lib/toponyms/build";
 import { buildIiif } from "./lib/iiif/build";
 import { buildImageCollections } from "./lib/imageCollections/build";
 import { discoverLayers } from "./lib/layers/discovery";
-import { publishLayers } from "./lib/layers/publish";
+import { publishLayers, significantIssues, type PublishLayersResult } from "./lib/layers/publish";
 import { log } from "./lib/log";
 import { cpus } from "node:os";
 import { BuildLog } from "./lib/build/buildLog";
 import { HashRegistry, buildForceEnabled } from "./lib/build/hashRegistry";
-import { setSourceDir, sourceDir } from "./lib/paths";
-import { listDraftFiles, syncZenodoSource } from "./lib/source/zenodo";
+import { BUILD_ZENODO_SOURCE_PATH, setSourceDir, sourceDir } from "./lib/paths";
+import { detectZenodoDraftStatus, listDraftFiles, syncZenodoSource } from "./lib/source/zenodo";
+import { writeJson } from "./lib/utils/files";
 
 const DEFAULT_ZENODO_RECORD = "21219182";
 
@@ -48,8 +49,7 @@ function help(): void {
   console.log("\nEnvironment:");
   console.log("  ARTEMIS_SOURCE_DIR         Local source root used with --local-source (default: Source)");
   console.log(`  ZENODO_RECORD              Default source record id (default: ${DEFAULT_ZENODO_RECORD})`);
-  console.log("  ZENODO_USE_DRAFT           Set to 1/true/yes to treat ZENODO_RECORD as an unpublished draft's own id");
-  console.log("  ZENODO_TOKEN               Zenodo personal access token; required when ZENODO_USE_DRAFT is set");
+  console.log("  ZENODO_TOKEN               Zenodo personal access token; required only if ZENODO_RECORD turns out to be an unpublished draft (auto-detected)");
   console.log("  BUILD_CONCURRENCY          Concurrent manifest/source workers (default: CPU-capped at 8)");
   console.log("  PARCEL_SIMPLIFY_EPSILON    Parcel Douglas-Peucker epsilon; pixels when pixel_geometry exists (default: 5)");
   console.log("  IIIF_LIMIT                 Process first N IIIF manifests per source for test runs");
@@ -120,14 +120,25 @@ type ZenodoSourceInfo = { recordId: string; isDraft: boolean };
  */
 async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo> {
   const recordId = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
-  const isDraft = /^(1|true|yes)$/i.test(process.env.ZENODO_USE_DRAFT ?? "");
+  let isDraft: boolean;
   if (args.includes("--local-source")) {
     log.ok(`using local source: ${sourceDir()}`);
-    return { recordId, isDraft };
+    isDraft = await detectZenodoDraftStatus(recordId, process.env.ZENODO_TOKEN);
+  } else {
+    const synced = await syncZenodoSource(recordId, { token: process.env.ZENODO_TOKEN });
+    setSourceDir(synced.sourceDir);
+    isDraft = synced.isDraft;
   }
-  const synced = await syncZenodoSource(recordId, { isDraft, token: process.env.ZENODO_TOKEN });
-  setSourceDir(synced.sourceDir);
+  // Written so CI can route the output branch/release without re-detecting draft-ness itself.
+  await writeJson(BUILD_ZENODO_SOURCE_PATH, { recordId, isDraft });
   return { recordId, isDraft };
+}
+
+/** Unresolved sublayer downloads/logos must block publishing, unlike IIIF warnings - fail the whole command on them. */
+function failOnSignificantIssues(result: PublishLayersResult): void {
+  const issues = significantIssues(result);
+  if (issues.length === 0) return;
+  throw new Error(`${issues.length} unresolved reference(s) block publishing:\n  - ${issues.join("\n  - ")}`);
 }
 
 function iiifLimit(): number | undefined {
@@ -163,8 +174,9 @@ async function main(): Promise<void> {
       await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog, registry }));
       await buildLog.timed("imagecollections", () => buildImageCollections({ concurrency: workerCount, buildLog, force }));
       // Registry last: it scans build/Layers/<id>/ for each layer's produced artifacts.
-      await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
+      const buildLayersResult = await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
       await registry.flushAll();
+      failOnSignificantIssues(buildLayersResult);
       break;
     }
     case "iiif": {
@@ -210,12 +222,13 @@ async function main(): Promise<void> {
       await buildLog.reset("layers", selectedLayerIds);
       if (selectedLayerIds.length > 0) log.warn("layers publishes the full registry; ignoring layer id filter");
       await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
-      await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
+      const layersResult = await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
+      failOnSignificantIssues(layersResult);
       break;
     }
     case "source:sync": {
       const recordId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
-      await syncZenodoSource(recordId);
+      await syncZenodoSource(recordId, { token: process.env.ZENODO_TOKEN });
       break;
     }
     case "source:draft-files": {

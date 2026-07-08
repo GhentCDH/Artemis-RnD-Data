@@ -1,7 +1,7 @@
 Artemis Data Build Log
 ======================
 
-Started  2026-07-08T07:59:56.525Z
+Started  2026-07-08T14:06:23.448Z
 Command  build
   workers        8
   raster         yes
@@ -22,7 +22,7 @@ IIIF: GereduceerdeKadaster
   raster              build/Layers/GereduceerdeKadaster/raster.pmtiles
   masks               0 (build/Layers/GereduceerdeKadaster/masks.pmtiles)
   geomaps             build/Layers/GereduceerdeKadaster/geomaps.json
-  iiif:GereduceerdeKadaster duration  1m 43.3s
+  iiif:GereduceerdeKadaster duration  1m 16.2s
 
 IIIF: PrimitiefKadaster
 -----------------------
@@ -34,12 +34,12 @@ IIIF: PrimitiefKadaster
   simplified masks    32
   mask points before  4997
   mask points after   3955
-  warped canvases     0
+  warped canvases     455
   raster              build/Layers/PrimitiefKadaster/raster.pmtiles
-  masks               0 (build/Layers/PrimitiefKadaster/masks.pmtiles)
+  masks               455 (build/Layers/PrimitiefKadaster/masks.pmtiles)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster/geomaps.json
-  iiif:PrimitiefKadaster duration  2m 17.5s
+  iiif:PrimitiefKadaster duration  5m 12.6s
 
 IIIF Summary
 ------------
@@ -52,79 +52,42 @@ IIIF Summary
   simplified masks    32
   mask points before  4997
   mask points after   3955
-  warped canvases     0
-  mask features       0
+  warped canvases     455
+  mask features       455
   warning details     build/IIIFWarnings.log
-  iiif duration  4m 2.8s
+  iiif duration  6m 30.5s
 
 Toponyms: Ferraris
 ------------------
   source files  411
   items         21079
   output        build/Layers/Ferraris/toponyms.json
-  toponyms:Ferraris duration  913ms
+  toponyms:Ferraris duration  941ms
   toponyms:Frickx duration  0ms
-
-Toponyms: GereduceerdeKadaster
-------------------------------
-  source files  1
-  items         3537
-  output        build/Layers/GereduceerdeKadaster/toponyms.json
-  toponyms:GereduceerdeKadaster duration  26ms
-  toponyms:HanddrawnCollection duration  0ms
+  toponyms:GereduceerdeKadaster duration  1ms
   toponyms:NGI1873 duration  0ms
   toponyms:NGI1904 duration  0ms
   toponyms:Popp duration  0ms
-
-Toponyms: PrimitiefKadaster
----------------------------
-  source files  68
-  items         2514
-  output        build/Layers/PrimitiefKadaster/toponyms.json
-  toponyms:PrimitiefKadaster duration  208ms
+  toponyms:PrimitiefKadaster duration  58ms
   toponyms:Vandermaelen duration  0ms
   toponyms:Villaret duration  0ms
 
 Toponyms Summary
 ----------------
   layers  3
-  items   27130
-  toponyms duration  1.15s
-  parcels:GereduceerdeKadaster-parcels duration  1ms
-  parcels:HanddrawnCollection-parcels duration  0ms
-
-Parcels: PrimitiefKadaster-parcels
-----------------------------------
-  layer         PrimitiefKadaster
-  sublayer      PrimitiefKadaster-parcels
-  source        parcels/*.geojson
-  source files  39
-  polygons      8538
-  output        build/Layers/PrimitiefKadaster/parcels.pmtiles
-
-Douglas-Peucker: PrimitiefKadaster-parcels
-------------------------------------------
-  layer                       PrimitiefKadaster
-  sublayer                    PrimitiefKadaster-parcels
-  epsilon                     5
-  input points                282874
-  output points               90998
-  removed points              191876
-  rings simplified            8529
-  features simplified         8529
-  pixel reference rings       8538
-  coordinate reference rings  0
-  parcels:PrimitiefKadaster-parcels duration  2.76s
+  items   21079
+  toponyms duration  1.00s
+  parcels:PrimitiefKadaster-parcels duration  244ms
 
 Parcels Summary
 ---------------
   layers          1
-  polygons        8538
-  input points    282874
-  output points   90998
-  removed points  191876
-  parcels duration  2.76s
-  imagecollection:massart duration  31.77s
+  polygons        0
+  input points    0
+  output points   0
+  removed points  0
+  parcels duration  245ms
+  imagecollection:massart duration  41.99s
 
 Image Collection: massart
 -------------------------
@@ -139,5 +102,27 @@ Image Collections Summary
   items             60
   with coordinates  60
   output            build/imagecollection.yaml
-  imagecollections duration  31.78s
-  layers duration  38ms
+  imagecollections duration  42.00s
+
+Baselayer
+---------
+  input   .build-cache/zenodo-source/21256920/Source/Baselayer.geojson
+  output  build/baselayer.pmtiles
+  baselayer duration  954ms
+
+Layers
+------
+  layers                      9
+  sublayers                   15
+  logos resolved              10
+  downloads resolved          1
+  sublayers without download  Ferraris-toponyms, GereduceerdeKadaster-iiif, GereduceerdeKadaster-toponyms, PrimitiefKadaster-iiif, PrimitiefKadaster-toponyms
+  output                      build/layers.yaml
+  layers duration  1.11s
+
+About
+-----
+  logo images copied    6
+  about logos resolved  6
+  about.json published  yes
+  about duration  2ms

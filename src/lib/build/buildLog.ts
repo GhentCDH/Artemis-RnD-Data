@@ -7,6 +7,8 @@ export const BUILD_LOG_PATH = "build/Build.log";
 export const IIIF_WARNINGS_LOG_PATH = "build/IIIFWarnings.log";
 /** Fatal: unresolved references (missing sublayer downloads, unknown attribution logos) that block publishing. */
 export const BUILD_ISSUES_LOG_PATH = "build/BuildIssues.log";
+/** Non-fatal, informational: sublayers that built real content but have no `download:` configured. */
+export const DOWNLOAD_REMINDERS_LOG_PATH = "build/DownloadReminders.log";
 
 export class BuildLog {
   private sectionOpen = false;

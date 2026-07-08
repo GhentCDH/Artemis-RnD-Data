@@ -104,7 +104,13 @@ jobs:
         run: |
           set -uo pipefail
 
-          docker run --rm \
+          # GitHub Actions invokes this whole script as `bash -e ...` before
+          # any line of the script itself runs, so a bare `set -uo pipefail`
+          # here does NOT turn that inherited -e off - a plain nonzero exit
+          # from docker run would still kill the script immediately, before
+          # `rc=$?` or the exit-code-2 handling below ever executed. Running
+          # it as an `if` condition is what actually exempts it from -e.
+          if docker run --rm \
             --user "$(id -u):$(id -g)" \
             --entrypoint bash \
             -v "$PWD:/app" \
@@ -133,7 +139,11 @@ jobs:
 
               timeout --preserve-status "${TIMEOUT_MINUTES}m" "${cmd[@]}"
             '
-          rc=$?
+          then
+            rc=0
+          else
+            rc=$?
+          fi
 
           # Exit code 2 means the pipeline itself ran fine but found unresolved
           # content issues (missing downloads/logos/empty sublayers) and
@@ -206,6 +216,7 @@ jobs:
             build/Build.log
             build/IIIFWarnings.log
             build/BuildIssues.log
+            build/DownloadReminders.log
             build/Sublayers.md
           if-no-files-found: ignore
           retention-days: 14
@@ -235,11 +246,9 @@ jobs:
             echo "## Build issues"
             echo
             if [ -s build/BuildIssues.log ]; then
-              echo "> **✗ Publish skipped.** The pipeline itself ran fine (this workflow run is not marked failed); it just found unresolved content problems and deliberately declined to publish. \`build/BuildIssues.log\` lists $issues_count unresolved reference(s) — missing sublayer downloads, unknown attribution logos, and/or sublayers with no build artifacts (nothing to render). Fix these and re-run to publish."
+              echo "> **✗ Publish skipped.** The pipeline itself ran fine (this workflow run is not marked failed); it just found unresolved content problems and deliberately declined to publish. $issues_count unresolved reference(s) below must be fixed before this can publish."
               echo
-              echo '```text'
-              cat build/BuildIssues.log
-              echo '```'
+              grep '^- ' build/BuildIssues.log
             else
               echo "✓ No blocking issues."
             fi
@@ -248,6 +257,17 @@ jobs:
               echo "> **Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
               echo
             fi
+
+            echo "## Sublayers without a download (non-blocking)"
+            echo
+            if [ -s build/DownloadReminders.log ]; then
+              echo "These sublayers built real content but have no \`download:\` configured yet — not an error, just a reminder in case one should be added."
+              echo
+              grep '^- ' build/DownloadReminders.log
+            else
+              echo "✓ Every built sublayer has a download configured (or doesn't need one)."
+            fi
+            echo
 
             echo "## Sublayers built"
             echo

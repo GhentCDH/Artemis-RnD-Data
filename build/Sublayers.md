@@ -12,6 +12,7 @@
 | Primitief kadaster | IIIF collection | iiif | geomaps, search, raster, masks, sprites, spritesIndex | ? |
 | Primitief kadaster | Parcels | geojson | parcels | [Primitief_Kadaster_Parcels.zip](https://zenodo.org/api/records/21240866/files/Primitief_Kadaster_Parcels.zip/content) |
 | Primitief kadaster | Toponyms | searchable | toponyms | ? |
+| Primitief kadaster | Verzamelbladen | iiif | geomaps, search, raster, masks, sprites, spritesIndex | ? |
 | Vandermaelen | Map | wmts | — | — |
 | Vandermaelen | Land usage | wms | — | — |
 | Villaret | Map | wms | — | — |

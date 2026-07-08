@@ -132,6 +132,25 @@ function zenodoDraftFileContentUrl(draftId: string, fileName: string): string {
 }
 
 /**
+ * Whichever OS/tool made the zip (macOS Finder's "Compress" adds a
+ * `__MACOSX/` sidecar tree of AppleDouble `._*` resource-fork files; Windows
+ * Explorer can leave `Thumbs.db`/`desktop.ini`; either OS may carry a stray
+ * `.DS_Store`), this is pure filesystem-metadata junk, never real content.
+ * Must be excluded before wrapping-dir detection below, or a junk entry with
+ * a different top-level folder (e.g. `__MACOSX/`) looks like a second,
+ * inconsistent top-level entry and defeats that detection entirely.
+ */
+const JUNK_BASENAMES = new Set(["thumbs.db", "desktop.ini", "ehthumbs.db", ".ds_store"]);
+
+function isJunkEntry(name: string): boolean {
+  const clean = name.replace(/^\/+/, "");
+  const segments = clean.split("/");
+  if (segments[0] === "__MACOSX") return true;
+  const basename = segments[segments.length - 1];
+  return basename.startsWith("._") || JUNK_BASENAMES.has(basename.toLowerCase());
+}
+
+/**
  * If every entry shares the same single first path segment (e.g. the zip was
  * made from the parent of `Source/` instead of its contents), that segment is
  * just wrapping - not part of the real layout - so callers should strip it.
@@ -152,12 +171,14 @@ function commonWrappingDir(names: string[]): string | undefined {
 
 async function extractZip(zipPath: string, destination: string): Promise<void> {
   const files = unzipSync(new Uint8Array(await readFile(zipPath)));
-  const wrapping = commonWrappingDir(Object.keys(files));
+  const realNames = Object.keys(files).filter((name) => !isJunkEntry(name));
+  const wrapping = commonWrappingDir(realNames);
   if (wrapping) log.warn(`Source.zip wraps everything in a top-level '${wrapping}/' folder; stripping it during extraction`);
 
   const normalizedDestination = normalize(destination);
-  for (const [name, content] of Object.entries(files)) {
+  for (const name of realNames) {
     if (name.endsWith("/")) continue;
+    const content = files[name];
     const relativeName = wrapping ? name.slice(wrapping.length + 1) : name;
     if (!relativeName) continue;
     const outputPath = normalize(join(destination, relativeName));

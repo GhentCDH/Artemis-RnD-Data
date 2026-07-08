@@ -174,7 +174,7 @@ jobs:
 
           if [ -s build/BuildIssues.log ]; then
             issues_line_count="$(wc -l < build/BuildIssues.log | tr -d ' ')"
-            echo "::error title=Build issues::Pipeline found $issues_line_count unresolved reference(s) (missing sublayer downloads / unknown logos) that block publishing. See the job summary or uploaded logs artifact."
+            echo "::error title=Build issues::Pipeline found $issues_line_count unresolved reference(s) (missing sublayer downloads / unknown logos / empty sublayers) that block publishing. See the job summary or uploaded logs artifact."
           fi
 
           if [ "$BUILD_FROM_DRAFT" = "true" ]; then
@@ -187,19 +187,10 @@ jobs:
           fi
 
           {
-            echo "## Sublayers built"
-            echo
-            if [ -s build/Sublayers.md ]; then
-              cat build/Sublayers.md
-            else
-              echo "_No sublayer summary produced._"
-            fi
-
-            echo
             echo "## Build issues"
             echo
             if [ -s build/BuildIssues.log ]; then
-              echo "> **🛑 This build FAILED to publish.** \`build/BuildIssues.log\` lists $issues_line_count unresolved reference(s) — missing sublayer downloads and/or unknown attribution logos — that must be fixed before this can publish."
+              echo "> **🛑 This build FAILED to publish.** \`build/BuildIssues.log\` lists $issues_line_count unresolved reference(s) — missing sublayer downloads, unknown attribution logos, and/or sublayers with no build artifacts (nothing to render) — that must be fixed before this can publish."
               echo
               echo '```text'
               cat build/BuildIssues.log
@@ -212,6 +203,15 @@ jobs:
               echo "> **⚠️ Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
               echo
             fi
+
+            echo "## Sublayers built"
+            echo
+            if [ -s build/Sublayers.md ]; then
+              cat build/Sublayers.md
+            else
+              echo "_No sublayer summary produced._"
+            fi
+            echo
 
             echo "## Pipeline logs (non-blocking)"
             echo

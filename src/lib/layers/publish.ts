@@ -40,6 +40,9 @@ export type PublishLayersOptions = {
 
 export type MissingDownload = { sublayerId: string; file: string };
 
+/** A sublayer that isn't a remote passthrough (wmts/wms) but produced no build artifact - nothing will render for it. */
+export type EmptySublayer = { layerId: string; sublayerId: string; kind: string };
+
 export type PublishLayersResult = {
   layers: number;
   sublayers: number;
@@ -47,6 +50,7 @@ export type PublishLayersResult = {
   unknownLogos: string[];
   downloadsResolved: number;
   missingDownloads: MissingDownload[];
+  emptySublayers: EmptySublayer[];
   outputPath: string;
   cached?: boolean;
 };
@@ -54,13 +58,14 @@ export type PublishLayersResult = {
 /**
  * Unresolved references that must be fixed before publishing - unlike IIIF
  * warnings (georeferencing quality notes), these mean a sublayer will render
- * broken or a download link will 404, so callers should fail the build on
- * these rather than merely log them.
+ * broken, be entirely empty, or a download link will 404, so callers should
+ * fail the build on these rather than merely log them.
  */
 export function significantIssues(result: PublishLayersResult): string[] {
   return [
     ...result.missingDownloads.map((m) => `missing sublayer download: ${m.sublayerId} → "${m.file}" not found in the Zenodo record`),
     ...result.unknownLogos.map((file) => `unknown attribution logo: "${file}" not in the logo registry`),
+    ...result.emptySublayers.map((s) => `no build artifacts for sublayer: ${s.sublayerId} (layer ${s.layerId}, kind ${s.kind}) — nothing will render`),
   ];
 }
 
@@ -102,6 +107,9 @@ type MutableLayer = {
 
 /** IIIF sublayers own the georeferenced/raster artifacts; each is a single build output. */
 const IIIF_ARTIFACT_KEYS = ["geomaps", "search", "raster", "masks", "sprites", "spritesIndex"];
+
+/** Rendered directly from an external tile/WMS endpoint - no local build artifact is ever expected. */
+const REMOTE_PASSTHROUGH_KINDS = new Set(["wmts", "wms"]);
 
 /**
  * Which registry keys a sublayer produces, by kind/source — so artifacts attach
@@ -244,6 +252,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   }
   let downloadsResolved = 0;
   const missingDownloads: MissingDownload[] = [];
+  const emptySublayers: EmptySublayer[] = [];
 
   const layers = await Promise.all(
     refs.map(async (ref) => {
@@ -261,6 +270,15 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
           if (scanned[key]) artifacts[key] = scanned[key];
         }
         if (Object.keys(artifacts).length > 0) sublayer.artifacts = artifacts;
+
+        // A remote wmts/wms sublayer renders directly from its own URL and
+        // never has a local artifact - anything else with zero artifacts
+        // means nothing will render (missing source data, or a new sublayer
+        // entry the builder doesn't know how to produce yet).
+        const kind = (sublayer.kind ?? "").toLowerCase();
+        if (!REMOTE_PASSTHROUGH_KINDS.has(kind) && Object.keys(artifacts).length === 0) {
+          emptySublayers.push({ layerId: ref.id, sublayerId: sublayer.id ?? "(unknown sublayer)", kind: sublayer.kind ?? "(unknown kind)" });
+        }
       }
       return config;
     }),
@@ -281,6 +299,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
           unknownLogos: [...unknownLogos],
           downloadsResolved,
           missingDownloads,
+          emptySublayers,
           outputPath: BUILD_LAYERS_YAML_PATH,
           cached: true,
         };
@@ -311,6 +330,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     unknownLogos: [...unknownLogos],
     downloadsResolved,
     missingDownloads,
+    emptySublayers,
     outputPath: BUILD_LAYERS_YAML_PATH,
   };
   const issues = significantIssues(result);
@@ -330,6 +350,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     "unknown logos": unknownLogos.size > 0 ? [...unknownLogos].join(", ") : undefined,
     "downloads resolved": downloadsResolved,
     "missing downloads": missingDownloads.length > 0 ? missingDownloads.map((m) => m.file).join(", ") : undefined,
+    "empty sublayers": emptySublayers.length > 0 ? emptySublayers.map((s) => s.sublayerId).join(", ") : undefined,
     "build issues": issues.length > 0 ? `${issues.length} — see ${BUILD_ISSUES_LOG_PATH}` : undefined,
     output: BUILD_LAYERS_YAML_PATH,
   });

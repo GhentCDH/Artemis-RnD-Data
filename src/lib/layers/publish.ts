@@ -9,6 +9,7 @@ import { log } from "../log";
 import { BUILD_ISSUES_LOG_PATH, BuildLog, DOWNLOAD_REMINDERS_LOG_PATH } from "../build/buildLog";
 import { fetchLatestPublishedVersionId, fetchRecordFileIndex } from "../source/zenodo";
 import { loadLogoRegistry, resolveLogoFile } from "../attribution/logos";
+import { VERZAMELBLAD_SPLITS } from "../iiif/config";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
 const LAYERS_RECIPE = 5;
@@ -86,7 +87,10 @@ export function significantIssues(result: PublishLayersResult): string[] {
   return [
     ...result.missingDownloads.map((m) => `missing sublayer download: ${m.sublayerId} → "${m.file}" not found in the Zenodo record`),
     ...result.unknownLogos.map((file) => `unknown attribution logo: "${file}" not in the logo registry`),
-    ...result.emptySublayers.map((s) => `${s.sublayerId} (kind: ${s.kind}) is defined in layers/${s.layerId}/${s.layerId}.yaml but its source data could not be found — nothing will render`),
+    ...result.emptySublayers.map((s) => {
+      const origin = VERZAMELBLAD_SPLIT_IDS.has(s.sublayerId) ? "is a hardcoded verzamelbladen split" : `is defined in layers/${s.layerId}/${s.layerId}.yaml`;
+      return `${s.sublayerId} (kind: ${s.kind}) ${origin} but its source data could not be found — nothing will render`;
+    }),
   ];
 }
 
@@ -94,6 +98,8 @@ type MutableSublayer = {
   id?: string;
   name?: string;
   kind?: string;
+  description?: string;
+  citation?: string;
   source?: { rawInput?: string };
   attribution?: { logos?: unknown };
   artifacts?: Record<string, string>;
@@ -105,6 +111,30 @@ type MutableLayer = {
   label?: string;
   sublayers?: MutableSublayer[];
 };
+
+const VERZAMELBLAD_SPLITS_BY_LAYER = new Map<string, typeof VERZAMELBLAD_SPLITS>();
+for (const split of VERZAMELBLAD_SPLITS) {
+  VERZAMELBLAD_SPLITS_BY_LAYER.set(split.layerId, [...(VERZAMELBLAD_SPLITS_BY_LAYER.get(split.layerId) ?? []), split]);
+}
+const VERZAMELBLAD_SPLIT_IDS = new Set(VERZAMELBLAD_SPLITS.map((split) => split.id));
+
+/**
+ * Injects the hardcoded verzamelbladen split(s) (see VERZAMELBLAD_SPLITS) as
+ * regular sublayers of their layer - not authored in Source/layers/*, but
+ * published/validated exactly like any real sublayer (logos, downloads,
+ * artifacts, empty-sublayer detection) rather than a special case.
+ */
+function injectVerzamelbladSplits(layerId: string, config: MutableLayer): void {
+  const splits = VERZAMELBLAD_SPLITS_BY_LAYER.get(layerId);
+  if (!splits) return;
+  for (const split of splits) {
+    const parent = config.sublayers?.find((sublayer) => sublayer.id === split.parentSublayerId);
+    config.sublayers = [
+      ...(config.sublayers ?? []),
+      { id: split.id, name: split.name, kind: "iiif", description: split.description, attribution: parent?.attribution, citation: parent?.citation },
+    ];
+  }
+}
 
 /** IIIF sublayers own the georeferenced/raster artifacts; each is a single build output. */
 const IIIF_ARTIFACT_KEYS = ["geomaps", "search", "raster", "masks", "sprites", "spritesIndex"];
@@ -290,14 +320,19 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   const layers = await Promise.all(
     refs.map(async (ref) => {
       const config = structuredClone(ref.config) as MutableLayer;
+      injectVerzamelbladSplits(ref.id, config);
       sublayers += config.sublayers?.length ?? 0;
       logosResolved += resolveLogos(config, registry, unknownLogos);
       downloadsResolved += resolveDownloads(config, downloadIndex, canResolveDownloads ? missingDownloads : undefined);
 
       // Attach each produced artifact to the sublayer that owns it, so two
-      // sublayers of the same kind stay individually resolvable.
-      const scanned = await scanArtifacts(ref.id);
+      // sublayers of the same kind stay individually resolvable. A
+      // verzamelbladen split publishes from its own output dir (its build
+      // group used the split id as its layer id - see VERZAMELBLAD_SPLITS)
+      // rather than sharing the parent layer's, so it needs its own scan.
       for (const sublayer of config.sublayers ?? []) {
+        const outputId = sublayer.id && VERZAMELBLAD_SPLIT_IDS.has(sublayer.id) ? sublayer.id : ref.id;
+        const scanned = await scanArtifacts(outputId);
         const artifacts: Record<string, string> = {};
         for (const key of ownedArtifactKeys(sublayer)) {
           if (scanned[key]) artifacts[key] = scanned[key];

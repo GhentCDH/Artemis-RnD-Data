@@ -40,7 +40,14 @@ export function shouldSkipManifest(value: Record<string, unknown>): boolean {
   return SKIP_MANIFEST_TERMS.some((term) => text.includes(term));
 }
 
-export async function resolveIiifResource(url: string): Promise<{ label: string; refs: ManifestRef[] }> {
+export type ResolvedIiifResource = {
+  label: string;
+  refs: ManifestRef[];
+  /** Manifests matching SKIP_MANIFEST_TERMS (e.g. verzamelbladen) - not discarded, just kept separate for callers that want to split them into their own sublayer instead of a normal build. */
+  verzamelbladRefs: ManifestRef[];
+};
+
+export async function resolveIiifResource(url: string): Promise<ResolvedIiifResource> {
   const json = await revalidatedJson(url, iiifCacheDir("collections"));
   if (!json || typeof json !== "object") throw new Error(`${url} did not resolve to an object`);
   const data = json as Record<string, unknown>;
@@ -48,20 +55,29 @@ export async function resolveIiifResource(url: string): Promise<{ label: string;
   const label = iiifLabel(data.label);
 
   if (type.includes("Manifest")) {
-    return { label, refs: shouldSkipManifest(data) ? [] : [{ url, label }] };
+    const ref = { url, label };
+    return shouldSkipManifest(data) ? { label, refs: [], verzamelbladRefs: [ref] } : { label, refs: [ref], verzamelbladRefs: [] };
   }
   if (!type.includes("Collection")) throw new Error(`Unsupported IIIF resource type for ${url}: ${type || "unknown"}`);
 
   const items = (Array.isArray(data.items) ? data.items : Array.isArray(data.manifests) ? data.manifests : []) as Array<Record<string, unknown>>;
   const refs: ManifestRef[] = [];
+  const verzamelbladRefs: ManifestRef[] = [];
   for (const item of items) {
     const itemType = resourceType(item);
     const itemUrl = resourceId(item);
     if (!itemUrl) continue;
-    if (itemType.includes("Collection")) refs.push(...(await resolveIiifResource(itemUrl)).refs);
-    else if (itemType.includes("Manifest") && !shouldSkipManifest(item)) refs.push({ url: itemUrl, label: iiifLabel(item.label) });
+    if (itemType.includes("Collection")) {
+      const nested = await resolveIiifResource(itemUrl);
+      refs.push(...nested.refs);
+      verzamelbladRefs.push(...nested.verzamelbladRefs);
+    } else if (itemType.includes("Manifest")) {
+      const ref = { url: itemUrl, label: iiifLabel(item.label) };
+      if (shouldSkipManifest(item)) verzamelbladRefs.push(ref);
+      else refs.push(ref);
+    }
   }
-  return { label, refs };
+  return { label, refs, verzamelbladRefs };
 }
 
 export function iiifSublayers(layer: LayerRef): IiifSublayer[] {

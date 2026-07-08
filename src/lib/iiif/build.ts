@@ -16,6 +16,7 @@ import { annotationTransformationType, warpCanvas, warpSignature } from "../rast
 import { analyzeAndSanitize, normalizeAnnotationPage, writeAnalysisLog, writeWarpFailureLog, type WarpFailure } from "./analysis";
 import { buildCompactGeomaps } from "./geomaps";
 import { buildIiifSearchIndex } from "./search";
+import { VERZAMELBLAD_SPLITS } from "./config";
 import { revalidatedJson } from "./json";
 import {
   canvasId,
@@ -350,6 +351,22 @@ export async function buildIiif(options: IiifBuildOptions): Promise<IiifBuildRes
     for (const sublayer of iiifSublayers(layer)) {
       const resolved = await resolveIiifResource(sublayer.url);
       groups.push({ layer, sublayer, collectionUrl: sublayer.url, collectionLabel: resolved.label || layer.label, refs: resolved.refs });
+
+      // Hardcoded splits (see VERZAMELBLAD_SPLITS): built as an independent
+      // group under the split's own synthetic id, so it gets its own output
+      // dir/hashes.txt/registry namespace via the same group.layer.id-keyed
+      // helpers every other layer already uses - no special-casing needed
+      // anywhere else in buildLayerIiif.
+      for (const split of VERZAMELBLAD_SPLITS) {
+        if (split.parentSublayerId !== sublayer.id || resolved.verzamelbladRefs.length === 0) continue;
+        groups.push({
+          layer: { ...layer, id: split.id },
+          sublayer: { id: split.id, url: sublayer.url },
+          collectionUrl: sublayer.url,
+          collectionLabel: `${resolved.label || layer.label} — ${split.name}`,
+          refs: resolved.verzamelbladRefs,
+        });
+      }
     }
   }
   if (groups.length === 0) {

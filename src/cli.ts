@@ -3,8 +3,10 @@ import { buildParcels } from "./lib/parcels/build";
 import { buildToponyms } from "./lib/toponyms/build";
 import { buildIiif } from "./lib/iiif/build";
 import { buildImageCollections } from "./lib/imageCollections/build";
+import { buildBaselayer } from "./lib/baselayer/build";
 import { discoverLayers } from "./lib/layers/discovery";
 import { publishLayers, significantIssues, type PublishLayersResult } from "./lib/layers/publish";
+import { publishAbout } from "./lib/about/publish";
 import { log } from "./lib/log";
 import { cpus } from "node:os";
 import { BuildLog } from "./lib/build/buildLog";
@@ -22,6 +24,8 @@ const COMMANDS = {
   parcels: "Build parcel PMTiles",
   imagecollections: "Build non-georeferenced image collections",
   layers: "Merge Source/layers/* into build/layers.yaml",
+  about: "Publish about.json + attribution-logos image assets into build/",
+  baselayer: "Publish Baselayer.geojson as build/baselayer.pmtiles",
   "source:sync": "Download and extract Source.zip from a Zenodo record into the local source mirror cache",
   "source:draft-files": "List the files Zenodo reports for an unpublished draft, given the draft's own record id (requires ZENODO_TOKEN)",
   help: "Show this help",
@@ -46,6 +50,7 @@ function help(): void {
   console.log("  --force                    Rebuild everything, bypassing the incremental build cache");
   console.log("  --local-source             Read from local Source/ instead of the Zenodo mirror");
   console.log("  --zenodo-record <id>       Explicit alternative to positional zenodoRecordId");
+  console.log("  --publish-live             Force a draft build's downloads to resolve against its latest published version, for publishing to live anyway");
   console.log("\nEnvironment:");
   console.log("  ARTEMIS_SOURCE_DIR         Local source root used with --local-source (default: Source)");
   console.log(`  ZENODO_RECORD              Default source record id (default: ${DEFAULT_ZENODO_RECORD})`);
@@ -87,7 +92,7 @@ function positionalZenodoRecord(args: string[]): string | undefined {
 }
 
 function isBuildCommand(command: string | undefined): boolean {
-  return ["build", "iiif", "toponyms", "parcels", "imagecollections", "layers"].includes(command ?? "");
+  return ["build", "iiif", "toponyms", "parcels", "imagecollections", "layers", "about", "baselayer"].includes(command ?? "");
 }
 
 function layerArgs(args: string[], consumePositionalZenodoRecord = false): string[] {
@@ -110,7 +115,7 @@ function layerArgs(args: string[], consumePositionalZenodoRecord = false): strin
   return layers;
 }
 
-type ZenodoSourceInfo = { recordId: string; isDraft: boolean };
+type ZenodoSourceInfo = { recordId: string; isDraft: boolean; publishLive: boolean };
 
 /**
  * Record id/draft-ness is resolved even under --local-source: sublayer
@@ -120,6 +125,7 @@ type ZenodoSourceInfo = { recordId: string; isDraft: boolean };
  */
 async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo> {
   const recordId = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
+  const publishLive = args.includes("--publish-live");
   let isDraft: boolean;
   if (args.includes("--local-source")) {
     log.ok(`using local source: ${sourceDir()}`);
@@ -129,9 +135,10 @@ async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo> {
     setSourceDir(synced.sourceDir);
     isDraft = synced.isDraft;
   }
+  if (isDraft && publishLive) log.info("  ! --publish-live: draft build will publish to live; sublayer downloads will resolve against the latest published version instead");
   // Written so CI can route the output branch/release without re-detecting draft-ness itself.
-  await writeJson(BUILD_ZENODO_SOURCE_PATH, { recordId, isDraft });
-  return { recordId, isDraft };
+  await writeJson(BUILD_ZENODO_SOURCE_PATH, { recordId, isDraft, publishLive });
+  return { recordId, isDraft, publishLive };
 }
 
 /**
@@ -183,8 +190,13 @@ async function main(): Promise<void> {
       await buildLog.timed("toponyms", () => buildToponyms({ layers, concurrency: workerCount, buildLog, registry }));
       await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog, registry }));
       await buildLog.timed("imagecollections", () => buildImageCollections({ concurrency: workerCount, buildLog, force }));
+      await buildLog.timed("baselayer", () => buildBaselayer({ buildLog }));
       // Registry last: it scans build/Layers/<id>/ for each layer's produced artifacts.
-      const buildLayersResult = await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
+      const buildLayersResult = await buildLog.timed("layers", () =>
+        publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft, resolveDraftDownloadsFromLatestPublished: zenodoSource?.publishLive }),
+      );
+      await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: buildLayersResult.downloadResolution, downloadRecordId: buildLayersResult.downloadRecordId });
+      await buildLog.timed("about", () => publishAbout({ buildLog }));
       await registry.flushAll();
       failOnSignificantIssues(buildLayersResult);
       break;
@@ -232,8 +244,25 @@ async function main(): Promise<void> {
       await buildLog.reset("layers", selectedLayerIds);
       if (selectedLayerIds.length > 0) log.warn("layers publishes the full registry; ignoring layer id filter");
       await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
-      const layersResult = await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
+      const layersResult = await buildLog.timed("layers", () =>
+        publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft, resolveDraftDownloadsFromLatestPublished: zenodoSource?.publishLive }),
+      );
+      await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: layersResult.downloadResolution, downloadRecordId: layersResult.downloadRecordId });
       failOnSignificantIssues(layersResult);
+      break;
+    }
+    case "about": {
+      const zenodoSource = await applyZenodoSource(args);
+      await buildLog.reset("about", []);
+      await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
+      await buildLog.timed("about", () => publishAbout({ buildLog }));
+      break;
+    }
+    case "baselayer": {
+      const zenodoSource = await applyZenodoSource(args);
+      await buildLog.reset("baselayer", []);
+      await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
+      await buildLog.timed("baselayer", () => buildBaselayer({ buildLog }));
       break;
     }
     case "source:sync": {

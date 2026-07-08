@@ -127,6 +127,32 @@ export async function fetchRecordFileIndex(recordId: string): Promise<Map<string
   return index;
 }
 
+type ZenodoVersionsResponse = {
+  hits?: {
+    hits?: Array<{
+      id: number;
+      metadata?: { relations?: { version?: Array<{ is_last?: boolean }> } };
+    }>;
+  };
+};
+
+/**
+ * Latest *published* sibling version's record id, for any record id in the
+ * same Zenodo version family - including an unpublished "new version"
+ * draft's own id. Verified live: `/api/records/<id>/versions` resolves via
+ * the shared parent even when `<id>` is the draft itself (no auth required),
+ * and only ever lists published versions - never the draft - so this is safe
+ * to use as a fallback download-resolution source for a draft build. Returns
+ * undefined if the family has no published version yet (e.g. a record's very
+ * first, still-unpublished draft).
+ */
+export async function fetchLatestPublishedVersionId(recordId: string): Promise<string | undefined> {
+  const response = await fetchJson<ZenodoVersionsResponse>(`https://zenodo.org/api/records/${recordId}/versions`);
+  const hits = response.hits?.hits ?? [];
+  const latest = hits.find((hit) => hit.metadata?.relations?.version?.[0]?.is_last) ?? hits[0];
+  return latest ? String(latest.id) : undefined;
+}
+
 function zenodoDraftFileContentUrl(draftId: string, fileName: string): string {
   return `https://zenodo.org/api/records/${draftId}/draft/files/${encodeURIComponent(fileName)}/content`;
 }

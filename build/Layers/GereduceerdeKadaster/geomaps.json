@@ -1,10 +1,10 @@
 {
   "geomapsVersion": 1,
-  "generatedAt": "2026-07-08T08:01:41.880Z",
+  "generatedAt": "2026-07-08T14:07:41.358Z",
   "id": "GereduceerdeKadaster",
   "baseImageUrl": "https://iiif.ghentcdh.ugent.be/iiif/images/",
   "iiifDefaults": {
-    "@context": "http://iiif.io/api/image/2/context.json",
+    "@context": "http://iiif.io/api/image/3/context.json",
     "protocol": "http://iiif.io/api/image",
     "tiles": [
       {
@@ -21,29 +21,34 @@
         ]
       }
     ],
-    "profile": [
-      "http://iiif.io/api/image/2/level1.json",
+    "type": "ImageService3",
+    "profile": "level2",
+    "maxWidth": 5000,
+    "maxHeight": 5000,
+    "extraQualities": [
+      "color",
+      "gray",
+      "bitonal"
+    ],
+    "extraFormats": [
+      "tif",
+      "webp",
+      "avif"
+    ],
+    "extraFeatures": [
+      "regionByPct",
+      "sizeByPct",
+      "sizeByConfinedWh",
+      "sizeUpscaling",
+      "rotationBy90s",
+      "mirroring"
+    ],
+    "service": [
       {
-        "formats": [
-          "jpg"
-        ],
-        "qualities": [
-          "native",
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "supports": [
-          "regionByPct",
-          "regionSquare",
-          "sizeByForcedWh",
-          "sizeByWh",
-          "sizeAboveFull",
-          "rotationBy90s",
-          "mirroring"
-        ],
-        "maxWidth": 5000,
-        "maxHeight": 5000
+        "@context": "http://iiif.io/api/annex/services/physdim/1/context.json",
+        "profile": "http://iiif.io/api/annex/services/physdim",
+        "physicalScale": 0.0019685,
+        "physicalUnits": "in"
       }
     ]
   },
@@ -320,48 +325,7 @@
         5233,
         5418,
         5237
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Termonde:Appels:Appels_1852",
@@ -635,48 +599,7 @@
         5233,
         5418,
         5237
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Termonde:Audeghem:Audeghem_1852",
@@ -11308,48 +11231,7 @@
         4273,
         3777,
         4201
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Termonde:Opdorp:Opdorp_1852",
@@ -11605,48 +11487,7 @@
         4273,
         3777,
         4201
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Termonde:Overmeire:Overmeire_1852",
@@ -13786,48 +13627,7 @@
         3695,
         4851,
         3734
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Termonde:St_Gilles-lez-Termonde:St_Gilles-lez-Termonde_1852",
@@ -14407,48 +14207,7 @@
         3695,
         4851,
         3734
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Termonde:Termonde:Termonde_1852",
@@ -33548,48 +33307,7 @@
         4636,
         3580,
         4823
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Anvers:Brasschaet:Brasschaet_1_2__1851",
@@ -33857,48 +33575,7 @@
         4636,
         3580,
         4823
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Anvers:Brasschaet:Brasschaet_2_2__1851",
@@ -48332,48 +48009,7 @@
         4760,
         3663,
         4719
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Anvers:Edegem:Edegem_1851",
@@ -49047,48 +48683,7 @@
         4760,
         3663,
         4719
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Anvers:Eekeren:Eekeren_1_2__1851",
@@ -76646,48 +76241,7 @@
         4725,
         5399,
         4705
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Gand:Ledeberg:Ledeberg_1852",
@@ -76885,48 +76439,7 @@
         4725,
         5399,
         4705
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Gand:Lemberge:Lemberge_1852",
@@ -96676,48 +96189,7 @@
         4359,
         4086,
         4445
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Malines:Saint-Amand:Saint-Amand_1851",
@@ -97047,48 +96519,7 @@
         4359,
         4086,
         4445
-      ],
-      "iiifOverrides": {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "protocol": "http://iiif.io/api/image",
-        "tiles": [
-          {
-            "width": 256,
-            "height": 256,
-            "scaleFactors": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32,
-              64
-            ]
-          }
-        ],
-        "type": "ImageService3",
-        "profile": "level2",
-        "maxWidth": 5000,
-        "maxHeight": 5000,
-        "extraQualities": [
-          "color",
-          "gray",
-          "bitonal"
-        ],
-        "extraFormats": [
-          "tif",
-          "webp",
-          "avif"
-        ],
-        "extraFeatures": [
-          "regionByPct",
-          "sizeByPct",
-          "sizeByConfinedWh",
-          "sizeUpscaling",
-          "rotationBy90s",
-          "mirroring"
-        ]
-      }
+      ]
     },
     {
       "id": "gereduceerd_kadaster:Malines:Waelhem:Waelhem_1851",

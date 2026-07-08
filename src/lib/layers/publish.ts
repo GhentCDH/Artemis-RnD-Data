@@ -65,7 +65,7 @@ export function significantIssues(result: PublishLayersResult): string[] {
   return [
     ...result.missingDownloads.map((m) => `missing sublayer download: ${m.sublayerId} → "${m.file}" not found in the Zenodo record`),
     ...result.unknownLogos.map((file) => `unknown attribution logo: "${file}" not in the logo registry`),
-    ...result.emptySublayers.map((s) => `no build artifacts for sublayer: ${s.sublayerId} (layer ${s.layerId}, kind ${s.kind}) — nothing will render`),
+    ...result.emptySublayers.map((s) => `${s.sublayerId} (kind: ${s.kind}) is defined in layers/${s.layerId}/${s.layerId}.yaml but its source data could not be found — nothing will render`),
   ];
 }
 
@@ -199,7 +199,7 @@ function downloadCell(sublayer: MutableSublayer, missingSublayerIds: Set<string>
   const { file, url } = download as { file?: unknown; url?: unknown };
   if (typeof file !== "string") return "—";
   if (typeof url === "string") return `[${file}](${url})`;
-  if (sublayer.id && missingSublayerIds.has(sublayer.id)) return `⚠️ ${file} — not found`;
+  if (sublayer.id && missingSublayerIds.has(sublayer.id)) return `✗ ${file} — not found`;
   return `${file} (unverified)`;
 }
 
@@ -338,7 +338,9 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     const issuesLog = new BuildLog(BUILD_ISSUES_LOG_PATH, "Build Issues Log");
     await issuesLog.reset("layers", []);
     await issuesLog.section("Unresolved references (block publishing)");
-    for (const issue of issues) await issuesLog.info(issue);
+    // Prefixed with "- " so CI can reliably count real issues (`grep -c '^- '`)
+    // instead of the file's total line count, which also includes this header.
+    for (const issue of issues) await issuesLog.info(`- ${issue}`);
     for (const issue of issues) log.warn(`${issue} — see ${BUILD_ISSUES_LOG_PATH}`);
   }
 

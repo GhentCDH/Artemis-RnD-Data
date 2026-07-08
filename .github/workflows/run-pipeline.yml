@@ -86,12 +86,13 @@ jobs:
           fi
 
       - name: Run selected pipeline command
+        id: run_pipeline
         env:
           FORCE: ${{ inputs.force }}
           BUILD_CONCURRENCY: "8"
           ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
           docker run --rm \
             --user "$(id -u):$(id -g)" \
@@ -122,6 +123,22 @@ jobs:
 
               timeout --preserve-status "${TIMEOUT_MINUTES}m" "${cmd[@]}"
             '
+          rc=$?
+
+          # Exit code 2 means the pipeline itself ran fine but found unresolved
+          # content issues (missing downloads/logos/empty sublayers) and
+          # deliberately refused to publish - not a pipeline crash. Surface
+          # that distinction so the job can stay green while still skipping
+          # publish, instead of reporting a red failure for expected content
+          # gaps (e.g. an intentionally-empty sublayer used to test this gate).
+          if [ "$rc" -eq 2 ]; then
+            echo "blocked=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Build blocked::Pipeline completed but found unresolved content issues; publish was skipped. See the job summary for details."
+            exit 0
+          fi
+
+          echo "blocked=false" >> "$GITHUB_OUTPUT"
+          exit "$rc"
 
       # The pipeline auto-detects draft-vs-published straight from the record
       # id (Zenodo's public API 404s for anything not published) and writes
@@ -173,8 +190,8 @@ jobs:
           set -euo pipefail
 
           if [ -s build/BuildIssues.log ]; then
-            issues_line_count="$(wc -l < build/BuildIssues.log | tr -d ' ')"
-            echo "::error title=Build issues::Pipeline found $issues_line_count unresolved reference(s) (missing sublayer downloads / unknown logos / empty sublayers) that block publishing. See the job summary or uploaded logs artifact."
+            issues_count="$(grep -c '^- ' build/BuildIssues.log || true)"
+            echo "::error title=Build issues::Pipeline found $issues_count unresolved reference(s) (missing sublayer downloads / unknown logos / empty sublayers) that block publishing. See the job summary or uploaded logs artifact."
           fi
 
           if [ "$BUILD_FROM_DRAFT" = "true" ]; then
@@ -190,17 +207,17 @@ jobs:
             echo "## Build issues"
             echo
             if [ -s build/BuildIssues.log ]; then
-              echo "> **🛑 This build FAILED to publish.** \`build/BuildIssues.log\` lists $issues_line_count unresolved reference(s) — missing sublayer downloads, unknown attribution logos, and/or sublayers with no build artifacts (nothing to render) — that must be fixed before this can publish."
+              echo "> **✗ Publish skipped.** The pipeline itself ran fine (this workflow run is not marked failed); it just found unresolved content problems and deliberately declined to publish. \`build/BuildIssues.log\` lists $issues_count unresolved reference(s) — missing sublayer downloads, unknown attribution logos, and/or sublayers with no build artifacts (nothing to render). Fix these and re-run to publish."
               echo
               echo '```text'
               cat build/BuildIssues.log
               echo '```'
             else
-              echo "✅ No blocking issues."
+              echo "✓ No blocking issues."
             fi
             echo
             if [ "$BUILD_FROM_DRAFT" = "true" ]; then
-              echo "> **⚠️ Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
+              echo "> **Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
               echo
             fi
 
@@ -237,7 +254,7 @@ jobs:
 
       - name: Publish build outputs
         id: publish
-        if: ${{ success() }}
+        if: ${{ success() && steps.run_pipeline.outputs.blocked != 'true' }}
         env:
           OUTPUT_BRANCH: ${{ steps.zenodo_source.outputs.branch }}
         run: |
@@ -324,7 +341,7 @@ jobs:
             TITLE="Zenodo draft $ZENODO_RECORD"
             NOTES_SUFFIX="
 
-          ⚠️ Built from an **unpublished Zenodo draft**. Sublayer download links will not work until this record is published — draft files require authenticated access, so they cannot be resolved to public download URLs."
+          Built from an **unpublished Zenodo draft**. Sublayer download links will not work until this record is published — draft files require authenticated access, so they cannot be resolved to public download URLs."
           fi
 
           SUBLAYERS_NOTE=""
@@ -346,7 +363,7 @@ jobs:
 
           Published to \`$PUBLISH_BRANCH\` @ \`$COMMIT_SHA\`.$NOTES_SUFFIX
 
-          ℹ️ The **Source code (zip)**/**(tar.gz)** assets below are GitHub's automatic archive of this tag and are, in this case, this build's data — the \`build/\` (and \`static/\`) output as of \`$COMMIT_SHA\`, not the pipeline source code.$SUBLAYERS_NOTE"
+          The **Source code (zip)**/**(tar.gz)** assets below are GitHub's automatic archive of this tag and are, in this case, this build's data — the \`build/\` (and \`static/\`) output as of \`$COMMIT_SHA\`, not the pipeline source code.$SUBLAYERS_NOTE"
 
             gh release create "$TAG" \
               --target "$COMMIT_SHA" \

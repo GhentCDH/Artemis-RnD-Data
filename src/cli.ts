@@ -134,11 +134,21 @@ async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo> {
   return { recordId, isDraft };
 }
 
-/** Unresolved sublayer downloads/logos must block publishing, unlike IIIF warnings - fail the whole command on them. */
+/**
+ * Distinct from a crash: content is unresolved (missing sublayer downloads,
+ * unknown logos, empty sublayers), not the pipeline itself broken. Exits with
+ * BUILD_BLOCKED_EXIT_CODE so CI can tell "don't publish this" apart from
+ * "the pipeline is broken" instead of treating both as the same hard failure.
+ */
+export const BUILD_BLOCKED_EXIT_CODE = 2;
+
+class BuildBlockedError extends Error {}
+
+/** Unresolved sublayer downloads/logos/empty sublayers must block publishing, unlike IIIF warnings - fail the whole command on them. */
 function failOnSignificantIssues(result: PublishLayersResult): void {
   const issues = significantIssues(result);
   if (issues.length === 0) return;
-  throw new Error(`${issues.length} unresolved reference(s) block publishing:\n  - ${issues.join("\n  - ")}`);
+  throw new BuildBlockedError(`${issues.length} unresolved reference(s) block publishing:\n  - ${issues.join("\n  - ")}`);
 }
 
 function iiifLimit(): number | undefined {
@@ -266,5 +276,5 @@ main().catch(async (err) => {
     // Avoid hiding the original failure if Build.log cannot be written.
   }
   console.error(err);
-  process.exit(1);
+  process.exit(err instanceof BuildBlockedError ? BUILD_BLOCKED_EXIT_CODE : 1);
 });

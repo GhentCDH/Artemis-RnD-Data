@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # lets "gh cache delete" replace the Zenodo source mirror cache in place (see below)
 
 concurrency:
   group: data-pipeline-${{ github.ref }}
@@ -42,16 +43,26 @@ jobs:
       - name: Pull pipeline container
         run: docker pull "$IMAGE"
 
-      # Safe to cache unconditionally, including for drafts: the pipeline
-      # re-fetches the record's file listing every run and only reuses the
-      # cached zip if its checksum still matches, so an edited draft is never
-      # served stale.
-      - name: Cache Zenodo source mirror
-        uses: actions/cache@v6.1.0
+      # One rolling slot, not one entry per record: the record id changes on
+      # almost every run (every draft tested), and cache entries are immutable
+      # per key, so a record-scoped key would recreate a new ~150-200MB cache
+      # every time instead of reusing one. Safe to restore unconditionally,
+      # including for drafts, since the pipeline re-fetches the record's file
+      # listing every run and only reuses the cached zip if its checksum still
+      # matches - so a stale or mismatched restore is never served as-is.
+      - name: Restore Zenodo source mirror cache
+        uses: actions/cache/restore@v6.1.0
         with:
           path: .build-cache/zenodo-source
-          key: zenodo-source-${{ env.ZENODO_RECORD }}
+          key: zenodo-source-${{ runner.os }}
 
+      # Not record-scoped: this holds IIIF/allmaps/sprite/warp caches that are
+      # keyed internally by their own content hashes (canvas id, warp
+      # signature, etc.), not by which Zenodo record triggered the build - so
+      # it's meant to be shared and grow across every record ever built, not
+      # duplicated per record. (It previously included the record id in the
+      # key, which created a brand new ~500MB cache per Zenodo draft tested
+      # instead of reusing/growing one shared cache - see repo cache list.)
       - name: Cache Bun dependencies and pipeline cache
         uses: actions/cache@v6.1.0
         with:
@@ -61,9 +72,8 @@ jobs:
             .build-cache/iiif
             .build-cache/image-collections
             .build-cache/warp-tif
-          key: pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ env.ZENODO_RECORD }}
+          key: pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: |
-            pipeline-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
             pipeline-${{ runner.os }}-
 
       - name: Restore build state
@@ -139,6 +149,24 @@ jobs:
 
           echo "blocked=false" >> "$GITHUB_OUTPUT"
           exit "$rc"
+
+      # Cache entries are immutable per key, so keeping this a single rolling
+      # slot means explicitly deleting the previous one before saving the new
+      # state - otherwise every run after the first would just silently skip
+      # saving (key already exists) and the cache would freeze at whatever the
+      # very first run downloaded.
+      - name: Save Zenodo source mirror cache
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh cache delete "zenodo-source-${{ runner.os }}" --repo "${{ github.repository }}" || true
+
+      - uses: actions/cache/save@v6.1.0
+        if: always()
+        with:
+          path: .build-cache/zenodo-source
+          key: zenodo-source-${{ runner.os }}
 
       # The pipeline auto-detects draft-vs-published straight from the record
       # id (Zenodo's public API 404s for anything not published) and writes

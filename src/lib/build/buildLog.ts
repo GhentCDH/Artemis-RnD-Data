@@ -4,6 +4,7 @@ import { ensureDir } from "../utils/files";
 
 export const BUILD_LOG_PATH = "build/Build.log";
 export const IIIF_WARNINGS_LOG_PATH = "build/IIIFWarnings.log";
+export const DOWNLOAD_WARNINGS_LOG_PATH = "build/DownloadWarnings.log";
 
 export class BuildLog {
   private sectionOpen = false;

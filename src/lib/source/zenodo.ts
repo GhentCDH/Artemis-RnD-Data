@@ -89,6 +89,21 @@ export async function listDraftFiles(draftId: string, token: string): Promise<Ze
   return listing.entries ?? [];
 }
 
+/**
+ * Filename → public download URL for every file in a *published* Zenodo
+ * record (not just Source.zip). Used to resolve sublayer `download:` filenames
+ * to real links; drafts have no public download URL, so callers should skip
+ * this for draft builds rather than call it.
+ */
+export async function fetchRecordFileIndex(recordId: string): Promise<Map<string, string>> {
+  const record = await fetchJson<ZenodoRecord>(zenodoRecordApiUrl(recordId));
+  const index = new Map<string, string>();
+  for (const file of record.files ?? []) {
+    if (file.links?.self) index.set(file.key, file.links.self);
+  }
+  return index;
+}
+
 function zenodoDraftFileContentUrl(draftId: string, fileName: string): string {
   return `https://zenodo.org/api/records/${draftId}/draft/files/${encodeURIComponent(fileName)}/content`;
 }

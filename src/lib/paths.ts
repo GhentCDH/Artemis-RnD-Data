@@ -31,6 +31,9 @@ export const BUILD_DIR = "build";
 /** Merged, published viewer layer config. */
 export const BUILD_LAYERS_YAML_PATH = join(BUILD_DIR, "layers.yaml");
 
+/** Human-readable Markdown table of every sublayer + kind, for the CI job summary / release notes. */
+export const BUILD_SUBLAYERS_SUMMARY_PATH = join(BUILD_DIR, "Sublayers.md");
+
 /** Published, per-layer output. */
 export const BUILD_LAYERS_DIR = join(BUILD_DIR, "Layers");
 

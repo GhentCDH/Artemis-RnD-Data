@@ -281,11 +281,18 @@ jobs:
             echo "## Publish target"
             echo
             echo "Zenodo record \`$RECORD_ID\` ($([ "$BUILD_FROM_DRAFT" = "true" ] && echo "unpublished draft" || echo "published")) → \`$PUBLISH_BRANCH\`."
-            if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
-              echo
-              echo "**Pipeline force-built from draft \`$RECORD_ID\`, tried to resolve downloads from \`$DOWNLOAD_RECORD_ID\`** (its latest published version)."
-            fi
             echo
+            if [ -s build/BuildIssues.log ]; then
+              echo "⚠ **Publish blocked** — see \"Build issues\" below; nothing was published this run."
+              echo
+            fi
+            if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
+              echo "**Force-built from draft \`$RECORD_ID\`** — \`--publish-live\` was set, so sublayer \`download:\` links were resolved against this record's latest published version (\`$DOWNLOAD_RECORD_ID\`) instead of the draft itself. Verify they still match this draft's content before trusting them."
+              echo
+            elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
+              echo "**Draft source** — sublayer \`download:\` links are left unresolved until this record is published (doesn't block publishing to \`draft\`)."
+              echo
+            fi
 
             echo "## Build issues"
             echo
@@ -297,13 +304,6 @@ jobs:
               echo "✓ No blocking issues."
             fi
             echo
-            if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
-              echo "> **Draft source, published to live anyway.** This build read \`Source.zip\` from an unpublished Zenodo draft, but \`--publish-live\` was set, so per-sublayer \`download\` links were resolved against this record's **latest published version** (\`$DOWNLOAD_RECORD_ID\`) instead of the draft itself — verify they still match this draft's content before trusting them."
-              echo
-            elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
-              echo "> **Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
-              echo
-            fi
 
             echo "## Sublayers without a download (non-blocking)"
             echo

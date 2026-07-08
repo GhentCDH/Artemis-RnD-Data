@@ -18,12 +18,17 @@ on:
 env:
   IMAGE: ghcr.io/ghentcdh/artemis-data
 
+concurrency:
+  group: docker-image-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      actions: write   # lets "gh cache delete" prune the superseded buildx cache generation below
     steps:
       - uses: actions/checkout@v7
 
@@ -48,6 +53,23 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
+      # `type=gha` cache entries are immutable (can't overwrite a key), so every
+      # build adds a brand new "index-buildkit-*"/"buildkit-blob-*" generation
+      # on top of the last instead of replacing it - left unchecked this floods
+      # the repo's shared 10GB Actions cache budget and starves the data
+      # pipeline's own caches. Snapshot the current generation's ids here, then
+      # delete exactly those (and only those) once this run's own fresh
+      # generation is safely saved, so only one generation ever exists at a time.
+      - name: Snapshot previous buildx cache generation
+        id: old_cache
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ids="$( { gh cache list --repo "${{ github.repository }}" --key buildkit-blob --limit 500 --json id -q '.[].id'; \
+                    gh cache list --repo "${{ github.repository }}" --key index-buildkit --limit 500 --json id -q '.[].id'; } | paste -sd, -)"
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -58,3 +80,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Prune superseded buildx cache generation
+        if: ${{ success() && steps.old_cache.outputs.ids != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra ids <<< "${{ steps.old_cache.outputs.ids }}"
+          for id in "${ids[@]}"; do
+            gh cache delete "$id" --repo "${{ github.repository }}" || true
+          done

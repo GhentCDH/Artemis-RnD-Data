@@ -6,7 +6,7 @@ import { BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir, logo
 import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
 import { log } from "../log";
-import { BUILD_ISSUES_LOG_PATH, BuildLog } from "../build/buildLog";
+import { BUILD_ISSUES_LOG_PATH, BuildLog, DOWNLOAD_REMINDERS_LOG_PATH } from "../build/buildLog";
 import { fetchRecordFileIndex } from "../source/zenodo";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
@@ -43,6 +43,9 @@ export type MissingDownload = { sublayerId: string; file: string };
 /** A sublayer that isn't a remote passthrough (wmts/wms) but produced no build artifact - nothing will render for it. */
 export type EmptySublayer = { layerId: string; sublayerId: string; kind: string };
 
+/** A sublayer that built real content but has no `download:` configured - not an error, just worth a nudge. */
+export type SublayerWithoutDownload = { layerId: string; sublayerId: string; kind: string };
+
 export type PublishLayersResult = {
   layers: number;
   sublayers: number;
@@ -51,6 +54,7 @@ export type PublishLayersResult = {
   downloadsResolved: number;
   missingDownloads: MissingDownload[];
   emptySublayers: EmptySublayer[];
+  sublayersWithoutDownload: SublayerWithoutDownload[];
   outputPath: string;
   cached?: boolean;
 };
@@ -253,6 +257,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   let downloadsResolved = 0;
   const missingDownloads: MissingDownload[] = [];
   const emptySublayers: EmptySublayer[] = [];
+  const sublayersWithoutDownload: SublayerWithoutDownload[] = [];
 
   const layers = await Promise.all(
     refs.map(async (ref) => {
@@ -279,6 +284,13 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
         if (!REMOTE_PASSTHROUGH_KINDS.has(kind) && Object.keys(artifacts).length === 0) {
           emptySublayers.push({ layerId: ref.id, sublayerId: sublayer.id ?? "(unknown sublayer)", kind: sublayer.kind ?? "(unknown kind)" });
         }
+
+        // Built real content but nobody can download it directly - not an
+        // error (plenty of sublayers, e.g. toponyms, never need one), just
+        // worth flagging so it isn't simply forgotten.
+        if (Object.keys(artifacts).length > 0 && sublayer.download === undefined) {
+          sublayersWithoutDownload.push({ layerId: ref.id, sublayerId: sublayer.id ?? "(unknown sublayer)", kind: sublayer.kind ?? "(unknown kind)" });
+        }
       }
       return config;
     }),
@@ -300,6 +312,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
           downloadsResolved,
           missingDownloads,
           emptySublayers,
+          sublayersWithoutDownload,
           outputPath: BUILD_LAYERS_YAML_PATH,
           cached: true,
         };
@@ -331,6 +344,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     downloadsResolved,
     missingDownloads,
     emptySublayers,
+    sublayersWithoutDownload,
     outputPath: BUILD_LAYERS_YAML_PATH,
   };
   const issues = significantIssues(result);
@@ -344,6 +358,15 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     for (const issue of issues) log.warn(`${issue} — see ${BUILD_ISSUES_LOG_PATH}`);
   }
 
+  if (sublayersWithoutDownload.length > 0) {
+    const remindersLog = new BuildLog(DOWNLOAD_REMINDERS_LOG_PATH, "Download Reminders Log");
+    await remindersLog.reset("layers", []);
+    await remindersLog.section("Sublayers built with no download configured (not an error)");
+    for (const s of sublayersWithoutDownload) {
+      await remindersLog.info(`- ${s.sublayerId} (layer ${s.layerId}, kind: ${s.kind}) built successfully but has no \`download:\` configured`);
+    }
+  }
+
   await options.buildLog?.section("Layers");
   await options.buildLog?.fields({
     layers: layers.length,
@@ -353,6 +376,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     "downloads resolved": downloadsResolved,
     "missing downloads": missingDownloads.length > 0 ? missingDownloads.map((m) => m.file).join(", ") : undefined,
     "empty sublayers": emptySublayers.length > 0 ? emptySublayers.map((s) => s.sublayerId).join(", ") : undefined,
+    "sublayers without download": sublayersWithoutDownload.length > 0 ? sublayersWithoutDownload.map((s) => s.sublayerId).join(", ") : undefined,
     "build issues": issues.length > 0 ? `${issues.length} — see ${BUILD_ISSUES_LOG_PATH}` : undefined,
     output: BUILD_LAYERS_YAML_PATH,
   });

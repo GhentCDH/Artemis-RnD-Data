@@ -1,5 +1,5 @@
 name: Run data pipeline
-run-name: "Zenodo record ${{ inputs.zenodo_record }}${{ inputs.force && ' · force' || '' }}${{ inputs.publish_live && ' · publish live' || '' }} (${{ github.actor }})"
+run-name: "Zenodo record ${{ inputs.zenodo_record }}${{ inputs.force && ' · force' || '' }}${{ inputs.publish_live && ' · publish live' || '' }}"
 
 on:
   workflow_dispatch:
@@ -219,6 +219,7 @@ jobs:
           is_draft="$(jq -r '.isDraft' build/ZenodoSource.json)"
           record_id="$(jq -r '.recordId' build/ZenodoSource.json)"
           download_resolution="$(jq -r '.downloadResolution // "source"' build/ZenodoSource.json)"
+          download_record_id="$(jq -r '.downloadRecordId // ""' build/ZenodoSource.json)"
           branch="live"
           if [ "$is_draft" = "true" ] && [ "${{ inputs.publish_live }}" != "true" ]; then
             branch="draft"
@@ -228,7 +229,11 @@ jobs:
           echo "record_id=$record_id" >> "$GITHUB_OUTPUT"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           echo "download_resolution=$download_resolution" >> "$GITHUB_OUTPUT"
+          echo "download_record_id=$download_record_id" >> "$GITHUB_OUTPUT"
 
+          if [ "$is_draft" = "true" ] && [ "${{ inputs.publish_live }}" = "true" ]; then
+            echo "Force-publishing draft $record_id to live; tried to resolve downloads from ${download_record_id:-(none available)}."
+          fi
           echo "Zenodo record $record_id is $([ "$is_draft" = "true" ] && echo "an unpublished draft" || echo "published") -> publishing to '$branch' (downloads: $download_resolution)."
 
       - name: Upload logs
@@ -250,6 +255,9 @@ jobs:
         env:
           BUILD_FROM_DRAFT: ${{ steps.zenodo_source.outputs.is_draft }}
           DOWNLOAD_RESOLUTION: ${{ steps.zenodo_source.outputs.download_resolution }}
+          RECORD_ID: ${{ steps.zenodo_source.outputs.record_id }}
+          DOWNLOAD_RECORD_ID: ${{ steps.zenodo_source.outputs.download_record_id }}
+          PUBLISH_BRANCH: ${{ steps.zenodo_source.outputs.branch }}
         run: |
           set -euo pipefail
 
@@ -259,7 +267,7 @@ jobs:
           fi
 
           if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
-            echo "::warning title=Draft Zenodo source, publishing live::Sublayer downloads were resolved against the latest published version instead of this draft — double-check they still make sense for this draft's content."
+            echo "::warning title=Forced draft publish to live::Pipeline force-built from draft $RECORD_ID, tried to resolve downloads from $DOWNLOAD_RECORD_ID — double-check they still make sense for this draft's content."
           elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
             echo "::warning title=Draft Zenodo source::Sublayer downloads won't work — the Zenodo record has not been published."
           fi
@@ -270,6 +278,15 @@ jobs:
           fi
 
           {
+            echo "## Publish target"
+            echo
+            echo "Zenodo record \`$RECORD_ID\` ($([ "$BUILD_FROM_DRAFT" = "true" ] && echo "unpublished draft" || echo "published")) → \`$PUBLISH_BRANCH\`."
+            if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
+              echo
+              echo "**Pipeline force-built from draft \`$RECORD_ID\`, tried to resolve downloads from \`$DOWNLOAD_RECORD_ID\`** (its latest published version)."
+            fi
+            echo
+
             echo "## Build issues"
             echo
             if [ -s build/BuildIssues.log ]; then
@@ -281,7 +298,7 @@ jobs:
             fi
             echo
             if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
-              echo "> **Draft source, published to live anyway.** This build read \`Source.zip\` from an unpublished Zenodo draft, but \`--publish-live\` was set, so per-sublayer \`download\` links were resolved against this record's **latest published version** instead of the draft itself — verify they still match this draft's content before trusting them."
+              echo "> **Draft source, published to live anyway.** This build read \`Source.zip\` from an unpublished Zenodo draft, but \`--publish-live\` was set, so per-sublayer \`download\` links were resolved against this record's **latest published version** (\`$DOWNLOAD_RECORD_ID\`) instead of the draft itself — verify they still match this draft's content before trusting them."
               echo
             elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
               echo "> **Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
@@ -404,6 +421,7 @@ jobs:
           ZENODO_RECORD: ${{ inputs.zenodo_record }}
           BUILD_FROM_DRAFT: ${{ steps.zenodo_source.outputs.is_draft }}
           DOWNLOAD_RESOLUTION: ${{ steps.zenodo_source.outputs.download_resolution }}
+          DOWNLOAD_RECORD_ID: ${{ steps.zenodo_source.outputs.download_record_id }}
           PUBLISH_BRANCH: ${{ steps.zenodo_source.outputs.branch }}
           COMMIT_SHA: ${{ steps.publish.outputs.commit }}
         run: |
@@ -420,7 +438,7 @@ jobs:
             TITLE="Zenodo draft $ZENODO_RECORD"
             NOTES_SUFFIX="
 
-          Built from an **unpublished Zenodo draft**, published to \`live\` anyway. Sublayer download links were resolved against this record's **latest published version** instead of the draft itself — verify they still match this draft's content."
+          Built from an **unpublished Zenodo draft**, published to \`live\` anyway. Sublayer download links were resolved against this record's **latest published version** (\`$DOWNLOAD_RECORD_ID\`) instead of the draft itself — verify they still match this draft's content."
           elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
             TAG="${TAG}-draft"
             TITLE="Zenodo draft $ZENODO_RECORD"

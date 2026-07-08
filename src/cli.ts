@@ -195,7 +195,7 @@ async function main(): Promise<void> {
       const buildLayersResult = await buildLog.timed("layers", () =>
         publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft, resolveDraftDownloadsFromLatestPublished: zenodoSource?.publishLive }),
       );
-      await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: buildLayersResult.downloadResolution });
+      await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: buildLayersResult.downloadResolution, downloadRecordId: buildLayersResult.downloadRecordId });
       await buildLog.timed("about", () => publishAbout({ buildLog }));
       await registry.flushAll();
       failOnSignificantIssues(buildLayersResult);
@@ -247,7 +247,7 @@ async function main(): Promise<void> {
       const layersResult = await buildLog.timed("layers", () =>
         publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft, resolveDraftDownloadsFromLatestPublished: zenodoSource?.publishLive }),
       );
-      await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: layersResult.downloadResolution });
+      await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: layersResult.downloadResolution, downloadRecordId: layersResult.downloadRecordId });
       failOnSignificantIssues(layersResult);
       break;
     }

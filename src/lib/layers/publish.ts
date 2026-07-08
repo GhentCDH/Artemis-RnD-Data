@@ -72,6 +72,8 @@ export type PublishLayersResult = {
    * `"unresolved"` (draft with no verifiable target - left unresolved).
    */
   downloadResolution: "source" | "latest-published-fallback" | "unresolved";
+  /** The Zenodo record id actually checked against, when downloadResolution isn't "unresolved". */
+  downloadRecordId?: string;
 };
 
 /**
@@ -279,6 +281,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
       log.warn(`could not fetch Zenodo record ${downloadRecordId} file list; leaving sublayer downloads unresolved: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
+  if (downloadResolution === "unresolved") downloadRecordId = undefined;
   let downloadsResolved = 0;
   const missingDownloads: MissingDownload[] = [];
   const emptySublayers: EmptySublayer[] = [];
@@ -341,6 +344,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
           outputPath: BUILD_LAYERS_YAML_PATH,
           cached: true,
           downloadResolution,
+          downloadRecordId,
         };
       }
     } catch {
@@ -373,6 +377,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     sublayersWithoutDownload,
     outputPath: BUILD_LAYERS_YAML_PATH,
     downloadResolution,
+    downloadRecordId,
   };
   const issues = significantIssues(result);
   if (issues.length > 0) {

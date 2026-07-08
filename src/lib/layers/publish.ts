@@ -7,7 +7,8 @@ import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
 import { log } from "../log";
 import { BUILD_ISSUES_LOG_PATH, BuildLog, DOWNLOAD_REMINDERS_LOG_PATH } from "../build/buildLog";
-import { fetchRecordFileIndex } from "../source/zenodo";
+import { fetchLatestPublishedVersionId, fetchRecordFileIndex } from "../source/zenodo";
+import { loadLogoRegistry, resolveLogoFile } from "../attribution/logos";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
 const LAYERS_RECIPE = 5;
@@ -36,6 +37,13 @@ export type PublishLayersOptions = {
   zenodoRecordId?: string;
   /** Drafts have no public download URL; skip resolving `download:` filenames entirely when true. */
   isDraft?: boolean;
+  /**
+   * When the source is a draft and this is set, resolve `download:` filenames
+   * against the draft's latest *published* sibling version instead of leaving
+   * them unresolved - used when a draft build is being force-published to the
+   * live branch, so its download links still work.
+   */
+  resolveDraftDownloadsFromLatestPublished?: boolean;
 };
 
 export type MissingDownload = { sublayerId: string; file: string };
@@ -57,6 +65,13 @@ export type PublishLayersResult = {
   sublayersWithoutDownload: SublayerWithoutDownload[];
   outputPath: string;
   cached?: boolean;
+  /**
+   * Which Zenodo record `download:` filenames were actually checked against:
+   * `"source"` (the build's own record), `"latest-published-fallback"` (a
+   * draft, resolved against its latest published sibling instead), or
+   * `"unresolved"` (draft with no verifiable target - left unresolved).
+   */
+  downloadResolution: "source" | "latest-published-fallback" | "unresolved";
 };
 
 /**
@@ -71,26 +86,6 @@ export function significantIssues(result: PublishLayersResult): string[] {
     ...result.unknownLogos.map((file) => `unknown attribution logo: "${file}" not in the logo registry`),
     ...result.emptySublayers.map((s) => `${s.sublayerId} (kind: ${s.kind}) is defined in layers/${s.layerId}/${s.layerId}.yaml but its source data could not be found — nothing will render`),
   ];
-}
-
-/**
- * Logo registry (`logos.yaml`) is a flat `filename: click-through-url` map. A
- * sublayer's `attribution.logos` lists filenames from it; publishing resolves
- * each filename to `{ file, href }` so the viewer needs no second lookup.
- */
-async function loadLogoRegistry(): Promise<Map<string, string>> {
-  const registryPath = logosRegistryPath();
-  try {
-    const parsed = YAML.parse(await readFile(registryPath, "utf-8")) as Record<string, unknown> | null;
-    const registry = new Map<string, string>();
-    for (const [file, href] of Object.entries(parsed ?? {})) {
-      if (typeof href === "string") registry.set(file, href);
-    }
-    return registry;
-  } catch {
-    log.warn(`no logo registry at ${registryPath}; leaving logo filenames unresolved`);
-    return new Map();
-  }
 }
 
 type MutableSublayer = {
@@ -162,10 +157,10 @@ function resolveLogos(layer: MutableLayer, registry: Map<string, string>, unknow
     if (!Array.isArray(logos)) continue;
     sublayer.attribution!.logos = logos.map((file) => {
       if (typeof file !== "string") return file;
-      const href = registry.get(file);
-      if (href) resolved++;
+      const resolvedLogo = resolveLogoFile(file, registry);
+      if (resolvedLogo.href) resolved++;
       else unknown.add(file);
-      return href ? { file, href } : { file };
+      return resolvedLogo;
     });
   }
   return resolved;
@@ -196,12 +191,20 @@ function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, m
   return resolved;
 }
 
-/** Renders a sublayer's `download` field for the summary table: link if resolved, flagged if confirmed missing, noted if never checked. */
+/**
+ * Renders a sublayer's `download` field for the summary table: link if
+ * resolved, flagged if confirmed missing, noted if never checked. A sublayer
+ * that built real content but has no `download:` at all gets "?" rather than
+ * "—" - distinct from wmts/wms (or truly empty) sublayers, where no download
+ * is simply expected and "—" is the right, unremarkable answer.
+ */
 function downloadCell(sublayer: MutableSublayer, missingSublayerIds: Set<string>): string {
+  const hasArtifacts = sublayer.artifacts !== undefined && Object.keys(sublayer.artifacts).length > 0;
+  const noDownloadMarker = hasArtifacts ? "?" : "—";
   const download = sublayer.download;
-  if (download === undefined || download === null || typeof download !== "object") return "—";
+  if (download === undefined || download === null || typeof download !== "object") return noDownloadMarker;
   const { file, url } = download as { file?: unknown; url?: unknown };
-  if (typeof file !== "string") return "—";
+  if (typeof file !== "string") return noDownloadMarker;
   if (typeof url === "string") return `[${file}](${url})`;
   if (sublayer.id && missingSublayerIds.has(sublayer.id)) return `✗ ${file} — not found`;
   return `${file} (unverified)`;
@@ -239,19 +242,41 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
 
   // Drafts have no public download URL, and without a record id there's
   // nothing to resolve against - in both cases, normalize `download:` to
-  // `{ file }` without treating unresolved filenames as an error.
+  // `{ file }` without treating unresolved filenames as an error. Exception:
+  // a draft explicitly being force-published to live falls back to its
+  // latest published sibling version as the resolution target instead.
   let canResolveDownloads = !options.isDraft && Boolean(options.zenodoRecordId);
+  let downloadResolution: PublishLayersResult["downloadResolution"] = canResolveDownloads ? "source" : "unresolved";
+  let downloadRecordId = options.zenodoRecordId;
+
+  if (options.isDraft && options.resolveDraftDownloadsFromLatestPublished && options.zenodoRecordId) {
+    try {
+      const latest = await fetchLatestPublishedVersionId(options.zenodoRecordId);
+      if (latest) {
+        downloadRecordId = latest;
+        canResolveDownloads = true;
+        downloadResolution = "latest-published-fallback";
+        log.info(`draft ${options.zenodoRecordId}: resolving sublayer downloads against latest published version ${latest} instead`);
+      } else {
+        log.warn(`draft ${options.zenodoRecordId} has no published version yet; leaving sublayer downloads unresolved`);
+      }
+    } catch (error) {
+      log.warn(`could not look up latest published version for draft ${options.zenodoRecordId}; leaving sublayer downloads unresolved: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   const wantsDownloads = refs.some((ref) => (ref.config.sublayers ?? []).some((sublayer) => typeof sublayer.download === "string"));
   let downloadIndex = new Map<string, string>();
-  if (wantsDownloads && canResolveDownloads && options.zenodoRecordId) {
+  if (wantsDownloads && canResolveDownloads && downloadRecordId) {
     try {
-      downloadIndex = await fetchRecordFileIndex(options.zenodoRecordId);
+      downloadIndex = await fetchRecordFileIndex(downloadRecordId);
     } catch (error) {
       // A Zenodo API hiccup shouldn't fail the whole build, but we can no
       // longer tell "missing" from "unverifiable" - treat as unresolved, same
       // as drafts, rather than falsely reporting every download as missing.
       canResolveDownloads = false;
-      log.warn(`could not fetch Zenodo record ${options.zenodoRecordId} file list; leaving sublayer downloads unresolved: ${error instanceof Error ? error.message : String(error)}`);
+      downloadResolution = "unresolved";
+      log.warn(`could not fetch Zenodo record ${downloadRecordId} file list; leaving sublayer downloads unresolved: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   let downloadsResolved = 0;
@@ -315,6 +340,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
           sublayersWithoutDownload,
           outputPath: BUILD_LAYERS_YAML_PATH,
           cached: true,
+          downloadResolution,
         };
       }
     } catch {
@@ -346,6 +372,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     emptySublayers,
     sublayersWithoutDownload,
     outputPath: BUILD_LAYERS_YAML_PATH,
+    downloadResolution,
   };
   const issues = significantIssues(result);
   if (issues.length > 0) {

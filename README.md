@@ -51,6 +51,8 @@ bun run src/cli.ts <command> [zenodoRecordId] [layerId...] [--no-raster] [--forc
 | `parcels [layerId...]`               | Build parcel PMTiles                                                   |
 | `imagecollections [collectionId...]` | Build non-georeferenced image collection artifacts                     |
 | `layers`                             | Merge source layer config and published-file registry into `build/layers.yaml` |
+| `about`                              | Publish `about.json` + attribution-logo image assets into `build/`      |
+| `baselayer`                          | Publish `Baselayer.geojson` as `build/baselayer.pmtiles`               |
 | `source:sync <recordId>`             | Download, verify, and extract `Source.zip` from a pinned Zenodo record into `.build-cache/zenodo-source/` |
 | `help`                               | Show usage and the full flag/env reference                            |
 
@@ -70,6 +72,7 @@ Package script aliases (`package.json`): `bun run build`, `bun run iiif`,
 | `--force`     | cache-aware commands | Bypass the incremental cache for that run. |
 | `--local-source` | build commands | Read from local `Source/` instead of the Zenodo mirror. |
 | `--zenodo-record <id>` | build commands | Explicit alternative to positional `zenodoRecordId`. |
+| `--publish-live` | build commands | Publish a draft build to `live` anyway; resolves `download:` against the record's latest published version instead of leaving it unresolved. See [Publishing a draft build to live anyway](#publishing-a-draft-build-to-live-anyway). |
 
 Anything not starting with `-` is treated as a layer id, so flags and layer ids
 can be mixed in any order.
@@ -139,9 +142,9 @@ Authoring source root is `Source/`:
 
 ```text
 Source/
-├── site.json                       # site-level config
+├── about.json                       # site-level "about" config (title, blurb, team, logos)
 ├── ImageCollectionConfig.yaml      # non-georeferenced image collections
-├── Baselayer.geojson
+├── Baselayer.geojson                # site-wide reference boundary layer, published as pmtiles
 ├── attribution-logos/              # logo image files + logos.yaml
 └── layers/
     └── <LayerId>/
@@ -163,6 +166,81 @@ Committed layers: `Ferraris`, `Frickx`, `GereduceerdeKadaster`,
 > local. A fresh clone cannot reproduce every output without obtaining those raw
 > inputs separately.
 
+## Zenodo record structure
+
+The pipeline's actual source of truth isn't the local `Source/` folder — it's a
+Zenodo record (draft or published), identified by its numeric id. That record
+holds two different kinds of files:
+
+1. **`Source.zip`** (required, exact filename) — a zip of the *contents* of the
+   `Source/` tree above (`about.json`, `ImageCollectionConfig.yaml`,
+   `Baselayer.geojson`, `attribution-logos/`, `layers/<LayerId>/<LayerId>.yaml`
+   + their raw `parcels/`/`toponyms/` geojson). This is the **only** file the pipeline
+   itself reads/extracts/builds from.
+2. **Anything else** — optional, per-sublayer downloadable data for end users
+   (e.g. `Primitief_Kadaster_Parcels.zip`). The pipeline never opens these; it
+   only confirms they exist in the record and links to them (see below).
+
+### Building `Source.zip`
+
+Zip the *contents* of `Source/`, not the folder itself — the pipeline
+tolerates a zip that wraps everything in one extra folder and strips common OS
+junk (`__MACOSX/`, `.DS_Store`, AppleDouble `._*` files) automatically, but a
+clean zip avoids depending on that:
+
+```bash
+cd Source
+zip -rXq ../Source.zip . -x ".*" -x "*/.*"
+```
+
+### Linking a downloadable file to a sublayer
+
+Add a `download:` key to a sublayer, naming a file uploaded to the **same**
+Zenodo record (not inside `Source.zip` — a sibling file in the record):
+
+```yaml
+- id: PrimitiefKadaster-parcels
+  name: Parcels
+  kind: geojson
+  download: Primitief_Kadaster_Parcels.zip   # a file in the Zenodo record, not in Source.zip
+  source:
+    type: generated
+    rawInput: parcels/*.geojson
+```
+
+At build time, `download:` filenames are looked up against the record's file
+list and resolved to a public download URL for the viewer
+(`{ file, url }` in `build/layers.yaml`). A filename that doesn't match any
+file in the record is **never** silently ignored — it's reported as a build
+issue (see the CI job summary's "Build issues" section) and fails the build for
+a published record. Sublayers that build real content but have no `download:`
+at all are flagged separately, as a non-blocking reminder.
+
+### Draft vs. published
+
+The pipeline auto-detects whether a record id is a draft or published —
+Zenodo's public API 404s for anything unpublished, so this needs no manual
+flag. This changes `download:` behavior specifically:
+
+- **Draft** — `download:` filenames can't be verified (drafts require
+  authenticated access to even list their files as far as a public link is
+  concerned), so they're left unresolved rather than checked or flagged. Always
+  test a dataset as a draft first.
+- **Published** — filenames are checked for real; a mismatch is a build issue,
+  not a silent gap.
+
+#### Publishing a draft build to live anyway
+
+Pass `--publish-live` (workflow: check "Publish to live" on the manual run) to
+publish a draft build to the `live` branch/release instead of `draft`. Since a
+draft's own files aren't publicly reachable, `download:` filenames are instead
+resolved against **the record's latest published version** (its most recent
+prior release) rather than left unresolved. If the record has no published
+version yet, downloads simply stay unresolved, same as an ordinary draft
+build. The CI job summary and release notes call out whenever this fallback
+was used, since the resolved links describe the previous release's files, not
+necessarily this draft's.
+
 ## Outputs
 
 Everything published lands under `build/`:
@@ -171,6 +249,10 @@ Everything published lands under `build/`:
 build/
 ├── Build.log                       # per-run timings, stats, layer totals
 ├── IIIFWarnings.log                # analyzer warnings + applied local fixes
+├── about.json                       # site-level "about" config, logos[] resolved (see below)
+├── baselayer.pmtiles                # site-wide reference boundary layer
+├── attribution-logos/              # logo image assets, copied as-is from Source/
+│   └── <file>.png / .jpg / .webp / .svg / .gif
 ├── imagecollection.yaml            # published non-georeferenced collection registry
 ├── Image collections/
 │   └── <CollectionId>/
@@ -209,6 +291,14 @@ Notes:
   outline artifacts at tile boundaries.
 - **Image collections** — non-georeferenced browse/search artifacts written as
   plain JSON plus WEBP sprites under `build/Image collections/`.
+- **Logos** — every logo reference, whether a sublayer's `attribution.logos` or
+  `about.json`'s `logos[]`, resolves through the same registry
+  (`attribution-logos/logos.yaml`) to the same shape:
+  `{ file, href, src }` — `href` is the click-through URL, `src` is the
+  deploy-root-relative path to the copied image (`attribution-logos/<file>`).
+  A filename not in the registry keeps `{ file, src }` (no `href`) and is
+  logged as an unknown logo. There is no second, hand-maintained copy of a
+  logo's URL or image path anywhere — `logos.yaml` is the only source of truth.
 - `build/` (except `.tmp/`) is the deployable public output.
 
 ## Environment Variables

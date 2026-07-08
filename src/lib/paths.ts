@@ -22,14 +22,30 @@ export const sourceLayersDir = () => join(sourceDir(), "layers");
 /** Non-georeferenced image collection build config. */
 export const imageCollectionConfigPath = () => join(sourceDir(), "ImageCollectionConfig.yaml");
 
-/** Logo registry: filename → click-through URL, resolved into build/layers.yaml. */
-export const logosRegistryPath = () => join(sourceDir(), "attribution-logos", "logos.yaml");
+/** Logo image assets + their registry (filename -> click-through URL). */
+export const sourceAttributionLogosDir = () => join(sourceDir(), "attribution-logos");
+export const logosRegistryPath = () => join(sourceAttributionLogosDir(), "logos.yaml");
+
+/** Site-level "about" config (title, blurb, team, project-level logos). */
+export const aboutJsonPath = () => join(sourceDir(), "about.json");
+
+/** Site-wide reference boundary layer (not tied to any single historical map layer). */
+export const sourceBaselayerPath = () => join(sourceDir(), "Baselayer.geojson");
 
 /** Published build root. */
 export const BUILD_DIR = "build";
 
 /** Merged, published viewer layer config. */
 export const BUILD_LAYERS_YAML_PATH = join(BUILD_DIR, "layers.yaml");
+
+/** Published "about" config, logos resolved the same way as sublayer attribution. */
+export const BUILD_ABOUT_JSON_PATH = join(BUILD_DIR, "about.json");
+
+/** Published logo image assets - deploy-relative paths in resolved logo objects point here. */
+export const BUILD_ATTRIBUTION_LOGOS_DIR = join(BUILD_DIR, "attribution-logos");
+
+/** Published site-wide reference boundary layer. */
+export const BUILD_BASELAYER_PMTILES_PATH = join(BUILD_DIR, "baselayer.pmtiles");
 
 /** Human-readable Markdown table of every sublayer + kind, for the CI job summary / release notes. */
 export const BUILD_SUBLAYERS_SUMMARY_PATH = join(BUILD_DIR, "Sublayers.md");

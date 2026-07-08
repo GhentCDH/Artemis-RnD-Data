@@ -1,5 +1,5 @@
 name: Run data pipeline
-run-name: "Zenodo record ${{ inputs.zenodo_record }}${{ inputs.force && ' · force' || '' }} (${{ github.actor }})"
+run-name: "Zenodo record ${{ inputs.zenodo_record }}${{ inputs.force && ' · force' || '' }}${{ inputs.publish_live && ' · publish live' || '' }} (${{ github.actor }})"
 
 on:
   workflow_dispatch:
@@ -14,6 +14,16 @@ on:
         required: true
         default: "21219182"
         type: string
+      publish_live:
+        description: "Force publish draft to live"
+        required: false
+        default: false
+        type: boolean
+      no_raster:
+        description: "Skip raster warp + XYZ tiles"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -99,6 +109,8 @@ jobs:
         id: run_pipeline
         env:
           FORCE: ${{ inputs.force }}
+          PUBLISH_LIVE: ${{ inputs.publish_live }}
+          NO_RASTER: ${{ inputs.no_raster }}
           BUILD_CONCURRENCY: "8"
           ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
         run: |
@@ -119,6 +131,8 @@ jobs:
             -e ZENODO_RECORD \
             -e ZENODO_TOKEN \
             -e FORCE \
+            -e PUBLISH_LIVE \
+            -e NO_RASTER \
             -e TIMEOUT_MINUTES \
             -e BUILD_CONCURRENCY \
             "$IMAGE" \
@@ -131,6 +145,14 @@ jobs:
 
               if [ "$FORCE" = "true" ]; then
                 cmd+=(--force)
+              fi
+
+              if [ "$PUBLISH_LIVE" = "true" ]; then
+                cmd+=(--publish-live)
+              fi
+
+              if [ "$NO_RASTER" = "true" ]; then
+                cmd+=(--no-raster)
               fi
 
               echo "Running with timeout ${TIMEOUT_MINUTES}m:"
@@ -196,16 +218,18 @@ jobs:
 
           is_draft="$(jq -r '.isDraft' build/ZenodoSource.json)"
           record_id="$(jq -r '.recordId' build/ZenodoSource.json)"
+          download_resolution="$(jq -r '.downloadResolution // "source"' build/ZenodoSource.json)"
           branch="live"
-          if [ "$is_draft" = "true" ]; then
+          if [ "$is_draft" = "true" ] && [ "${{ inputs.publish_live }}" != "true" ]; then
             branch="draft"
           fi
 
           echo "is_draft=$is_draft" >> "$GITHUB_OUTPUT"
           echo "record_id=$record_id" >> "$GITHUB_OUTPUT"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "download_resolution=$download_resolution" >> "$GITHUB_OUTPUT"
 
-          echo "Zenodo record $record_id is $([ "$is_draft" = "true" ] && echo "an unpublished draft" || echo "published") -> publishing to '$branch'."
+          echo "Zenodo record $record_id is $([ "$is_draft" = "true" ] && echo "an unpublished draft" || echo "published") -> publishing to '$branch' (downloads: $download_resolution)."
 
       - name: Upload logs
         if: always()
@@ -225,6 +249,7 @@ jobs:
         if: always()
         env:
           BUILD_FROM_DRAFT: ${{ steps.zenodo_source.outputs.is_draft }}
+          DOWNLOAD_RESOLUTION: ${{ steps.zenodo_source.outputs.download_resolution }}
         run: |
           set -euo pipefail
 
@@ -233,7 +258,9 @@ jobs:
             echo "::error title=Build issues::Pipeline found $issues_count unresolved reference(s) (missing sublayer downloads / unknown logos / empty sublayers) that block publishing. See the job summary or uploaded logs artifact."
           fi
 
-          if [ "$BUILD_FROM_DRAFT" = "true" ]; then
+          if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
+            echo "::warning title=Draft Zenodo source, publishing live::Sublayer downloads were resolved against the latest published version instead of this draft — double-check they still make sense for this draft's content."
+          elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
             echo "::warning title=Draft Zenodo source::Sublayer downloads won't work — the Zenodo record has not been published."
           fi
 
@@ -253,7 +280,10 @@ jobs:
               echo "✓ No blocking issues."
             fi
             echo
-            if [ "$BUILD_FROM_DRAFT" = "true" ]; then
+            if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
+              echo "> **Draft source, published to live anyway.** This build read \`Source.zip\` from an unpublished Zenodo draft, but \`--publish-live\` was set, so per-sublayer \`download\` links were resolved against this record's **latest published version** instead of the draft itself — verify they still match this draft's content before trusting them."
+              echo
+            elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
               echo "> **Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs until this record is published. This does not block publishing to the \`draft\` branch."
               echo
             fi
@@ -373,6 +403,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ZENODO_RECORD: ${{ inputs.zenodo_record }}
           BUILD_FROM_DRAFT: ${{ steps.zenodo_source.outputs.is_draft }}
+          DOWNLOAD_RESOLUTION: ${{ steps.zenodo_source.outputs.download_resolution }}
           PUBLISH_BRANCH: ${{ steps.zenodo_source.outputs.branch }}
           COMMIT_SHA: ${{ steps.publish.outputs.commit }}
         run: |
@@ -384,7 +415,13 @@ jobs:
           TAG="zenodo-$ZENODO_RECORD"
           TITLE="Zenodo record $ZENODO_RECORD"
           NOTES_SUFFIX=""
-          if [ "$BUILD_FROM_DRAFT" = "true" ]; then
+          if [ "$BUILD_FROM_DRAFT" = "true" ] && [ "$DOWNLOAD_RESOLUTION" = "latest-published-fallback" ]; then
+            TAG="${TAG}-draft"
+            TITLE="Zenodo draft $ZENODO_RECORD"
+            NOTES_SUFFIX="
+
+          Built from an **unpublished Zenodo draft**, published to \`live\` anyway. Sublayer download links were resolved against this record's **latest published version** instead of the draft itself — verify they still match this draft's content."
+          elif [ "$BUILD_FROM_DRAFT" = "true" ]; then
             TAG="${TAG}-draft"
             TITLE="Zenodo draft $ZENODO_RECORD"
             NOTES_SUFFIX="

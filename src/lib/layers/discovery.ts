@@ -16,6 +16,8 @@ export type LayerConfig = {
       rawInput?: string;
       url?: string;
     };
+    /** Filename of a standalone file in the Zenodo record (alongside Source.zip) offered as an end-user download. */
+    download?: string;
   }>;
 };
 

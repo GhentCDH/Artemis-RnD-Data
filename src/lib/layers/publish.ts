@@ -2,11 +2,12 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import YAML from "yaml";
 import { discoverLayers } from "./discovery";
-import { BUILD_LAYERS_YAML_PATH, layerOutDir, logosRegistryPath } from "../paths";
+import { BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir, logosRegistryPath } from "../paths";
 import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
 import { log } from "../log";
-import type { BuildLog } from "../build/buildLog";
+import { BuildLog, DOWNLOAD_WARNINGS_LOG_PATH } from "../build/buildLog";
+import { fetchRecordFileIndex } from "../source/zenodo";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
 const LAYERS_RECIPE = 5;
@@ -31,6 +32,10 @@ const ARTIFACT_KEYS: Record<string, string> = {
 export type PublishLayersOptions = {
   buildLog?: BuildLog;
   force?: boolean;
+  /** Zenodo record backing this build, used to resolve sublayer `download:` filenames to real URLs. */
+  zenodoRecordId?: string;
+  /** Drafts have no public download URL; skip resolving `download:` filenames entirely when true. */
+  isDraft?: boolean;
 };
 
 export type PublishLayersResult = {
@@ -38,6 +43,8 @@ export type PublishLayersResult = {
   sublayers: number;
   logosResolved: number;
   unknownLogos: string[];
+  downloadsResolved: number;
+  missingDownloads: string[];
   outputPath: string;
   cached?: boolean;
 };
@@ -69,9 +76,12 @@ type MutableSublayer = {
   source?: { rawInput?: string };
   attribution?: { logos?: unknown };
   artifacts?: Record<string, string>;
+  download?: unknown;
 };
 
 type MutableLayer = {
+  id?: string;
+  label?: string;
   sublayers?: MutableSublayer[];
 };
 
@@ -135,6 +145,45 @@ function resolveLogos(layer: MutableLayer, registry: Map<string, string>, unknow
 }
 
 /**
+ * Replaces each sublayer's `download: <filename>` with `{ file, url }` in
+ * place, resolving against a Zenodo record's file index. Filenames not found
+ * in the record collapse to `{ file }` (no url) and are recorded in `missing`
+ * so the caller can surface them; this never fails the build.
+ */
+function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, missing: string[] | undefined): number {
+  let resolved = 0;
+  for (const sublayer of layer.sublayers ?? []) {
+    const file = sublayer.download;
+    if (typeof file !== "string") continue;
+    const url = fileIndex.get(file);
+    if (url) {
+      resolved++;
+      sublayer.download = { file, url };
+    } else {
+      missing?.push(`${sublayer.id ?? "(unknown sublayer)"}: could not find "${file}" in the Zenodo record`);
+      sublayer.download = { file };
+    }
+  }
+  return resolved;
+}
+
+/**
+ * Renders a Markdown table of every sublayer (layer, sublayer, kind, and which
+ * artifacts it produced) for the CI job summary and release notes - the
+ * human-facing answer to "what did this build actually contain?".
+ */
+function buildSublayersMarkdown(layers: MutableLayer[]): string {
+  const rows = layers.flatMap((layer) =>
+    (layer.sublayers ?? []).map((sublayer) => {
+      const artifactKeys = sublayer.artifacts ? Object.keys(sublayer.artifacts) : [];
+      return `| ${layer.label ?? layer.id ?? "—"} | ${sublayer.name ?? sublayer.id ?? "—"} | ${sublayer.kind ?? "—"} | ${artifactKeys.length > 0 ? artifactKeys.join(", ") : "—"} |`;
+    }),
+  );
+  if (rows.length === 0) return "_No sublayers found._\n";
+  return `| Layer | Sublayer | Kind | Artifacts built |\n| --- | --- | --- | --- |\n${rows.join("\n")}\n`;
+}
+
+/**
  * Merges every `Source/layers/<LayerId>/<LayerId>.yaml` into a single
  * `build/layers.yaml` the viewer fetches. Always publishes all layers so the
  * registry stays complete regardless of any per-layer build selection.
@@ -146,11 +195,23 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   let sublayers = 0;
   let logosResolved = 0;
 
+  // Drafts have no public download URL, and without a record id there's
+  // nothing to resolve against - in both cases, normalize `download:` to
+  // `{ file }` without treating unresolved filenames as an error.
+  const canResolveDownloads = !options.isDraft && Boolean(options.zenodoRecordId);
+  const wantsDownloads = refs.some((ref) => (ref.config.sublayers ?? []).some((sublayer) => typeof sublayer.download === "string"));
+  const downloadIndex = wantsDownloads && canResolveDownloads && options.zenodoRecordId
+    ? await fetchRecordFileIndex(options.zenodoRecordId)
+    : new Map<string, string>();
+  let downloadsResolved = 0;
+  const missingDownloads: string[] = [];
+
   const layers = await Promise.all(
     refs.map(async (ref) => {
       const config = structuredClone(ref.config) as MutableLayer;
       sublayers += config.sublayers?.length ?? 0;
       logosResolved += resolveLogos(config, registry, unknownLogos);
+      downloadsResolved += resolveDownloads(config, downloadIndex, canResolveDownloads ? missingDownloads : undefined);
 
       // Attach each produced artifact to the sublayer that owns it, so two
       // sublayers of the same kind stay individually resolvable.
@@ -166,12 +227,24 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     }),
   );
 
+  await ensureDir(dirname(BUILD_SUBLAYERS_SUMMARY_PATH));
+  await writeFile(BUILD_SUBLAYERS_SUMMARY_PATH, buildSublayersMarkdown(layers), "utf-8");
+
   if (!options.force) {
     try {
       const current = YAML.parse(await readFile(BUILD_LAYERS_YAML_PATH, "utf-8")) as { buildRecipe?: unknown; layers?: unknown };
       if (current?.buildRecipe === LAYERS_RECIPE && stableStringify(current?.layers) === stableStringify(layers)) {
         log.ok(`layers: unchanged — skipped (${BUILD_LAYERS_YAML_PATH})`);
-        return { layers: layers.length, sublayers, logosResolved, unknownLogos: [...unknownLogos], outputPath: BUILD_LAYERS_YAML_PATH, cached: true };
+        return {
+          layers: layers.length,
+          sublayers,
+          logosResolved,
+          unknownLogos: [...unknownLogos],
+          downloadsResolved,
+          missingDownloads,
+          outputPath: BUILD_LAYERS_YAML_PATH,
+          cached: true,
+        };
       }
     } catch {
       // Missing or invalid output: rewrite below.
@@ -192,12 +265,22 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   const registryPath = logosRegistryPath();
   for (const file of unknownLogos) log.warn(`unknown logo '${file}' not in ${registryPath}`);
 
+  if (missingDownloads.length > 0) {
+    const warningLog = new BuildLog(DOWNLOAD_WARNINGS_LOG_PATH, "Download Warnings Log");
+    await warningLog.reset("layers", []);
+    await warningLog.section("Missing sublayer downloads");
+    for (const message of missingDownloads) await warningLog.info(message);
+    for (const message of missingDownloads) log.warn(`${message} — see ${DOWNLOAD_WARNINGS_LOG_PATH}`);
+  }
+
   await options.buildLog?.section("Layers");
   await options.buildLog?.fields({
     layers: layers.length,
     sublayers,
     "logos resolved": logosResolved,
     "unknown logos": unknownLogos.size > 0 ? [...unknownLogos].join(", ") : undefined,
+    "downloads resolved": downloadsResolved,
+    "missing downloads": missingDownloads.length > 0 ? `${missingDownloads.length} — see ${DOWNLOAD_WARNINGS_LOG_PATH}` : undefined,
     output: BUILD_LAYERS_YAML_PATH,
   });
 
@@ -206,6 +289,8 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     sublayers,
     logosResolved,
     unknownLogos: [...unknownLogos],
+    downloadsResolved,
+    missingDownloads,
     outputPath: BUILD_LAYERS_YAML_PATH,
   };
 }

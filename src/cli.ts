@@ -110,7 +110,9 @@ function layerArgs(args: string[], consumePositionalZenodoRecord = false): strin
   return layers;
 }
 
-async function applyZenodoSource(args: string[]): Promise<string | undefined> {
+type ZenodoSourceInfo = { recordId: string; isDraft: boolean };
+
+async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo | undefined> {
   if (args.includes("--local-source")) {
     log.ok(`using local source: ${sourceDir()}`);
     return undefined;
@@ -119,7 +121,7 @@ async function applyZenodoSource(args: string[]): Promise<string | undefined> {
   const isDraft = /^(1|true|yes)$/i.test(process.env.ZENODO_USE_DRAFT ?? "");
   const synced = await syncZenodoSource(recordId, { isDraft, token: process.env.ZENODO_TOKEN });
   setSourceDir(synced.sourceDir);
-  return recordId;
+  return { recordId, isDraft };
 }
 
 function iiifLimit(): number | undefined {
@@ -144,65 +146,65 @@ async function main(): Promise<void> {
 
   switch (command) {
     case "build": {
-      const zenodoRecord = await applyZenodoSource(args);
+      const zenodoSource = await applyZenodoSource(args);
       await buildLog.reset("build", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
       log.step(`Building data artifacts (${workerCount} workers)`);
-      await buildLog.fields({ workers: workerCount, raster: raster ? "yes" : "no", force: force ? "yes" : "no", source: sourceDir(), "zenodo record": zenodoRecord });
+      await buildLog.fields({ workers: workerCount, raster: raster ? "yes" : "no", force: force ? "yes" : "no", source: sourceDir(), "zenodo record": zenodoSource?.recordId });
       await buildLog.timed("iiif", () => buildIiif({ layers, concurrency: workerCount, limit: iiifLimit(), raster, buildLog, registry }));
       await buildLog.timed("toponyms", () => buildToponyms({ layers, concurrency: workerCount, buildLog, registry }));
       await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog, registry }));
       await buildLog.timed("imagecollections", () => buildImageCollections({ concurrency: workerCount, buildLog, force }));
       // Registry last: it scans build/Layers/<id>/ for each layer's produced artifacts.
-      await buildLog.timed("layers", () => publishLayers({ buildLog, force }));
+      await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
       await registry.flushAll();
       break;
     }
     case "iiif": {
-      const zenodoRecord = await applyZenodoSource(args);
+      const zenodoSource = await applyZenodoSource(args);
       await buildLog.reset("iiif", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
-      await buildLog.fields({ workers: workerCount, limit: iiifLimit(), raster: raster ? "yes" : "no", force: force ? "yes" : "no", source: sourceDir(), "zenodo record": zenodoRecord });
+      await buildLog.fields({ workers: workerCount, limit: iiifLimit(), raster: raster ? "yes" : "no", force: force ? "yes" : "no", source: sourceDir(), "zenodo record": zenodoSource?.recordId });
       await buildLog.timed("iiif", () => buildIiif({ layers, concurrency: workerCount, limit: iiifLimit(), raster, buildLog, registry }));
       await registry.flushAll();
       break;
     }
     case "toponyms": {
-      const zenodoRecord = await applyZenodoSource(args);
+      const zenodoSource = await applyZenodoSource(args);
       await buildLog.reset("toponyms", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
-      await buildLog.fields({ workers: workerCount, source: sourceDir(), "zenodo record": zenodoRecord });
+      await buildLog.fields({ workers: workerCount, source: sourceDir(), "zenodo record": zenodoSource?.recordId });
       await buildLog.timed("toponyms", () => buildToponyms({ layers, concurrency: workerCount, buildLog, registry }));
       await registry.flushAll();
       break;
     }
     case "parcels": {
-      const zenodoRecord = await applyZenodoSource(args);
+      const zenodoSource = await applyZenodoSource(args);
       await buildLog.reset("parcels", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
-      await buildLog.fields({ workers: workerCount, source: sourceDir(), "zenodo record": zenodoRecord });
+      await buildLog.fields({ workers: workerCount, source: sourceDir(), "zenodo record": zenodoSource?.recordId });
       await buildLog.timed("parcels", () => buildParcels({ layers, concurrency: workerCount, buildLog, registry }));
       await registry.flushAll();
       break;
     }
     case "imagecollections": {
-      const zenodoRecord = await applyZenodoSource(args);
+      const zenodoSource = await applyZenodoSource(args);
       await buildLog.reset("imagecollections", selectedLayerIds);
       const workerCount = concurrency();
-      await buildLog.fields({ workers: workerCount, force: force ? "yes" : "no", source: sourceDir(), "zenodo record": zenodoRecord });
+      await buildLog.fields({ workers: workerCount, force: force ? "yes" : "no", source: sourceDir(), "zenodo record": zenodoSource?.recordId });
       await buildLog.timed("imagecollections", () => buildImageCollections({ selectedIds: selectedLayerIds, concurrency: workerCount, buildLog, force }));
       break;
     }
     case "layers": {
-      const zenodoRecord = await applyZenodoSource(args);
+      const zenodoSource = await applyZenodoSource(args);
       await buildLog.reset("layers", selectedLayerIds);
       if (selectedLayerIds.length > 0) log.warn("layers publishes the full registry; ignoring layer id filter");
-      await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoRecord });
-      await buildLog.timed("layers", () => publishLayers({ buildLog, force }));
+      await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
+      await buildLog.timed("layers", () => publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft }));
       break;
     }
     case "source:sync": {

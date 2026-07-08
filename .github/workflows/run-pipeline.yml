@@ -143,22 +143,47 @@ jobs:
           path: |
             build/Build.log
             build/IIIFWarnings.log
+            build/DownloadWarnings.log
+            build/Sublayers.md
           if-no-files-found: ignore
           retention-days: 14
 
       - name: Surface pipeline warnings
         if: always()
+        env:
+          BUILD_FROM_DRAFT: ${{ inputs.build_from_draft }}
         run: |
           set -euo pipefail
+
+          if [ "$BUILD_FROM_DRAFT" = "true" ]; then
+            echo "::warning title=Draft Zenodo source::Sublayer downloads won't work — the Zenodo record has not been published."
+          fi
 
           if [ -s build/IIIFWarnings.log ]; then
             line_count="$(wc -l < build/IIIFWarnings.log | tr -d ' ')"
             echo "::warning title=IIIF warnings::Pipeline produced IIIF warnings ($line_count log lines). See the job summary or uploaded logs artifact."
           fi
 
+          if [ -s build/DownloadWarnings.log ]; then
+            download_line_count="$(wc -l < build/DownloadWarnings.log | tr -d ' ')"
+            echo "::warning title=Missing sublayer downloads::Pipeline could not resolve $download_line_count sublayer download(s) against the Zenodo record. See the job summary or uploaded logs artifact."
+          fi
+
           {
+            echo "## Sublayers built"
+            echo
+            if [ -s build/Sublayers.md ]; then
+              cat build/Sublayers.md
+            else
+              echo "_No sublayer summary produced._"
+            fi
+            echo
             echo "## Pipeline logs"
             echo
+            if [ "$BUILD_FROM_DRAFT" = "true" ]; then
+              echo "> **⚠️ Draft source: sublayer downloads won't work.** This build read \`Source.zip\` from an unpublished Zenodo draft. Draft files require authenticated access, so per-sublayer \`download\` links cannot be resolved to public URLs — end users will not be able to download data via those links until this record is published."
+              echo
+            fi
             if [ -s build/IIIFWarnings.log ]; then
               echo "### IIIF warnings"
               echo
@@ -176,6 +201,19 @@ jobs:
               echo "</details>"
             else
               echo "No IIIF warning log produced."
+            fi
+
+            echo
+            if [ -s build/DownloadWarnings.log ]; then
+              echo "### Missing sublayer downloads"
+              echo
+              echo "\`build/DownloadWarnings.log\` contains $download_line_count lines."
+              echo
+              echo '```text'
+              cat build/DownloadWarnings.log
+              echo '```'
+            else
+              echo "No missing sublayer downloads."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -255,15 +293,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Tag reflects source draft-ness (was Source.zip read from an unpublished
-          # draft?), independent of which branch the build was published to.
+          # Tag/title reflect source draft-ness (was Source.zip read from an
+          # unpublished draft?), independent of which branch the build was
+          # published to.
           TAG="zenodo-$ZENODO_RECORD"
-          TITLE_SUFFIX=""
+          TITLE="Zenodo record $ZENODO_RECORD"
           NOTES_SUFFIX=""
           if [ "$BUILD_FROM_DRAFT" = "true" ]; then
             TAG="${TAG}-draft"
-            TITLE_SUFFIX=" (draft source)"
-            NOTES_SUFFIX=" (unpublished draft)"
+            TITLE="Zenodo draft $ZENODO_RECORD"
+            NOTES_SUFFIX="
+
+          ⚠️ Built from an **unpublished Zenodo draft**. Sublayer download links will not work until this record is published — draft files require authenticated access, so they cannot be resolved to public download URLs."
+          fi
+
+          SUBLAYERS_NOTE=""
+          if [ -s build/Sublayers.md ]; then
+            SUBLAYERS_NOTE="
+
+          ## Sublayers built
+
+          $(cat build/Sublayers.md)"
           fi
 
           if [ "$PUBLISH_BRANCH" = "live" ]; then
@@ -272,13 +322,15 @@ jobs:
               gh release delete "$TAG" --yes --cleanup-tag
             fi
 
-            NOTES="Automated data-pipeline build from [Zenodo record $ZENODO_RECORD](https://zenodo.org/records/$ZENODO_RECORD)$NOTES_SUFFIX.
+            NOTES="Automated data-pipeline build from [Zenodo record $ZENODO_RECORD](https://zenodo.org/records/$ZENODO_RECORD).
 
-          Published to \`$PUBLISH_BRANCH\` @ \`$COMMIT_SHA\`."
+          Published to \`$PUBLISH_BRANCH\` @ \`$COMMIT_SHA\`.$NOTES_SUFFIX
+
+          ℹ️ The **Source code (zip)**/**(tar.gz)** assets below are GitHub's automatic archive of this tag and are, in this case, this build's data — the \`build/\` (and \`static/\`) output as of \`$COMMIT_SHA\`, not the pipeline source code.$SUBLAYERS_NOTE"
 
             gh release create "$TAG" \
               --target "$COMMIT_SHA" \
-              --title "Zenodo record $ZENODO_RECORD$TITLE_SUFFIX" \
+              --title "$TITLE" \
               --notes "$NOTES"
           else
             # Non-live publish target: traceable tag on the branch, no public Release.

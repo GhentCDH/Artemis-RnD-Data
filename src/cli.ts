@@ -13,6 +13,7 @@ import { BuildLog } from "./lib/build/buildLog";
 import { HashRegistry, buildForceEnabled } from "./lib/build/hashRegistry";
 import { BUILD_ZENODO_SOURCE_PATH, setSourceDir, sourceDir } from "./lib/paths";
 import { detectZenodoDraftStatus, listDraftFiles, syncZenodoSource } from "./lib/source/zenodo";
+import { assertValidSource } from "./lib/sourceValidation";
 import { writeJson } from "./lib/utils/files";
 
 const DEFAULT_ZENODO_RECORD = "21219182";
@@ -27,6 +28,7 @@ const COMMANDS = {
   about: "Publish about.json + attribution-logos image assets into build/",
   baselayer: "Publish Baselayer.geojson as build/baselayer.pmtiles",
   "source:sync": "Download and extract Source.zip from a Zenodo record into the local source mirror cache",
+  "source:validate": "Validate Source/ structure and layer config before building",
   "source:draft-files": "List the files Zenodo reports for an unpublished draft, given the draft's own record id (requires ZENODO_TOKEN)",
   help: "Show this help",
 } as const;
@@ -141,6 +143,16 @@ async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo> {
   return { recordId, isDraft, publishLive };
 }
 
+async function applyValidationSource(args: string[]): Promise<void> {
+  if (args.includes("--local-source")) {
+    log.ok(`using local source: ${sourceDir()}`);
+    return;
+  }
+  const recordId = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
+  const synced = await syncZenodoSource(recordId, { token: process.env.ZENODO_TOKEN });
+  setSourceDir(synced.sourceDir);
+}
+
 /**
  * Distinct from a crash: content is unresolved (missing sublayer downloads,
  * unknown logos, empty sublayers), not the pipeline itself broken. Exits with
@@ -171,7 +183,7 @@ function rasterEnabled(args: string[]): boolean {
 
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
-  const selectedLayerIds = layerArgs(args, isBuildCommand(command) && !args.includes("--local-source"));
+  const selectedLayerIds = layerArgs(args, (isBuildCommand(command) || command === "source:validate") && !args.includes("--local-source"));
   const raster = rasterEnabled(args);
   const force = args.includes("--force") || buildForceEnabled();
   const buildLog = new BuildLog();
@@ -181,6 +193,9 @@ async function main(): Promise<void> {
   switch (command) {
     case "build": {
       const zenodoSource = await applyZenodoSource(args);
+      log.step("Validating source");
+      const validation = await assertValidSource({ layerIds: selectedLayerIds });
+      log.ok(`source valid (${validation.layers} layer config(s), ${validation.logoReferences} logo reference(s))`);
       await buildLog.reset("build", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
@@ -268,6 +283,13 @@ async function main(): Promise<void> {
     case "source:sync": {
       const recordId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
       await syncZenodoSource(recordId, { token: process.env.ZENODO_TOKEN });
+      break;
+    }
+    case "source:validate": {
+      await applyValidationSource(args);
+      log.step("Validating source");
+      const validation = await assertValidSource({ layerIds: selectedLayerIds });
+      log.ok(`source valid (${validation.layers} layer config(s), ${validation.logoReferences} logo reference(s))`);
       break;
     }
     case "source:draft-files": {

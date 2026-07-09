@@ -81,6 +81,7 @@ bun run src/cli.ts <command> [zenodoRecordId] [layerId...] [flags]
 | `about` | Publish `about.json` and attribution-logo assets |
 | `baselayer` | Convert `Baselayer.geojson` to `build/baselayer.pmtiles` |
 | `source:sync <recordId>` | Download, verify, and extract `Source.zip` into `.build-cache/zenodo-source/` |
+| `source:validate` | Validate source structure, layer YAML, and attribution logo references before building |
 | `source:draft-files <draftId>` | List files in an unpublished Zenodo draft; requires `ZENODO_TOKEN` |
 | `help` | Print CLI help, flags, and environment variables |
 
@@ -102,6 +103,9 @@ operation, run the GitHub workflow with the target Zenodo record or draft id.
 ```bash
 # Full local build from an explicit source tree
 ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts build --local-source
+
+# Validate a local source tree before uploading Source.zip
+ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts source:validate --local-source
 
 # Build from local source while checking download filenames against a record
 ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts build --local-source --zenodo-record 21219182

@@ -51,6 +51,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Normalize Zenodo record input
+        env:
+          ZENODO_INPUT: ${{ inputs.zenodo_record }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$ZENODO_INPUT" =~ ^[0-9]+$ ]]; then
+            record_id="$ZENODO_INPUT"
+          elif [[ "$ZENODO_INPUT" =~ zenodo\.org/(records?|uploads?|deposit)/([0-9]+) ]]; then
+            record_id="${BASH_REMATCH[2]}"
+          elif [[ "$ZENODO_INPUT" =~ zenodo\.([0-9]+) ]]; then
+            record_id="${BASH_REMATCH[1]}"
+          else
+            echo "Invalid Zenodo record: enter a numeric ID, a zenodo.org record/draft URL, or a Zenodo DOI URL." >&2
+            exit 1
+          fi
+
+          echo "ZENODO_RECORD=$record_id" >> "$GITHUB_ENV"
+          echo "Using Zenodo record $record_id."
+
       - name: Pull pipeline container
         run: docker pull "$IMAGE"
 
@@ -419,7 +439,6 @@ jobs:
         if: ${{ success() && steps.publish.outputs.published == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ZENODO_RECORD: ${{ inputs.zenodo_record }}
           BUILD_FROM_DRAFT: ${{ steps.zenodo_source.outputs.is_draft }}
           DOWNLOAD_RESOLUTION: ${{ steps.zenodo_source.outputs.download_resolution }}
           DOWNLOAD_RECORD_ID: ${{ steps.zenodo_source.outputs.download_record_id }}

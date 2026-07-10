@@ -50,11 +50,11 @@ export function rasterWebpQuality(): number {
 }
 
 /**
- * Signature of every knob that affects the tiled raster or mask output. Folded
+ * Signature of every knob that affects the tiled raster output. Folded
  * into the per-layer raster signature so config changes invalidate cached
- * raster.pmtiles/masks.pmtiles even when the georeference inputs are unchanged.
+ * raster.pmtiles/masks.geojson even when the georeference inputs are unchanged.
  */
-export function rasterConfigSignature(vectorBuffer?: number): string {
+export function rasterConfigSignature(): string {
   return [
     rasterFetchWidth(),
     rasterTileSize(),
@@ -62,7 +62,6 @@ export function rasterConfigSignature(vectorBuffer?: number): string {
     rasterMinZoom(),
     rasterMaxZoom(),
     rasterWebpQuality(),
-    vectorBuffer ?? "",
   ].join(":");
 }
 

@@ -8,7 +8,7 @@ export type IiifBuildOptions = {
   layers: LayerRef[];
   concurrency: number;
   limit?: number;
-  /** Warp canvases into raster.pmtiles + masks.pmtiles (default on; --no-raster skips). */
+  /** Warp canvases into raster.pmtiles + masks.geojson (default on; --no-raster skips). */
   raster?: boolean;
   buildLog?: BuildLog;
   /** Committed source-hash registry; when set, unchanged stages are skipped. */
@@ -57,7 +57,7 @@ export type ProcessedCanvas = {
   warpSig?: string;
   /** Warped EPSG:3857 GeoTIFF path (raster stage only, kept until tiling). */
   geotiffPath?: string;
-  /** Canvas geo footprint for masks.pmtiles (raster stage only). */
+  /** Canvas geo footprint for masks.geojson (raster stage only). */
   maskFeature?: MaskFeature;
 };
 
@@ -95,7 +95,7 @@ export type IiifBuildResult = {
   spritesJsonPath?: string;
   spritesImagePath?: string;
   rasterPmtilesPath?: string;
-  masksPmtilesPath?: string;
+  masksGeojsonPath?: string;
 };
 
 export type MapAnalysis = {

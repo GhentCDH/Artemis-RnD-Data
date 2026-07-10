@@ -8,8 +8,7 @@ import { allmapsCanvasCacheDir, iiifCacheDir, layerOutDir, layerTmpDir, warpTifC
 import { ensureDir, fileExists, writeJson } from "../utils/files";
 import { contentHash } from "../utils/hash";
 import { buildRasterPmtiles } from "../pmtiles/raster";
-import { vectorTileBuffer } from "../pmtiles/vector";
-import { buildMasksPmtiles } from "../raster/masks";
+import { writeMasksGeojson } from "../raster/masks";
 import { rasterConfigSignature } from "../raster/config";
 import { buildXyzTiles } from "../raster/tiles";
 import { annotationTransformationType, warpCanvas, warpSignature } from "../raster/warp";
@@ -36,8 +35,8 @@ import {
 import { calculateSpriteSize, fetchSprite, spriteCachePath, writeSpriteArtifacts } from "./sprites";
 import type { IiifBuildOptions, IiifBuildResult, ProcessedCanvas, ProcessedManifest, SourceGroup } from "./types";
 
-/** Bump to invalidate cached raster.pmtiles when the assembly recipe changes. */
-const RASTER_RECIPE = 1;
+/** Bump to invalidate cached raster/mask outputs when the assembly recipe changes. */
+const RASTER_RECIPE = 2;
 
 function maskSimplificationStats(processed: ProcessedManifest[]): { masks: number; before: number; after: number } {
   const stats = { masks: 0, before: 0, after: 0 };
@@ -198,26 +197,26 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
   // Raster stage (gated): if no manifest or georeference annotation in this layer
   // changed, the whole warp + mosaic + tiling + masks step is skipped. Otherwise
   // each canvas is warped through the per-canvas GeoTIFF cache (so a single edited
-  // sheet only re-warps itself), then mosaicked into raster.pmtiles + masks.pmtiles.
+  // sheet only re-warps itself), then mosaicked into raster.pmtiles + masks.geojson.
   let warpedCanvases = 0;
   let rasterPmtilesPath: string | undefined;
-  let masksPmtilesPath: string | undefined;
+  let masksGeojsonPath: string | undefined;
   let masks = 0;
   if (options.raster) {
     const rasterTarget = join(outDir, "raster.pmtiles");
-    const masksTarget = join(outDir, "masks.pmtiles");
+    const masksTarget = join(outDir, "masks.geojson");
+    await rm(join(outDir, "masks.pmtiles"), { force: true });
     const rasterCanvases = processed.flatMap((manifest) => manifest.canvases.filter((canvas) => canvas.warpSig));
-    const maskTileBuffer = vectorTileBuffer();
     // Raster is fresh when both the canvas georeferences (canvasUnchanged, above)
     // and the raster tiling config (@raster) match the committed registry.
-    const rasterParamHash = contentHash("raster", RASTER_RECIPE, rasterConfigSignature(maskTileBuffer));
+    const rasterParamHash = contentHash("raster", RASTER_RECIPE, rasterConfigSignature());
     const rasterParamUnchanged = hashes?.categoryUnchanged("raster", [["@raster", rasterParamHash]]) ?? false;
-    const rasterFresh = !options.registry?.force && canvasUnchanged && rasterParamUnchanged && (await fileExists(rasterTarget));
+    const rasterFresh = !options.registry?.force && canvasUnchanged && rasterParamUnchanged && (await fileExists(rasterTarget)) && (await fileExists(masksTarget));
 
     if (rasterFresh) {
       log.ok(`${group.layer.id}: raster unchanged — skipped warp + tiling (${rasterCanvases.length} canvases)`);
       rasterPmtilesPath = rasterTarget;
-      masksPmtilesPath = (await fileExists(masksTarget)) ? masksTarget : undefined;
+      masksGeojsonPath = masksTarget;
     } else {
       const reason = !hadPrevBuild
         ? "no cache"
@@ -278,9 +277,9 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
           await buildRasterPmtiles({ inputTilesDir: tiles.xyzDir, outputPmtiles: rasterTarget, name: group.layer.id });
           rasterPmtilesPath = rasterTarget;
         }
-        log.info(`    ${group.layer.id}: building masks.pmtiles (${maskFeatures.length} features)`);
-        masks = await buildMasksPmtiles(maskFeatures, rasterWorkDir, masksTarget, maskTileBuffer);
-        if (masks > 0) masksPmtilesPath = masksTarget;
+        log.info(`    ${group.layer.id}: writing masks.geojson (${maskFeatures.length} features)`);
+        masks = await writeMasksGeojson(maskFeatures, masksTarget);
+        masksGeojsonPath = masksTarget;
       }
       await rm(rasterWorkDir, { recursive: true, force: true });
       if (rasterCanvases.length > 0 && !rasterPmtilesPath) {
@@ -313,7 +312,7 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
     spritesJsonPath: spritesMeta ? join(outDir, "sprites.json") : undefined,
     spritesImagePath: spritesMeta ? join(outDir, "sprites.webp") : undefined,
     rasterPmtilesPath,
-    masksPmtilesPath,
+    masksGeojsonPath,
   };
 
   await options.buildLog?.section(`IIIF: ${group.layer.id}`);
@@ -328,7 +327,7 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
     "mask points after": result.simplifiedMaskPointsAfter,
     "warped canvases": options.raster ? result.warpedCanvases : undefined,
     raster: result.rasterPmtilesPath,
-    masks: result.masksPmtilesPath ? `${result.masks} (${result.masksPmtilesPath})` : undefined,
+    masks: result.masksGeojsonPath ? `${result.masks} (${result.masksGeojsonPath})` : undefined,
     "warning details": result.warningLogPath,
     geomaps: result.geomapsPath,
   });

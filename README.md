@@ -67,7 +67,7 @@ GitHub Actions pipeline currently pulls `ghcr.io/ghentcdh/artemis-data:pipeline-
 ## Commands
 
 ```bash
-bun run src/cli.ts <command> [zenodoRecordId] [layerId...] [flags]
+bun run src/cli.ts <command> [zenodoRecordId|url] [layerId...] [flags]
 ```
 
 | Command | Purpose |
@@ -109,6 +109,7 @@ ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts source:validate --local-so
 
 # Build from local source while checking download filenames against a record
 ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts build --local-source --zenodo-record 21219182
+ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts build --local-source --zenodo-record https://zenodo.org/uploads/21256920
 
 # Fast metadata iteration: skip GDAL raster warp and mask GeoJSON
 ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts iiif PrimitiefKadaster --local-source --no-raster
@@ -132,11 +133,11 @@ ARTEMIS_SOURCE_DIR=/path/to/Source BUILD_FORCE=1 bun run src/cli.ts build --loca
 | `--no-raster` | Skip the GDAL raster warp in `build` and `iiif`; produces geomaps/search/sprites only |
 | `--force` | Bypass the incremental hash cache for cache-aware stages |
 | `--local-source` | Read from `ARTEMIS_SOURCE_DIR` instead of synced `.build-cache/zenodo-source/.../Source` |
-| `--zenodo-record <id>` | Use a specific Zenodo record or draft id |
+| `--zenodo-record <id\|url>` | Use a specific Zenodo record/draft id or full `zenodo.org/records/...` / `zenodo.org/uploads/...` URL |
 | `--publish-live` | For draft records, publish as live and resolve `download:` links against the latest published version |
 
-Positional numeric arguments are treated as the Zenodo record id. Other
-positional arguments are layer or collection ids, depending on the command.
+Positional numeric arguments and Zenodo URLs are treated as the Zenodo record id.
+Other positional arguments are layer or collection ids, depending on the command.
 
 ## Source Data
 

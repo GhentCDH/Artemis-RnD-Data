@@ -23,7 +23,7 @@ const ARTIFACT_KEYS: Record<string, string> = {
   "geomaps.json": "geomaps",
   "search.json": "search",
   "raster.pmtiles": "raster",
-  "masks.pmtiles": "masks",
+  "masks.geojson": "masks",
   "parcels.pmtiles": "parcels",
   "sprites.jpg": "sprites",
   "sprites.webp": "sprites",

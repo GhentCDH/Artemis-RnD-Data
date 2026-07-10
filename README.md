@@ -3,7 +3,7 @@
 TypeScript/Bun data pipeline for the Artemis viewer. It reads a versioned
 `Source.zip` from Zenodo, builds viewer-ready map data, and publishes a single
 `build/` tree containing layer metadata, IIIF georeferencing, raster PMTiles,
-mask and parcel PMTiles, toponym search, image collections, the baselayer, and
+mask GeoJSON, parcel PMTiles, toponym search, image collections, the baselayer, and
 the about-page configuration.
 
 The viewer consumes the published output from this repository; the raw authoring
@@ -73,7 +73,7 @@ bun run src/cli.ts <command> [zenodoRecordId] [layerId...] [flags]
 | Command | Purpose |
 | --- | --- |
 | `build [layerId...]` | Full build: IIIF, raster/masks, toponyms, parcels, image collections, baselayer, layers registry, about config |
-| `iiif [layerId...]` | Build geomaps, search, sprites, and by default raster/mask PMTiles |
+| `iiif [layerId...]` | Build geomaps, search, sprites, and by default raster PMTiles plus mask GeoJSON |
 | `toponyms [layerId...]` | Build `toponyms.json` search indexes |
 | `parcels [layerId...]` | Build parcel PMTiles |
 | `imagecollections [collectionId...]` | Build non-georeferenced image collection indexes and sprites |
@@ -110,7 +110,7 @@ ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts source:validate --local-so
 # Build from local source while checking download filenames against a record
 ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts build --local-source --zenodo-record 21219182
 
-# Fast metadata iteration: skip GDAL raster warp and mask PMTiles
+# Fast metadata iteration: skip GDAL raster warp and mask GeoJSON
 ARTEMIS_SOURCE_DIR=/path/to/Source bun run src/cli.ts iiif PrimitiefKadaster --local-source --no-raster
 ARTEMIS_SOURCE_DIR=/path/to/Source RASTER=0 bun run src/cli.ts iiif PrimitiefKadaster --local-source
 
@@ -166,7 +166,7 @@ Each layer YAML defines the layer label, timeframe, sublayers, source URLs,
 attribution, citation, and optional `download:` filenames. Sublayer `kind`
 controls what builds:
 
-- `iiif`: georeferenced maps, geomaps/search/sprites, raster PMTiles, mask PMTiles
+- `iiif`: georeferenced maps, geomaps/search/sprites, raster PMTiles, mask GeoJSON
 - `searchable`: toponym search from generated GeoJSON
 - `geojson`: generated vector data such as parcels
 - `wmts` / `wms`: remote passthrough rendered by the viewer; no local artifact
@@ -245,7 +245,7 @@ build/
         ├── toponyms.json
         ├── parcels.pmtiles
         ├── raster.pmtiles
-        └── masks.pmtiles
+        └── masks.geojson
 ```
 
 `build/.tmp/` is scratch space and is stripped before publishing deploy output.
@@ -258,7 +258,7 @@ Important artifacts:
 - `geomaps.json`: compact Allmaps-style georeferencing metadata.
 - `search.json`: manifest/canvas search and fly-to index.
 - `raster.pmtiles`: warped raster XYZ pyramid packed as PMTiles.
-- `masks.pmtiles`: per-canvas geospatial footprints.
+- `masks.geojson`: per-canvas geospatial footprints.
 - `parcels.pmtiles`: generated parcel vector tiles.
 - `toponyms.json`: toponym search index.
 - `about.json` and `attribution-logos/`: site/about metadata and shared logo assets.
@@ -287,7 +287,7 @@ invalidate raster hashes. Fetch and warp caches live under `.build-cache/`.
 | `IIIF_SPRITE_SIZE` | Long edge of generated sprites in pixels | `256` |
 | `IIIF_MASK_SIMPLIFY_EPSILON` | Resource-mask simplification epsilon in image pixels | `5.5` |
 | `PARCEL_SIMPLIFY_EPSILON` | Parcel simplification epsilon; pixels when `pixel_geometry` exists | `5` |
-| `VECTOR_TILE_BUFFER` | Tippecanoe buffer for parcel and mask PMTiles | `64` |
+| `VECTOR_TILE_BUFFER` | Tippecanoe buffer for parcel PMTiles | `64` |
 | `RASTER` | Set `0`/`false`/`no` to skip raster generation | on |
 | `RASTER_FETCH_WIDTH` | Capped IIIF warp-source width in pixels | `1024` |
 | `RASTER_TILE_SIZE` | Raster tile size in pixels | `512` |

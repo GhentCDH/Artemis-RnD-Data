@@ -203,7 +203,7 @@ async function pixelRingToGeo(gcpTif: string, transformArgs: string[], ring: Pos
  * projected through the same GCP transform). Because the source has no
  * transparent-black exterior, resampling never bleeds black into the map edge;
  * the transparent background is initialised white so gdal2tiles overviews don't
- * darken the border either. The cutline doubles as the masks.pmtiles feature.
+ * darken the border either. The cutline doubles as the masks.geojson feature.
  * Throws a concise Error on any fetch/warp failure; the caller logs the reason
  * and skips the canvas.
  */
@@ -303,7 +303,7 @@ export async function warpCanvas(params: {
     await rename(tmpGeotiffPath, geotiffPath);
 
     // Persist the mask sidecar next to the cached GeoTIFF so a later cache hit
-    // can rebuild masks.pmtiles without re-warping.
+    // can rebuild masks.geojson without re-warping.
     await writeFile(params.maskSidecarPath, JSON.stringify(maskFeature));
     return { geotiffPath, maskFeature };
   } finally {

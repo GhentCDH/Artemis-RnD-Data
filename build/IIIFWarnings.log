@@ -1,7 +1,7 @@
 IIIF Warnings Log
 =================
 
-Started  2026-07-08T14:23:09.267Z
+Started  2026-07-10T08:09:49.225Z
 Command  iiif warnings GereduceerdeKadaster PrimitiefKadaster PrimitiefKadaster-verzamelbladen
 IIIF Analysis: PrimitiefKadaster
 --------------------------------
@@ -94,14 +94,6 @@ IIIF Analysis: PrimitiefKadaster
 
 IIIF Analysis: PrimitiefKadaster
 --------------------------------
-  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000
-  manifest      Buggenhout - Sectie C
-  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000/canvas/550_0001_000_06002_000_0_0002
-  skipped       no
-  possible fix  clamped-mask-points:2, simplified-mask:258->228
-
-IIIF Analysis: PrimitiefKadaster
---------------------------------
   manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06003_000
   manifest      Buggenhout - Sectie D
   canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06003_000/canvas/550_0001_000_06003_000_0_0002
@@ -110,19 +102,27 @@ IIIF Analysis: PrimitiefKadaster
 
 IIIF Analysis: PrimitiefKadaster
 --------------------------------
-  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06059_000
-  manifest      Dendermonde - Sectie C
-  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06059_000/canvas/550_0001_000_06059_000_0_0001
-  skipped       no
-  possible fix  clamped-mask-points:1, simplified-mask:155->118
 
-IIIF Analysis: PrimitiefKadaster
---------------------------------
   manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06058_000
   manifest      Dendermonde - Sectie B
   canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06058_000/canvas/550_0001_000_06058_000_0_0001
   skipped       no
   possible fix  clamped-mask-points:1, simplified-mask:163->119
+IIIF Analysis: PrimitiefKadaster
+--------------------------------
+  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000
+  manifest      Buggenhout - Sectie C
+  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06002_000/canvas/550_0001_000_06002_000_0_0002
+  skipped       no
+  possible fix  clamped-mask-points:2, simplified-mask:258->228
+
+IIIF Analysis: PrimitiefKadaster
+--------------------------------
+  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06059_000
+  manifest      Dendermonde - Sectie C
+  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06059_000/canvas/550_0001_000_06059_000_0_0001
+  skipped       no
+  possible fix  clamped-mask-points:1, simplified-mask:155->118
 
 IIIF Analysis: PrimitiefKadaster
 --------------------------------
@@ -166,19 +166,19 @@ IIIF Analysis: PrimitiefKadaster
 
 IIIF Analysis: PrimitiefKadaster
 --------------------------------
-  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000
-  manifest      Grembergen - Sectie A
-  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0002
-  skipped       no
-  possible fix  clamped-mask-points:1, simplified-mask:216->156
-
-IIIF Analysis: PrimitiefKadaster
---------------------------------
   manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06078_000
   manifest      Oudegem - Sectie A
   canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06078_000/canvas/550_0001_000_06078_000_0_0001
   skipped       no
   warnings      gcpoutlier: GCP 13 with resource coordinates [-336,-1182] and geo coordinates [4.034162408306656,51.01336476119397] is possibly an outlier.
+
+IIIF Analysis: PrimitiefKadaster
+--------------------------------
+  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000
+  manifest      Grembergen - Sectie A
+  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06071_000/canvas/550_0001_000_06071_000_0_0002
+  skipped       no
+  possible fix  clamped-mask-points:1, simplified-mask:216->156
 
 IIIF Analysis: PrimitiefKadaster
 --------------------------------
@@ -309,6 +309,15 @@ IIIF Analysis: PrimitiefKadaster
   canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06790_000/canvas/550_0001_000_06790_000_0_0001
   skipped       no
   possible fix  clamped-mask-points:1, simplified-mask:174->124
+
+IIIF Warp Failures: PrimitiefKadaster
+-------------------------------------
+  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06078_000
+  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06078_000/canvas/550_0001_000_06078_000_0_0001
+  reason        gdalwarp: ERROR 1: Too many points in a segment: 1 or 2147483647
+  manifest url  https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06385_000
+  canvas        https://iiif.ghentcdh.ugent.be/iiif/manifests/primitief_kadaster:550_0001_000_06385_000/canvas/550_0001_000_06385_000_0_0001
+  reason        gdalwarp: ERROR 1: PROJ: webmerc: Invalid latitude
 
 IIIF Analysis: PrimitiefKadaster-verzamelbladen
 -----------------------------------------------

@@ -43,7 +43,7 @@ function concurrency(): number {
 }
 
 function help(): void {
-  console.log("artemis-data (v2)\n\nUsage:\n  bun run src/cli.ts <command> [zenodoRecordId] [layerId...] [--no-raster] [--force] [--local-source]\n\nCommands:");
+  console.log("artemis-data (v2)\n\nUsage:\n  bun run src/cli.ts <command> [zenodoRecordId|url] [layerId...] [--no-raster] [--force] [--local-source]\n\nCommands:");
   for (const [name, desc] of Object.entries(COMMANDS)) {
     console.log(`  ${name.padEnd(8)} ${desc}`);
   }
@@ -51,7 +51,7 @@ function help(): void {
   console.log("  --no-raster                Skip the raster warp (geomaps + sprites only) for build/iiif");
   console.log("  --force                    Rebuild everything, bypassing the incremental build cache");
   console.log("  --local-source             Read from local Source/ instead of the Zenodo mirror");
-  console.log("  --zenodo-record <id>       Explicit alternative to positional zenodoRecordId");
+  console.log("  --zenodo-record <id|url>   Explicit alternative to positional zenodoRecordId");
   console.log("  --publish-live             Force a draft build's downloads to resolve against its latest published version, for publishing to live anyway");
   console.log("\nEnvironment:");
   console.log("  ARTEMIS_SOURCE_DIR         Local source root used with --local-source (default: Source)");
@@ -79,6 +79,38 @@ function optionValue(args: string[], name: string): string | undefined {
   return index >= 0 ? args[index + 1] : undefined;
 }
 
+function zenodoRecordIdFromInput(value: string): string | undefined {
+  if (/^\d+$/.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (!url.hostname.endsWith("zenodo.org")) return undefined;
+    const segments = url.pathname.split("/").filter(Boolean);
+    for (const marker of ["records", "record", "uploads"]) {
+      const index = segments.indexOf(marker);
+      const id = index >= 0 ? segments[index + 1] : undefined;
+      if (id && /^\d+$/.test(id)) return id;
+    }
+    for (let index = segments.length - 1; index >= 0; index--) {
+      const segment = segments[index];
+      if (segment && /^\d+$/.test(segment)) return segment;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeZenodoRecordId(value: string): string {
+  const id = zenodoRecordIdFromInput(value);
+  if (!id) throw new Error(`Zenodo record must be a numeric id or zenodo.org URL, got '${value}'`);
+  return id;
+}
+
+function zenodoRecordArg(args: string[]): string {
+  const value = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
+  return normalizeZenodoRecordId(value);
+}
+
 function positionalZenodoRecord(args: string[]): string | undefined {
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
@@ -87,7 +119,8 @@ function positionalZenodoRecord(args: string[]): string | undefined {
       continue;
     }
     if (arg.startsWith("--")) continue;
-    if (/^\d+$/.test(arg)) return arg;
+    const recordId = zenodoRecordIdFromInput(arg);
+    if (recordId) return recordId;
     return undefined;
   }
   return undefined;
@@ -108,7 +141,7 @@ function layerArgs(args: string[], consumePositionalZenodoRecord = false): strin
     }
     if (arg.startsWith("--zenodo-record=")) continue;
     if (arg === "--local-source") continue;
-    if (consumePositionalZenodoRecord && !consumedPositionalRecord && /^\d+$/.test(arg)) {
+    if (consumePositionalZenodoRecord && !consumedPositionalRecord && zenodoRecordIdFromInput(arg)) {
       consumedPositionalRecord = true;
       continue;
     }
@@ -126,7 +159,7 @@ type ZenodoSourceInfo = { recordId: string; isDraft: boolean; publishLive: boole
  * so --local-source only skips the Source.zip sync, not that lookup.
  */
 async function applyZenodoSource(args: string[]): Promise<ZenodoSourceInfo> {
-  const recordId = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
+  const recordId = zenodoRecordArg(args);
   const publishLive = args.includes("--publish-live");
   let isDraft: boolean;
   if (args.includes("--local-source")) {
@@ -148,7 +181,7 @@ async function applyValidationSource(args: string[]): Promise<void> {
     log.ok(`using local source: ${sourceDir()}`);
     return;
   }
-  const recordId = optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? positionalZenodoRecord(args) ?? DEFAULT_ZENODO_RECORD;
+  const recordId = zenodoRecordArg(args);
   const synced = await syncZenodoSource(recordId, { token: process.env.ZENODO_TOKEN });
   setSourceDir(synced.sourceDir);
 }
@@ -281,7 +314,7 @@ async function main(): Promise<void> {
       break;
     }
     case "source:sync": {
-      const recordId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
+      const recordId = zenodoRecordArg(args);
       await syncZenodoSource(recordId, { token: process.env.ZENODO_TOKEN });
       break;
     }
@@ -293,7 +326,7 @@ async function main(): Promise<void> {
       break;
     }
     case "source:draft-files": {
-      const draftId = selectedLayerIds[0] ?? optionValue(args, "--zenodo-record") ?? process.env.ZENODO_RECORD ?? DEFAULT_ZENODO_RECORD;
+      const draftId = zenodoRecordArg(args);
       const token = process.env.ZENODO_TOKEN;
       if (!token) throw new Error("ZENODO_TOKEN is required to list draft files");
       const files = await listDraftFiles(draftId, token);

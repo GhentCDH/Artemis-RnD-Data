@@ -1,10 +1,12 @@
-| Collection | Items | navPlace | Paired coordinates |
-| --- | --- | --- | --- |
-| Jean Massart photographs (`Massart`) | 60 | 0 | 60 |
+| Collection | Items | Years | navPlace | Paired coordinates | Identifier issues |
+| --- | --- | --- | --- | --- | --- |
+| Jean Massart photographs (`Massart`) | 60 | 60/60 | 0 | 60 | 0 |
 
 ### Jean Massart photographs (`Massart`)
 
 No manifest carries the navPlace extension — all 60 rely on paired coordinates in `MassartCollection.json`.
+
+✓ Every manifest has one year and a unique identifier.
 
 <details><summary>Manifests with paired coordinates (60)</summary>
 

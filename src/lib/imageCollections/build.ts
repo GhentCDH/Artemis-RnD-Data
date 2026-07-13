@@ -19,8 +19,9 @@ import {
 } from "../paths";
 import { ensureDir, fileExists, writeJson } from "../utils/files";
 import { contentHash, stableStringify } from "../utils/hash";
+import { extractManifestMetadata } from "./manifestMetadata";
 
-const IMAGE_COLLECTION_RECIPE = 4;
+const IMAGE_COLLECTION_RECIPE = 5;
 
 type ImageCollectionConfig = {
   id: string;
@@ -45,10 +46,21 @@ type ImageCollectionSource = {
 export type ImageCollectionItem = {
   id: string;
   title: string;
+  year?: string;
+  date?: string;
   lat?: number;
   lon?: number;
   manifestUrl: string;
+  recordId?: string;
+  repId?: string;
   searchText: string;
+};
+
+type MetadataIssues = {
+  missingYears: string[];
+  ambiguousYears: Array<{ manifestUrl: string; years: string[] }>;
+  missingIdentifiers: string[];
+  duplicateIdentifiers: Array<{ identifier: string; manifestUrls: string[] }>;
 };
 
 export type ImageCollectionBuildResult = {
@@ -61,6 +73,7 @@ export type ImageCollectionBuildResult = {
   coordsAvailable: number;
   /** Manifest URLs grouped by where their coordinates came from (navPlace extension vs paired data in <Name>Collection.json). */
   coordinateSources: { navPlace: string[]; paired: string[] };
+  metadataIssues: MetadataIssues;
   indexPath: string;
   spritesImagePath?: string;
   spritesJsonPath?: string;
@@ -175,6 +188,7 @@ type CollectionRecord = {
   item: ImageCollectionItem;
   manifest: Record<string, unknown>;
   coordinateSource: "navPlace" | "paired";
+  yearCandidates: string[];
 };
 
 async function fetchCollectionRecords(source: ImageCollectionSource, concurrency: number): Promise<CollectionRecord[]> {
@@ -192,16 +206,23 @@ async function fetchCollectionRecords(source: ImageCollectionSource, concurrency
       missingNavPlace.push(entry.manifestUrl);
       return;
     }
+    const metadata = extractManifestMetadata(manifest, entry.manifestUrl);
+    const identifier = metadata.recordId ?? metadata.repId ?? metadata.manifestId;
     records[index] = {
       manifest,
       coordinateSource: entry.coordinates ? "paired" : "navPlace",
+      yearCandidates: metadata.yearCandidates,
       item: {
-        id: await generateId(entry.manifestUrl),
+        id: metadata.repId ?? await generateId(entry.manifestUrl),
         title,
+        year: metadata.year,
+        date: metadata.date,
         lat: roundCoordinate(coords.lat),
         lon: roundCoordinate(coords.lon),
         manifestUrl: entry.manifestUrl,
-        searchText: [title, config.label, config.provider].filter(Boolean).join(" "),
+        recordId: metadata.recordId,
+        repId: metadata.repId,
+        searchText: [title, metadata.year, identifier, config.label, config.provider].filter(Boolean).join(" "),
       },
     };
   });
@@ -211,6 +232,34 @@ async function fetchCollectionRecords(source: ImageCollectionSource, concurrency
     );
   }
   return records.filter((record): record is CollectionRecord => record !== undefined);
+}
+
+function metadataIssues(records: CollectionRecord[]): MetadataIssues {
+  const byIdentifier = new Map<string, string[]>();
+  const missingIdentifiers: string[] = [];
+  for (const record of records) {
+    const identifiers: Array<[string, string]> = [];
+    if (record.item.recordId) identifiers.push(["recordId", record.item.recordId]);
+    if (record.item.repId) identifiers.push(["repId", record.item.repId]);
+    if (identifiers.length === 0) {
+      missingIdentifiers.push(record.item.manifestUrl);
+      continue;
+    }
+    for (const [kind, identifier] of identifiers) {
+      const key = `${kind}: ${identifier}`;
+      byIdentifier.set(key, [...(byIdentifier.get(key) ?? []), record.item.manifestUrl]);
+    }
+  }
+  return {
+    missingYears: records.filter((record) => !record.item.year).map((record) => record.item.manifestUrl),
+    ambiguousYears: records
+      .filter((record) => record.yearCandidates.length > 1)
+      .map((record) => ({ manifestUrl: record.item.manifestUrl, years: record.yearCandidates })),
+    missingIdentifiers,
+    duplicateIdentifiers: [...byIdentifier]
+      .filter(([, urls]) => urls.length > 1)
+      .map(([identifier, manifestUrls]) => ({ identifier, manifestUrls })),
+  };
 }
 
 async function spriteSourceForRecord(collection: ImageCollectionConfig, record: CollectionRecord): Promise<SpriteSource | null> {
@@ -315,6 +364,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     navPlace: records.filter((record) => record.coordinateSource === "navPlace").map((record) => record.item.manifestUrl),
     paired: records.filter((record) => record.coordinateSource === "paired").map((record) => record.item.manifestUrl),
   };
+  const issues = metadataIssues(records);
   const hashEntries: Array<[string, string]> = [
     ["@config", contentHash(IMAGE_COLLECTION_RECIPE, config)],
     ["@entries", contentHash(entries)],
@@ -335,6 +385,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
       totalItems: items.length,
       coordsAvailable: items.filter((item) => item.lat !== undefined && item.lon !== undefined).length,
       coordinateSources,
+      metadataIssues: issues,
       indexPath,
       spritesImagePath,
       spritesJsonPath,
@@ -368,6 +419,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     totalItems: items.length,
     coordsAvailable: index.coordsAvailable,
     coordinateSources,
+    metadataIssues: issues,
     indexPath,
     spritesImagePath: sprites ? spritesImagePath : undefined,
     spritesJsonPath: sprites ? spritesJsonPath : undefined,
@@ -375,18 +427,18 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
 }
 
 /**
- * Human-readable report for the CI job summary / release notes: per collection,
- * how many manifests carry their own navPlace extension vs. how many rely on
- * paired coordinates in <Name>Collection.json, with the URL lists collapsed.
+ * Human-readable report for the CI job summary / release notes: coordinate
+ * provenance plus year and identifier coverage, with URL lists collapsed.
  */
 function buildImageCollectionsMarkdown(results: ImageCollectionBuildResult[]): string {
   if (results.length === 0) return "_No image collections found._\n";
   const lines: string[] = [
-    "| Collection | Items | navPlace | Paired coordinates |",
-    "| --- | --- | --- | --- |",
+    "| Collection | Items | Years | navPlace | Paired coordinates | Identifier issues |",
+    "| --- | --- | --- | --- | --- | --- |",
   ];
   for (const result of results) {
-    lines.push(`| ${result.label} (\`${result.id}\`) | ${result.totalItems} | ${result.coordinateSources.navPlace.length} | ${result.coordinateSources.paired.length} |`);
+    const identifierIssueCount = result.metadataIssues.missingIdentifiers.length + result.metadataIssues.duplicateIdentifiers.length;
+    lines.push(`| ${result.label} (\`${result.id}\`) | ${result.totalItems} | ${result.totalItems - result.metadataIssues.missingYears.length}/${result.totalItems} | ${result.coordinateSources.navPlace.length} | ${result.coordinateSources.paired.length} | ${identifierIssueCount} |`);
   }
   lines.push("");
   for (const result of results) {
@@ -397,6 +449,22 @@ function buildImageCollectionsMarkdown(results: ImageCollectionBuildResult[]): s
     else if (navPlace.length === 0) lines.push(`No manifest carries the navPlace extension — all ${paired.length} rely on paired coordinates in \`${result.id}Collection.json\`.`);
     else lines.push(`${navPlace.length} manifest(s) carry the navPlace extension; ${paired.length} rely on paired coordinates in \`${result.id}Collection.json\`.`);
     lines.push("");
+    const issueGroups: Array<[string, string[]]> = [
+      ["Manifests without a year", result.metadataIssues.missingYears],
+      ["Manifests without an identifier", result.metadataIssues.missingIdentifiers],
+      ["Manifests with ambiguous years", result.metadataIssues.ambiguousYears.map((issue) => `${issue.manifestUrl} — ${issue.years.join(", ")}`)],
+      ["Duplicate identifiers", result.metadataIssues.duplicateIdentifiers.map((issue) => `${issue.identifier} — ${issue.manifestUrls.join(", ")}`)],
+    ];
+    if (issueGroups.every(([, entries]) => entries.length === 0)) {
+      lines.push("✓ Every manifest has one year and a unique identifier.", "");
+    } else {
+      for (const [title, entries] of issueGroups) {
+        if (entries.length === 0) continue;
+        lines.push(`<details><summary>⚠ ${title} (${entries.length})</summary>`, "");
+        for (const entry of entries) lines.push(`- ${entry}`);
+        lines.push("", "</details>", "");
+      }
+    }
     for (const [title, urls] of [["Manifests with navPlace", navPlace], ["Manifests with paired coordinates", paired]] as const) {
       if (urls.length === 0) continue;
       lines.push(`<details><summary>${title} (${urls.length})</summary>`, "");
@@ -461,6 +529,9 @@ export async function buildImageCollections(options: BuildImageCollectionsOption
       "with coordinates": result.coordsAvailable,
       "navPlace coordinates": result.coordinateSources.navPlace.length,
       "paired coordinates": result.coordinateSources.paired.length,
+      "with year": result.totalItems - result.metadataIssues.missingYears.length,
+      "missing identifiers": result.metadataIssues.missingIdentifiers.length,
+      "duplicate identifiers": result.metadataIssues.duplicateIdentifiers.length,
       index: result.indexPath,
       sprites: result.spritesImagePath,
     });

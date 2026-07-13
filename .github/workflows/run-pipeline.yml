@@ -268,6 +268,7 @@ jobs:
             build/BuildIssues.log
             build/DownloadReminders.log
             build/Sublayers.md
+            build/ImageCollections.md
           if-no-files-found: ignore
           retention-days: 14
 
@@ -343,6 +344,15 @@ jobs:
               cat build/Sublayers.md
             else
               echo "_No sublayer summary produced._"
+            fi
+            echo
+
+            echo "## Image collections"
+            echo
+            if [ -s build/ImageCollections.md ]; then
+              cat build/ImageCollections.md
+            else
+              echo "_No image collection summary produced._"
             fi
             echo
 
@@ -476,6 +486,15 @@ jobs:
           $(cat build/Sublayers.md)"
           fi
 
+          IMAGE_COLLECTIONS_NOTE=""
+          if [ -s build/ImageCollections.md ]; then
+            IMAGE_COLLECTIONS_NOTE="
+
+          ## Image collections
+
+          $(cat build/ImageCollections.md)"
+          fi
+
           if [ "$PUBLISH_BRANCH" = "live" ]; then
             if gh release view "$TAG" >/dev/null 2>&1; then
               echo "Release $TAG already exists; replacing it to point at the latest build."
@@ -486,7 +505,7 @@ jobs:
 
           Published to \`$PUBLISH_BRANCH\` @ \`$COMMIT_SHA\`.$NOTES_SUFFIX
 
-          The **Source code (zip)**/**(tar.gz)** assets below are GitHub's automatic archive of this tag and are, in this case, this build's data — the \`build/\` (and \`static/\`) output as of \`$COMMIT_SHA\`, not the pipeline source code.$SUBLAYERS_NOTE"
+          The **Source code (zip)**/**(tar.gz)** assets below are GitHub's automatic archive of this tag and are, in this case, this build's data — the \`build/\` (and \`static/\`) output as of \`$COMMIT_SHA\`, not the pipeline source code.$SUBLAYERS_NOTE$IMAGE_COLLECTIONS_NOTE"
 
             gh release create "$TAG" \
               --target "$COMMIT_SHA" \

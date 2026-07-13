@@ -1,7 +1,7 @@
 Artemis Data Build Log
 ======================
 
-Started  2026-07-13T11:35:53.134Z
+Started  2026-07-13T14:34:58.109Z
 Command  build
   workers        8
   raster         yes
@@ -22,24 +22,24 @@ IIIF: GereduceerdeKadaster
   raster              build/Layers/GereduceerdeKadaster/raster.pmtiles
   masks               0 (build/Layers/GereduceerdeKadaster/masks.geojson)
   geomaps             build/Layers/GereduceerdeKadaster/geomaps.json
-  iiif:GereduceerdeKadaster duration  1m 11.2s
+  iiif:GereduceerdeKadaster duration  1m 8.3s
 
 IIIF: PrimitiefKadaster
 -----------------------
-  manifests           174
-  canvases            468
-  sprites             468
+  manifests           177
+  canvases            478
+  sprites             478
   analysis warnings   16
   analysis fixes      34
   simplified masks    33
   mask points before  5107
   mask points after   4046
-  warped canvases     466
+  warped canvases     476
   raster              build/Layers/PrimitiefKadaster/raster.pmtiles
-  masks               466 (build/Layers/PrimitiefKadaster/masks.geojson)
+  masks               476 (build/Layers/PrimitiefKadaster/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster/geomaps.json
-  iiif:PrimitiefKadaster duration  2m 45.4s
+  iiif:PrimitiefKadaster duration  3m 0.2s
 
 IIIF: PrimitiefKadaster-verzamelbladen
 --------------------------------------
@@ -56,30 +56,30 @@ IIIF: PrimitiefKadaster-verzamelbladen
   masks               0 (build/Layers/PrimitiefKadaster-verzamelbladen/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster-verzamelbladen/geomaps.json
-  iiif:PrimitiefKadaster-verzamelbladen duration  14.01s
+  iiif:PrimitiefKadaster-verzamelbladen duration  13.47s
 
 IIIF Summary
 ------------
   layers              3
-  manifests           308
-  canvases            727
-  sprites             727
+  manifests           311
+  canvases            737
+  sprites             737
   analysis warnings   16
   analysis fixes      35
   simplified masks    34
   mask points before  5555
   mask points after   4390
-  warped canvases     466
-  mask features       466
+  warped canvases     476
+  mask features       476
   warning details     build/IIIFWarnings.log
-  iiif duration  4m 12.5s
-  toponyms:Ferraris duration  151ms
+  iiif duration  4m 24.3s
+  toponyms:Ferraris duration  168ms
   toponyms:Frickx duration  0ms
   toponyms:GereduceerdeKadaster duration  1ms
   toponyms:NGI1873 duration  0ms
   toponyms:NGI1904 duration  0ms
   toponyms:Popp duration  0ms
-  toponyms:PrimitiefKadaster duration  50ms
+  toponyms:PrimitiefKadaster duration  65ms
   toponyms:Vandermaelen duration  0ms
   toponyms:Villaret duration  0ms
 
@@ -87,8 +87,8 @@ Toponyms Summary
 ----------------
   layers  3
   items   0
-  toponyms duration  204ms
-  parcels:PrimitiefKadaster-parcels duration  218ms
+  toponyms duration  237ms
+  parcels:PrimitiefKadaster-parcels duration  247ms
 
 Parcels Summary
 ---------------
@@ -97,8 +97,8 @@ Parcels Summary
   input points    0
   output points   0
   removed points  0
-  parcels duration  219ms
-  imagecollection:Massart duration  14.34s
+  parcels duration  250ms
+  imagecollection:Massart duration  4.75s
 
 Image Collection: Massart
 -------------------------
@@ -118,18 +118,18 @@ Image Collections Summary
   items             60
   with coordinates  60
   output            build/imagecollection.yaml
-  imagecollections duration  14.35s
+  imagecollections duration  4.76s
 
 Baselayer
 ---------
   input   .build-cache/zenodo-source/21295519/Source/Baselayer.geojson
   output  build/baselayer.pmtiles
-  baselayer duration  750ms
-  layers duration  881ms
+  baselayer duration  5.84s
+  layers duration  1.28s
 
 About
 -----
   logo images copied    6
   about logos resolved  6
   about.json published  yes
-  about duration  3ms
+  about duration  2ms

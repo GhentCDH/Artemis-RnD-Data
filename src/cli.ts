@@ -228,7 +228,7 @@ async function main(): Promise<void> {
       const zenodoSource = await applyZenodoSource(args);
       log.step("Validating source");
       const validation = await assertValidSource({ layerIds: selectedLayerIds });
-      log.ok(`source valid (${validation.layers} layer config(s), ${validation.logoReferences} logo reference(s))`);
+      log.ok(`source valid (${validation.layers} layer config(s), ${validation.imageCollections} image collection(s), ${validation.logoReferences} logo reference(s))`);
       await buildLog.reset("build", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
@@ -322,7 +322,7 @@ async function main(): Promise<void> {
       await applyValidationSource(args);
       log.step("Validating source");
       const validation = await assertValidSource({ layerIds: selectedLayerIds });
-      log.ok(`source valid (${validation.layers} layer config(s), ${validation.logoReferences} logo reference(s))`);
+      log.ok(`source valid (${validation.layers} layer config(s), ${validation.imageCollections} image collection(s), ${validation.logoReferences} logo reference(s))`);
       break;
     }
     case "source:draft-files": {

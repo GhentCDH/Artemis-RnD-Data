@@ -1,7 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import YAML from "yaml";
-import { aboutJsonPath, imageCollectionConfigPath, logosRegistryPath, sourceBaselayerPath, sourceDir, sourceLayersDir } from "./paths";
+import { aboutJsonPath, logosRegistryPath, sourceBaselayerPath, sourceDir, sourceImageCollectionsDir, sourceLayersDir } from "./paths";
 
 export type LayerConfig = {
   id: string;
@@ -13,6 +13,8 @@ export type LayerConfig = {
     kind?: string;
     description?: string;
     citation?: string;
+    /** Further-reading links shown with the sublayer: display label → URL. */
+    readingList?: Record<string, string>;
     attribution?: {
       logos?: string[];
     };
@@ -36,6 +38,7 @@ export type SourceValidationResult = {
   ok: boolean;
   issues: SourceValidationIssue[];
   layers: number;
+  imageCollections: number;
   logoReferences: number;
 };
 
@@ -126,6 +129,22 @@ function validateAttributionObject(value: unknown, file: string, basePath: strin
   }
 }
 
+/** Validates a link map (display label → http(s) URL), as used by sublayer readingList and about.json dataPipeline.links. */
+function validateLinkMap(value: unknown, file: string, basePath: string, issues: SourceValidationIssue[]): void {
+  if (value === undefined) return;
+  if (!isRecord(value)) {
+    issues.push(issue(file, basePath, "must be an object mapping link labels to URLs"));
+    return;
+  }
+  for (const [label, url] of Object.entries(value)) {
+    const path = `${basePath}["${label}"]`;
+    if (label.trim() === "") issues.push(issue(file, path, "link label must not be empty"));
+    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) {
+      issues.push(issue(file, path, "must map to an http(s) URL"));
+    }
+  }
+}
+
 function validateSublayers(value: unknown, file: string, issues: SourceValidationIssue[], logoReferences: LogoReference[]): void {
   if (value === undefined) return;
   if (!Array.isArray(value)) {
@@ -146,6 +165,7 @@ function validateSublayers(value: unknown, file: string, issues: SourceValidatio
     requireString(sublayer, "description", file, `${path}.description`, issues);
     requireString(sublayer, "citation", file, `${path}.citation`, issues);
     requireString(sublayer, "download", file, `${path}.download`, issues);
+    validateLinkMap(sublayer.readingList, file, `${path}.readingList`, issues);
     validateSourceObject(sublayer.source, file, `${path}.source`, issues);
     validateAttributionObject(sublayer.attribution, file, `${path}.attribution`, issues, logoReferences);
     if (typeof sublayer.id === "string") {
@@ -169,7 +189,7 @@ export function validateLayerConfig(value: unknown, file: string, expectedId?: s
 
 function assertLayerConfig(value: unknown, file: string): asserts value is LayerConfig {
   const issues = validateLayerConfig(value, file);
-  if (issues.length > 0) throw new SourceValidationError({ ok: false, issues, layers: 0, logoReferences: 0 });
+  if (issues.length > 0) throw new SourceValidationError({ ok: false, issues, layers: 0, imageCollections: 0, logoReferences: 0 });
 }
 
 export function parseLayerConfig(value: unknown, file: string): LayerConfig {
@@ -206,13 +226,85 @@ async function readLogoRegistry(issues: SourceValidationIssue[]): Promise<Set<st
   return files;
 }
 
+function validateCollectionEntries(parsed: unknown, file: string, issues: SourceValidationIssue[]): void {
+  if (!isRecord(parsed)) {
+    issues.push(issue(file, "", "must be a JSON object mapping manifest URLs to [lon, lat] or null"));
+    return;
+  }
+  for (const [manifestUrl, coordinates] of Object.entries(parsed)) {
+    if (!/^https?:\/\//i.test(manifestUrl)) {
+      issues.push(issue(file, manifestUrl, "key must be an http(s) IIIF manifest URL"));
+    }
+    if (coordinates === null) continue;
+    if (!Array.isArray(coordinates) || coordinates.length !== 2 || !coordinates.every((part) => typeof part === "number" && Number.isFinite(part))) {
+      issues.push(issue(file, manifestUrl, "must be null (manifest has navPlace) or a [lon, lat] pair"));
+      continue;
+    }
+    const [lon, lat] = coordinates as [number, number];
+    if (lon < -180 || lon > 180) issues.push(issue(file, manifestUrl, `longitude ${lon} out of range [-180, 180]`));
+    if (lat < -90 || lat > 90) issues.push(issue(file, manifestUrl, `latitude ${lat} out of range [-90, 90]`));
+  }
+}
+
+async function validateImageCollections(issues: SourceValidationIssue[], logoReferences: LogoReference[]): Promise<number> {
+  const root = sourceImageCollectionsDir();
+  if (!(await isDirectory(root))) {
+    issues.push(issue("imagecollections", "", `required directory is missing from ${sourceDir()}`));
+    return 0;
+  }
+  const entries = await readdir(root, { withFileTypes: true });
+  const dirs = entries
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
+
+  let count = 0;
+  for (const name of dirs) {
+    const ymlFile = `imagecollections/${name}/${name}.yml`;
+    const ymlPath = join(root, name, `${name}.yml`);
+    const yamlPath = join(root, name, `${name}.yaml`);
+    const configPath = (await isFile(ymlPath)) ? ymlPath : (await isFile(yamlPath)) ? yamlPath : undefined;
+    if (!configPath) {
+      issues.push(issue(ymlFile, "", "required image collection config file is missing"));
+    } else {
+      count++;
+      const configFile = configPath === ymlPath ? ymlFile : `imagecollections/${name}/${name}.yaml`;
+      const parsed = await parseYamlFile(configPath, configFile, issues);
+      if (parsed !== undefined) {
+        if (!isRecord(parsed)) {
+          issues.push(issue(configFile, "", "must be a YAML object"));
+        } else {
+          requireString(parsed, "id", configFile, "id", issues, true);
+          requireString(parsed, "label", configFile, "label", issues, true);
+          if (typeof parsed.id === "string" && parsed.id !== name) {
+            issues.push(issue(configFile, "id", `must match containing directory "${name}"`));
+          }
+          validateAttributionObject(parsed.attribution, configFile, "attribution", issues, logoReferences);
+        }
+      }
+    }
+
+    const dataFile = `imagecollections/${name}/${name}Collection.json`;
+    const dataPath = join(root, name, `${name}Collection.json`);
+    if (!(await isFile(dataPath))) {
+      issues.push(issue(dataFile, "", "required manifest list is missing"));
+      continue;
+    }
+    try {
+      validateCollectionEntries(JSON.parse(await readFile(dataPath, "utf-8")), dataFile, issues);
+    } catch (err) {
+      issues.push(issue(dataFile, "", err instanceof Error ? err.message : "could not parse JSON"));
+    }
+  }
+  return count;
+}
+
 export async function validateSource(options: { layerIds?: string[] } = {}): Promise<SourceValidationResult> {
   const issues: SourceValidationIssue[] = [];
   const logoReferences: LogoReference[] = [];
   const requiredFiles = [
     { path: aboutJsonPath(), file: "about.json" },
     { path: sourceBaselayerPath(), file: "Baselayer.geojson" },
-    { path: imageCollectionConfigPath(), file: "ImageCollectionConfig.yaml" },
   ];
   for (const required of requiredFiles) {
     if (!(await isFile(required.path))) issues.push(issue(required.file, "", `required file is missing from ${sourceDir()}`));
@@ -224,7 +316,16 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
 
   if (await isFile(aboutJsonPath())) {
     try {
-      JSON.parse(await readFile(aboutJsonPath(), "utf-8"));
+      const about = JSON.parse(await readFile(aboutJsonPath(), "utf-8")) as unknown;
+      const dataPipeline = isRecord(about) ? about.dataPipeline : undefined;
+      if (dataPipeline !== undefined) {
+        if (!isRecord(dataPipeline)) {
+          issues.push(issue("about.json", "dataPipeline", "must be an object"));
+        } else {
+          requireString(dataPipeline, "title", "about.json", "dataPipeline.title", issues);
+          validateLinkMap(dataPipeline.links, "about.json", "dataPipeline.links", issues);
+        }
+      }
     } catch (err) {
       issues.push(issue("about.json", "", err instanceof Error ? err.message : "could not parse JSON"));
     }
@@ -259,6 +360,8 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
     }
   }
 
+  const imageCollectionCount = await validateImageCollections(issues, logoReferences);
+
   const logoRegistry = await readLogoRegistry(issues);
   for (const ref of logoReferences) {
     if (!logoRegistry.has(ref.value)) {
@@ -266,7 +369,7 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
     }
   }
 
-  return { ok: issues.length === 0, issues, layers: layerCount, logoReferences: logoReferences.length };
+  return { ok: issues.length === 0, issues, layers: layerCount, imageCollections: imageCollectionCount, logoReferences: logoReferences.length };
 }
 
 export async function assertValidSource(options: { layerIds?: string[] } = {}): Promise<SourceValidationResult> {

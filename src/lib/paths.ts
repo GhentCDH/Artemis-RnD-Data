@@ -19,8 +19,8 @@ export const SOURCE_LAYERS_DIR = join(SOURCE_DIR, "layers");
 
 export const sourceLayersDir = () => join(sourceDir(), "layers");
 
-/** Non-georeferenced image collection build config. */
-export const imageCollectionConfigPath = () => join(sourceDir(), "ImageCollectionConfig.yaml");
+/** Non-georeferenced image collection source configs (one directory per collection, like layers/). */
+export const sourceImageCollectionsDir = () => join(sourceDir(), "imagecollections");
 
 /** Logo image assets + their registry (filename -> click-through URL). */
 export const sourceAttributionLogosDir = () => join(sourceDir(), "attribution-logos");
@@ -49,6 +49,9 @@ export const BUILD_BASELAYER_PMTILES_PATH = join(BUILD_DIR, "baselayer.pmtiles")
 
 /** Human-readable Markdown table of every sublayer + kind, for the CI job summary / release notes. */
 export const BUILD_SUBLAYERS_SUMMARY_PATH = join(BUILD_DIR, "Sublayers.md");
+
+/** Human-readable Markdown report of every image collection (navPlace vs paired coordinates), for the CI job summary / release notes. */
+export const BUILD_IMAGE_COLLECTIONS_SUMMARY_PATH = join(BUILD_DIR, "ImageCollections.md");
 
 /** Which Zenodo record this build synced from and whether it was a draft - read by CI to route the output branch/release. */
 export const BUILD_ZENODO_SOURCE_PATH = join(BUILD_DIR, "ZenodoSource.json");

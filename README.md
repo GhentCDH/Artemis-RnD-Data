@@ -152,10 +152,13 @@ Expected source shape:
 ```text
 Source/
 ├── about.json
-├── ImageCollectionConfig.yaml
 ├── Baselayer.geojson
 ├── attribution-logos/
 │   └── logos.yaml
+├── imagecollections/
+│   └── <CollectionId>/
+│       ├── <CollectionId>.yml
+│       └── <CollectionId>Collection.json
 └── layers/
     └── <LayerId>/
         ├── <LayerId>.yaml
@@ -164,8 +167,17 @@ Source/
 ```
 
 Each layer YAML defines the layer label, timeframe, sublayers, source URLs,
-attribution, citation, and optional `download:` filenames. Sublayer `kind`
-controls what builds:
+attribution, citation, and optional `download:` filenames. A sublayer may also
+carry an optional `readingList:` — further-reading links published with the
+sublayer, written as a map of display label → URL:
+
+```yaml
+readingList:
+  "De Ferrariskaart (KBR)": https://www.kbr.be/nl/de-ferrariskaart/
+  "Cartesius": https://www.cartesius.be/
+```
+
+Sublayer `kind` controls what builds:
 
 - `iiif`: georeferenced maps, geomaps/search/sprites, raster PMTiles, mask GeoJSON
 - `searchable`: toponym search from generated GeoJSON
@@ -174,6 +186,19 @@ controls what builds:
 
 `source.type` is usually `remote` for IIIF/WMTS/WMS endpoints and `generated`
 for data built from `rawInput` globs.
+
+Image collections (non-georeferenced photograph sets shown as located pins) are
+one folder per collection under `imagecollections/`, mirroring `layers/`:
+
+- `<CollectionId>.yml` (or `.yaml`): metadata only — `id` (must match the folder
+  name), `label`, and optional `provider`, `description`, `attribution`.
+- `<CollectionId>Collection.json`: a single JSON object mapping each IIIF
+  manifest URL to `null` (the manifest carries the navPlace extension, so
+  coordinates are read from it) or an explicit `[lon, lat]` pair for manifests
+  without navPlace.
+
+The build fetches each listed manifest directly — no catalog APIs or adapters —
+and keeps manifest titles exactly as published by the source collection.
 
 ## Zenodo Records
 
@@ -224,6 +249,7 @@ build/
 ├── BuildIssues.log
 ├── DownloadReminders.log
 ├── Sublayers.md
+├── ImageCollections.md
 ├── ZenodoSource.json
 ├── about.json
 ├── baselayer.pmtiles

@@ -1,7 +1,8 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Image } from "@allmaps/iiif-parser";
 import sharp from "sharp";
+import { runPool } from "../concurrency";
 import { iiifCacheDir } from "../paths";
 import { ensureDir, writeJson } from "../utils/files";
 import { spriteMaxSize, SPRITESHEET_MAX_WIDTH } from "./config";
@@ -79,7 +80,7 @@ export function packSprites(sprites: SpriteSource[]): { width: number; height: n
   return { width, height: cursorY + rowHeight, placements };
 }
 
-export async function writeSpriteArtifacts(layerId: string, outDir: string, spriteSources: SpriteSource[]): Promise<{ image: string; json: string; imageSize: [number, number]; count: number } | null> {
+export async function writeSpriteArtifacts(layerId: string, outDir: string, spriteSources: SpriteSource[], concurrency: number): Promise<{ image: string; json: string; dir: string; imageSize: [number, number]; count: number } | null> {
   if (spriteSources.length === 0) return null;
   const packed = packSprites(spriteSources);
   await sharp({
@@ -87,6 +88,16 @@ export async function writeSpriteArtifacts(layerId: string, outDir: string, spri
   }).composite(packed.placements.map((placement) => ({ input: placement.buffer, left: placement.x, top: placement.y })))
     .webp({ quality: 75 })
     .toFile(join(outDir, "sprites.webp"));
+
+  // Per-canvas twins of the sheet cells (sprites/<canvasAllmapsId>.webp), so the
+  // viewer can also fetch/upload one canvas's thumbnail without the whole atlas.
+  // The dir is rebuilt from scratch so canvases removed upstream leave no stale files.
+  const spritesDir = join(outDir, "sprites");
+  await rm(spritesDir, { recursive: true, force: true });
+  await ensureDir(spritesDir);
+  await runPool(packed.placements, concurrency, async (placement) => {
+    await sharp(placement.buffer).webp({ quality: 75 }).toFile(join(spritesDir, `${placement.canvasAllmapsId}.webp`));
+  });
 
   const spritesJson: Record<string, unknown> = {};
   for (const placement of packed.placements) {
@@ -98,10 +109,11 @@ export async function writeSpriteArtifacts(layerId: string, outDir: string, spri
       y: placement.y,
       width: placement.spriteWidth,
       height: placement.spriteHeight,
+      file: `Layers/${layerId}/sprites/${placement.canvasAllmapsId}.webp`,
     };
   }
   await writeJson(join(outDir, "sprites.json"), spritesJson, true);
-  return { image: `Layers/${layerId}/sprites.webp`, json: `Layers/${layerId}/sprites.json`, imageSize: [packed.width, packed.height], count: packed.placements.length };
+  return { image: `Layers/${layerId}/sprites.webp`, json: `Layers/${layerId}/sprites.json`, dir: `Layers/${layerId}/sprites`, imageSize: [packed.width, packed.height], count: packed.placements.length };
 }
 
 export function spriteCachePath(layerId: string, canvasAllmapsId: string, size: { width: number; height: number }): string {

@@ -186,7 +186,7 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
   await ensureDir(outDir);
   const spriteSources = processed.flatMap((manifest) => manifest.canvases.flatMap((canvas) => canvas.sprite ? [canvas.sprite] : []));
   log.info(`    ${group.layer.id}: packing ${spriteSources.length} sprites + geomaps`);
-  const spritesMeta = await writeSpriteArtifacts(group.layer.id, outDir, spriteSources);
+  const spritesMeta = await writeSpriteArtifacts(group.layer.id, outDir, spriteSources, options.concurrency);
   await writeJson(join(outDir, "geomaps.json"), buildCompactGeomaps(group.layer.id, processed), true);
   await writeJson(join(outDir, "search.json"), buildIiifSearchIndex(group.layer.id, group.layer.label, processed), true);
   const maskStats = maskSimplificationStats(processed);
@@ -311,6 +311,7 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
     searchPath: join(outDir, "search.json"),
     spritesJsonPath: spritesMeta ? join(outDir, "sprites.json") : undefined,
     spritesImagePath: spritesMeta ? join(outDir, "sprites.webp") : undefined,
+    spritesDirPath: spritesMeta ? join(outDir, "sprites") : undefined,
     rasterPmtilesPath,
     masksGeojsonPath,
   };

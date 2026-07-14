@@ -94,6 +94,8 @@ export type IiifBuildResult = {
   searchPath?: string;
   spritesJsonPath?: string;
   spritesImagePath?: string;
+  /** Directory of per-canvas sprite files (sprites/<canvasAllmapsId>.webp). */
+  spritesDirPath?: string;
   rasterPmtilesPath?: string;
   masksGeojsonPath?: string;
 };

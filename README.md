@@ -269,6 +269,8 @@ build/
         ├── hashes.txt
         ├── sprites.webp
         ├── sprites.json
+        ├── sprites/                # per-canvas twins of the sheet cells
+        │   └── <canvasAllmapsId>.webp
         ├── toponyms.json
         ├── parcels.pmtiles
         ├── raster.pmtiles

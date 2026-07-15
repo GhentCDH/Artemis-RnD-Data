@@ -29,8 +29,9 @@ export const logosRegistryPath = () => join(sourceAttributionLogosDir(), "logos.
 /** Site-level "about" config (title, blurb, team, project-level logos). */
 export const aboutJsonPath = () => join(sourceDir(), "about.json");
 
-/** Site-wide reference boundary layer (not tied to any single historical map layer). */
-export const sourceBaselayerPath = () => join(sourceDir(), "Baselayer.geojson");
+/** Site-wide reference layers (not tied to any single historical map layer). */
+export const sourceBaselayerWaterPath = () => join(sourceDir(), "Baselayer_Water.geojson");
+export const sourceBaselayerBorderPath = () => join(sourceDir(), "Baselayer_Border.geojson");
 
 /** Published build root. */
 export const BUILD_DIR = "build";

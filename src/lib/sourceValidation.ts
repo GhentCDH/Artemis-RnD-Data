@@ -1,7 +1,15 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import YAML from "yaml";
-import { aboutJsonPath, logosRegistryPath, sourceBaselayerPath, sourceDir, sourceImageCollectionsDir, sourceLayersDir } from "./paths";
+import {
+  aboutJsonPath,
+  logosRegistryPath,
+  sourceBaselayerBorderPath,
+  sourceBaselayerWaterPath,
+  sourceDir,
+  sourceImageCollectionsDir,
+  sourceLayersDir,
+} from "./paths";
 
 export type LayerConfig = {
   id: string;
@@ -304,7 +312,8 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
   const logoReferences: LogoReference[] = [];
   const requiredFiles = [
     { path: aboutJsonPath(), file: "about.json" },
-    { path: sourceBaselayerPath(), file: "Baselayer.geojson" },
+    { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.geojson" },
+    { path: sourceBaselayerBorderPath(), file: "Baselayer_Border.geojson" },
   ];
   for (const required of requiredFiles) {
     if (!(await isFile(required.path))) issues.push(issue(required.file, "", `required file is missing from ${sourceDir()}`));

@@ -1,7 +1,12 @@
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { buildVectorPmtiles, vectorTileBuffer } from "../pmtiles/vector";
-import { BUILD_BASELAYER_PMTILES_PATH, BUILD_TMP_DIR, sourceBaselayerPath } from "../paths";
+import {
+  BUILD_BASELAYER_PMTILES_PATH,
+  BUILD_TMP_DIR,
+  sourceBaselayerBorderPath,
+  sourceBaselayerWaterPath,
+} from "../paths";
 import { fileExists } from "../utils/files";
 import { log } from "../log";
 import type { BuildLog } from "../build/buildLog";
@@ -16,22 +21,28 @@ export type BaselayerBuildResult = {
 };
 
 /**
- * Publishes the site-wide reference boundary layer (`Baselayer.geojson`, not
- * tied to any single historical map) as vector tiles - a straight
- * geojson-to-pmtiles conversion, unlike parcels/masks there's no per-feature
- * normalization or simplification to do first.
+ * Publishes the site-wide water and border polygons as separate vector source
+ * layers in one archive. Keeping them separate lets the viewer independently
+ * control their color, opacity, and z-order.
  */
 export async function buildBaselayer(options: BuildBaselayerOptions = {}): Promise<BaselayerBuildResult> {
-  const inputPath = sourceBaselayerPath();
-  if (!(await fileExists(inputPath))) {
-    log.warn(`no Baselayer.geojson at ${inputPath}; skipping baselayer pmtiles`);
+  const waterPath = sourceBaselayerWaterPath();
+  const borderPath = sourceBaselayerBorderPath();
+  const missing = [];
+  if (!(await fileExists(waterPath))) missing.push(waterPath);
+  if (!(await fileExists(borderPath))) missing.push(borderPath);
+  if (missing.length > 0) {
+    log.warn(`missing baselayer input(s): ${missing.join(", ")}; skipping baselayer pmtiles`);
     return { published: false };
   }
 
   const tmpDir = join(BUILD_TMP_DIR, "baselayer");
   try {
     await buildVectorPmtiles({
-      inputGeojson: inputPath,
+      inputLayers: [
+        { name: "water", inputGeojson: waterPath },
+        { name: "border", inputGeojson: borderPath },
+      ],
       outputPmtiles: BUILD_BASELAYER_PMTILES_PATH,
       tmpDir,
       layerName: "baselayer",
@@ -45,7 +56,7 @@ export async function buildBaselayer(options: BuildBaselayerOptions = {}): Promi
 
   log.ok(`baselayer: published ${BUILD_BASELAYER_PMTILES_PATH}`);
   await options.buildLog?.section("Baselayer");
-  await options.buildLog?.fields({ input: inputPath, output: BUILD_BASELAYER_PMTILES_PATH });
+  await options.buildLog?.fields({ water: waterPath, border: borderPath, output: BUILD_BASELAYER_PMTILES_PATH });
 
   return { published: true, pmtilesPath: BUILD_BASELAYER_PMTILES_PATH };
 }

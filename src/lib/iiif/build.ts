@@ -205,7 +205,7 @@ async function buildLayerIiif(group: SourceGroup, options: IiifBuildOptions, war
   if (options.raster) {
     const rasterTarget = join(outDir, "raster.pmtiles");
     const masksTarget = join(outDir, "masks.geojson");
-    await rm(join(outDir, "masks.pmtiles"), { force: true });
+    // (The retired masks.pmtiles is now swept by pruneStaleLayerOutputs in the layers step.)
     const rasterCanvases = processed.flatMap((manifest) => manifest.canvases.filter((canvas) => canvas.warpSig));
     // Raster is fresh when both the canvas georeferences (canvasUnchanged, above)
     // and the raster tiling config (@raster) match the committed registry.

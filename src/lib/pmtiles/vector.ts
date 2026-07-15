@@ -4,7 +4,8 @@ import { ensureDir } from "../utils/files";
 import { runCommand } from "../utils/run";
 
 export type VectorPmtilesOptions = {
-  inputGeojson: string;
+  inputGeojson?: string;
+  inputLayers?: Array<{ name: string; inputGeojson: string }>;
   outputPmtiles: string;
   tmpDir: string;
   layerName: string;
@@ -30,6 +31,13 @@ export async function buildVectorPmtiles(options: VectorPmtilesOptions): Promise
   await rm(mbtilesPath, { force: true });
   await rm(options.outputPmtiles, { force: true });
 
+  const inputs = options.inputLayers?.length
+    ? options.inputLayers.flatMap(({ name, inputGeojson }) => ["--named-layer", `${name}:${inputGeojson}`])
+    : options.inputGeojson
+      ? ["--layer", options.layerName, options.inputGeojson]
+      : [];
+  if (inputs.length === 0) throw new Error("buildVectorPmtiles requires inputGeojson or inputLayers");
+
   await runCommand("tippecanoe", [
     "--force",
     "--no-tile-compression",
@@ -39,11 +47,9 @@ export async function buildVectorPmtiles(options: VectorPmtilesOptions): Promise
     String(maxZoom),
     "--buffer",
     String(buffer),
-    "--layer",
-    options.layerName,
     "--output",
     mbtilesPath,
-    options.inputGeojson,
+    ...inputs,
   ]);
 
   await runCommand("pmtiles", ["convert", mbtilesPath, options.outputPmtiles]);

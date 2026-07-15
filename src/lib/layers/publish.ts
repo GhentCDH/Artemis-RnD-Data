@@ -1,8 +1,8 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import YAML from "yaml";
-import { discoverLayers } from "./discovery";
-import { BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir, logosRegistryPath } from "../paths";
+import { discoverLayers, type LayerRef } from "./discovery";
+import { BUILD_LAYERS_DIR, BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir, logosRegistryPath } from "../paths";
 import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
 import { log } from "../log";
@@ -30,6 +30,32 @@ const ARTIFACT_KEYS: Record<string, string> = {
   "sprites.json": "spritesIndex",
   "toponyms.json": "toponyms",
 };
+
+/**
+ * The output filename(s) each artifact key *currently* produces — the allow-list
+ * `pruneStaleLayerOutputs` uses to decide what may stay in a layer's output dir.
+ * Deliberately narrower than ARTIFACT_KEYS: that map recognizes legacy names too
+ * (e.g. a pre-webp `sprites.jpg`) so old builds still register, but those legacy
+ * names are absent here so the pruner cleans them up. `sprites` also owns the
+ * per-canvas `sprites/` directory alongside the shared sheet.
+ */
+const ARTIFACT_KEY_FILES: Record<string, string[]> = {
+  geomaps: ["geomaps.json"],
+  search: ["search.json"],
+  raster: ["raster.pmtiles"],
+  masks: ["masks.geojson"],
+  parcels: ["parcels.pmtiles"],
+  sprites: ["sprites.webp", "sprites"],
+  spritesIndex: ["sprites.json"],
+  toponyms: ["toponyms.json"],
+};
+
+/**
+ * Files that legitimately live in a layer output dir but aren't published
+ * artifacts, so the pruner must never remove them. `hashes.txt` is the committed
+ * incremental-build state; deleting it would force a full rebuild of the layer.
+ */
+const PRESERVED_LAYER_FILES = new Set(["hashes.txt"]);
 
 export type PublishLayersOptions = {
   buildLog?: BuildLog;
@@ -64,6 +90,10 @@ export type PublishLayersResult = {
   missingDownloads: MissingDownload[];
   emptySublayers: EmptySublayer[];
   sublayersWithoutDownload: SublayerWithoutDownload[];
+  /** Layer output dirs deleted because their layer is no longer in the source config. */
+  prunedLayers: string[];
+  /** Individual stale files (`<dir>/<file>`) deleted from surviving layer dirs. */
+  prunedFiles: string[];
   outputPath: string;
   cached?: boolean;
   /**
@@ -179,6 +209,71 @@ async function scanArtifacts(layerId: string): Promise<Record<string, string>> {
     if (key) artifacts[key] = `Layers/${layerId}/${name}`;
   }
   return artifacts;
+}
+
+/**
+ * The filenames each output dir under build/Layers/ may legitimately contain,
+ * derived purely from the current source config (which layers/sublayers exist
+ * and what each kind produces). Keyed by output dir id — the layer id, or a
+ * verzamelbladen split's own id, since a split publishes from its own dir. A
+ * configured layer that currently produces nothing still gets an (empty) entry
+ * so its dir — and its `hashes.txt` build state — is kept rather than pruned.
+ */
+export function expectedFilesByOutputDir(refs: LayerRef[]): Map<string, Set<string>> {
+  const expected = new Map<string, Set<string>>();
+  for (const ref of refs) {
+    const config = structuredClone(ref.config) as MutableLayer;
+    injectVerzamelbladSplits(ref.id, config);
+    if (!expected.has(ref.id)) expected.set(ref.id, new Set());
+    for (const sublayer of config.sublayers ?? []) {
+      const outputId = sublayer.id && VERZAMELBLAD_SPLIT_IDS.has(sublayer.id) ? sublayer.id : ref.id;
+      const allowed = expected.get(outputId) ?? new Set<string>();
+      for (const key of ownedArtifactKeys(sublayer)) {
+        for (const file of ARTIFACT_KEY_FILES[key] ?? []) allowed.add(file);
+      }
+      expected.set(outputId, allowed);
+    }
+  }
+  return expected;
+}
+
+/**
+ * Deletes anything under build/Layers/ the current source config no longer
+ * produces: a whole dir when its layer was removed from Source/, and individual
+ * stale files inside a surviving layer (an artifact whose sublayer/source was
+ * removed, a renamed/reformatted output like a pre-webp `sprites.jpg`, or the
+ * long-retired `masks.pmtiles`). The pipeline restores prior outputs from the
+ * build-state branch and never overwrites what it no longer emits, so without
+ * this pass removed data would keep shipping to `live` indefinitely — and
+ * `scanArtifacts` would even re-register a leftover file into `layers.yaml`.
+ *
+ * Safe on partial (layerId-filtered) builds: `expectedFilesByDir` is always
+ * built from the *full* config (publishLayers calls `discoverLayers()` with no
+ * filter), so an unselected layer is recognized and kept, never mistaken for a
+ * removed one. Run before scanning so `layers.yaml` never references a file this
+ * pass just deleted.
+ */
+export async function pruneStaleLayerOutputs(expectedFilesByDir: Map<string, Set<string>>): Promise<{ removedDirs: string[]; removedFiles: string[] }> {
+  const removedDirs: string[] = [];
+  const removedFiles: string[] = [];
+  const entries = await readdir(BUILD_LAYERS_DIR, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue; // build/Layers/ holds one dir per layer; leave stray root files alone
+    const dirPath = join(BUILD_LAYERS_DIR, entry.name);
+    const allowed = expectedFilesByDir.get(entry.name);
+    if (!allowed) {
+      await rm(dirPath, { recursive: true, force: true });
+      removedDirs.push(entry.name);
+      continue;
+    }
+    const contents = await readdir(dirPath, { withFileTypes: true });
+    for (const item of contents) {
+      if (PRESERVED_LAYER_FILES.has(item.name) || allowed.has(item.name)) continue;
+      await rm(join(dirPath, item.name), { recursive: true, force: true });
+      removedFiles.push(`${entry.name}/${item.name}`);
+    }
+  }
+  return { removedDirs, removedFiles };
 }
 
 /** Replaces each sublayer's `logos: [filename]` with `[{ file, href }]` in place. */
@@ -317,6 +412,17 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   const emptySublayers: EmptySublayer[] = [];
   const sublayersWithoutDownload: SublayerWithoutDownload[] = [];
 
+  // Drop outputs the current config no longer produces (removed layers, retired
+  // artifacts) before scanning, so the artifacts recorded below — and the files
+  // published to `live` — reflect exactly what this config builds. Runs even on
+  // an unchanged/cached publish (below) so pre-existing stale files still clear.
+  const pruned = await pruneStaleLayerOutputs(expectedFilesByOutputDir(refs));
+  if (pruned.removedDirs.length > 0 || pruned.removedFiles.length > 0) {
+    log.info(`layers: pruned ${pruned.removedDirs.length} stale layer dir(s), ${pruned.removedFiles.length} stale file(s) from ${BUILD_LAYERS_DIR}`);
+    for (const dir of pruned.removedDirs) log.info(`  - removed ${dir}/ (layer no longer in source config)`);
+    for (const file of pruned.removedFiles) log.info(`  - removed ${file} (no longer produced)`);
+  }
+
   const layers = await Promise.all(
     refs.map(async (ref) => {
       const config = structuredClone(ref.config) as MutableLayer;
@@ -376,6 +482,8 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
           missingDownloads,
           emptySublayers,
           sublayersWithoutDownload,
+          prunedLayers: pruned.removedDirs,
+          prunedFiles: pruned.removedFiles,
           outputPath: BUILD_LAYERS_YAML_PATH,
           cached: true,
           downloadResolution,
@@ -410,6 +518,8 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     missingDownloads,
     emptySublayers,
     sublayersWithoutDownload,
+    prunedLayers: pruned.removedDirs,
+    prunedFiles: pruned.removedFiles,
     outputPath: BUILD_LAYERS_YAML_PATH,
     downloadResolution,
     downloadRecordId,
@@ -444,6 +554,8 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     "missing downloads": missingDownloads.length > 0 ? missingDownloads.map((m) => m.file).join(", ") : undefined,
     "empty sublayers": emptySublayers.length > 0 ? emptySublayers.map((s) => s.sublayerId).join(", ") : undefined,
     "sublayers without download": sublayersWithoutDownload.length > 0 ? sublayersWithoutDownload.map((s) => s.sublayerId).join(", ") : undefined,
+    "pruned layers": pruned.removedDirs.length > 0 ? pruned.removedDirs.join(", ") : undefined,
+    "pruned files": pruned.removedFiles.length > 0 ? pruned.removedFiles.join(", ") : undefined,
     "build issues": issues.length > 0 ? `${issues.length} — see ${BUILD_ISSUES_LOG_PATH}` : undefined,
     output: BUILD_LAYERS_YAML_PATH,
   });

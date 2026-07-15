@@ -79,7 +79,7 @@ bun run src/cli.ts <command> [zenodoRecordId|url] [layerId...] [flags]
 | `imagecollections [collectionId...]` | Build non-georeferenced image collection indexes and sprites |
 | `layers` | Publish the full merged `build/layers.yaml` registry |
 | `about` | Publish `about.json` and attribution-logo assets |
-| `baselayer` | Convert `Baselayer.geojson` to `build/baselayer.pmtiles` |
+| `baselayer` | Convert `Baselayer_Water.geojson` and `Baselayer_Border.geojson` to separate source layers in `build/baselayer.pmtiles` |
 | `source:sync <recordId>` | Download, verify, and extract `Source.zip` into `.build-cache/zenodo-source/` |
 | `source:validate` | Validate source structure, layer YAML, and attribution logo references before building |
 | `source:draft-files <draftId>` | List files in an unpublished Zenodo draft; requires `ZENODO_TOKEN` |
@@ -152,7 +152,8 @@ Expected source shape:
 ```text
 Source/
 ├── about.json
-├── Baselayer.geojson
+├── Baselayer_Water.geojson
+├── Baselayer_Border.geojson
 ├── attribution-logos/
 │   └── logos.yaml
 ├── imagecollections/
@@ -302,6 +303,14 @@ PMTiles. It runs by default for `build` and `iiif`; use `--no-raster` or
 Incremental rebuild state is stored in each layer's `build/Layers/<LayerId>/hashes.txt`.
 Partial runs preserve unrelated hash categories, so a `parcels` run does not
 invalidate raster hashes. Fetch and warp caches live under `.build-cache/`.
+
+Because the pipeline restores prior outputs from the build-state branch and only
+overwrites what it re-emits, the `layers` step (which always runs in a full
+`build`) prunes `build/Layers/` to match the current source config: it deletes
+the output dir of any layer removed from `Source/`, and any stale file a
+surviving layer no longer produces (a dropped artifact, a renamed/reformatted
+output). Pruning is config-derived, so it is safe on partial (layer-filtered)
+builds — unselected layers are recognized and kept.
 
 ## Environment
 

@@ -1,13 +1,13 @@
 Artemis Data Build Log
 ======================
 
-Started  2026-07-10T08:09:46.361Z
+Started  2026-07-15T10:38:10.103Z
 Command  build
   workers        8
   raster         yes
   force          no
-  source         .build-cache/zenodo-source/21256920/Source
-  zenodo record  21256920
+  source         .build-cache/zenodo-source/21295519/Source
+  zenodo record  21295519
 IIIF: GereduceerdeKadaster
 --------------------------
   manifests           103
@@ -18,28 +18,28 @@ IIIF: GereduceerdeKadaster
   simplified masks    0
   mask points before  0
   mask points after   0
-  warped canvases     222
+  warped canvases     0
   raster              build/Layers/GereduceerdeKadaster/raster.pmtiles
-  masks               222 (build/Layers/GereduceerdeKadaster/masks.geojson)
+  masks               0 (build/Layers/GereduceerdeKadaster/masks.geojson)
   geomaps             build/Layers/GereduceerdeKadaster/geomaps.json
-  iiif:GereduceerdeKadaster duration  5m 3.5s
+  iiif:GereduceerdeKadaster duration  1m 41.2s
 
 IIIF: PrimitiefKadaster
 -----------------------
-  manifests           169
-  canvases            457
-  sprites             457
+  manifests           185
+  canvases            491
+  sprites             491
   analysis warnings   16
-  analysis fixes      33
-  simplified masks    32
-  mask points before  4997
-  mask points after   3955
-  warped canvases     455
+  analysis fixes      34
+  simplified masks    33
+  mask points before  5107
+  mask points after   4046
+  warped canvases     489
   raster              build/Layers/PrimitiefKadaster/raster.pmtiles
-  masks               455 (build/Layers/PrimitiefKadaster/masks.geojson)
+  masks               489 (build/Layers/PrimitiefKadaster/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster/geomaps.json
-  iiif:PrimitiefKadaster duration  2m 46.2s
+  iiif:PrimitiefKadaster duration  3m 34.3s
 
 IIIF: PrimitiefKadaster-verzamelbladen
 --------------------------------------
@@ -51,35 +51,35 @@ IIIF: PrimitiefKadaster-verzamelbladen
   simplified masks    1
   mask points before  448
   mask points after   344
-  warped canvases     37
+  warped canvases     0
   raster              build/Layers/PrimitiefKadaster-verzamelbladen/raster.pmtiles
-  masks               37 (build/Layers/PrimitiefKadaster-verzamelbladen/masks.geojson)
+  masks               0 (build/Layers/PrimitiefKadaster-verzamelbladen/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster-verzamelbladen/geomaps.json
-  iiif:PrimitiefKadaster-verzamelbladen duration  1m 14.1s
+  iiif:PrimitiefKadaster-verzamelbladen duration  19.47s
 
 IIIF Summary
 ------------
   layers              3
-  manifests           303
-  canvases            716
-  sprites             716
+  manifests           319
+  canvases            750
+  sprites             750
   analysis warnings   16
-  analysis fixes      34
-  simplified masks    33
-  mask points before  5445
-  mask points after   4299
-  warped canvases     714
-  mask features       714
+  analysis fixes      35
+  simplified masks    34
+  mask points before  5555
+  mask points after   4390
+  warped canvases     489
+  mask features       489
   warning details     build/IIIFWarnings.log
-  iiif duration  9m 6.6s
-  toponyms:Ferraris duration  172ms
+  iiif duration  5m 37.2s
+  toponyms:Ferraris duration  178ms
   toponyms:Frickx duration  0ms
-  toponyms:GereduceerdeKadaster duration  2ms
+  toponyms:GereduceerdeKadaster duration  6ms
   toponyms:NGI1873 duration  0ms
   toponyms:NGI1904 duration  0ms
   toponyms:Popp duration  0ms
-  toponyms:PrimitiefKadaster duration  66ms
+  toponyms:PrimitiefKadaster duration  60ms
   toponyms:Vandermaelen duration  0ms
   toponyms:Villaret duration  0ms
 
@@ -87,8 +87,8 @@ Toponyms Summary
 ----------------
   layers  3
   items   0
-  toponyms duration  242ms
-  parcels:PrimitiefKadaster-parcels duration  254ms
+  toponyms duration  248ms
+  parcels:PrimitiefKadaster-parcels duration  284ms
 
 Parcels Summary
 ---------------
@@ -97,15 +97,20 @@ Parcels Summary
   input points    0
   output points   0
   removed points  0
-  parcels duration  262ms
-  imagecollection:massart duration  37.15s
+  parcels duration  285ms
+  imagecollection:Massart duration  7.06s
 
-Image Collection: massart
+Image Collection: Massart
 -------------------------
-  items             60
-  with coordinates  60
-  index             build/Image collections/massart/massart_index.json
-  sprites           build/Image collections/massart/massart_sprites.webp
+  items                  60
+  with coordinates       60
+  navPlace coordinates   0
+  paired coordinates     60
+  with year              60
+  missing identifiers    0
+  duplicate identifiers  0
+  index                  build/Image collections/Massart/Massart_index.json
+  sprites                build/Image collections/Massart/Massart_sprites.webp
 
 Image Collections Summary
 -------------------------
@@ -113,13 +118,14 @@ Image Collections Summary
   items             60
   with coordinates  60
   output            build/imagecollection.yaml
-  imagecollections duration  37.16s
+  imagecollections duration  7.06s
 
 Baselayer
 ---------
-  input   .build-cache/zenodo-source/21256920/Source/Baselayer.geojson
+  water   .build-cache/zenodo-source/21295519/Source/Baselayer_Water.geojson
+  border  .build-cache/zenodo-source/21295519/Source/Baselayer_Border.geojson
   output  build/baselayer.pmtiles
-  baselayer duration  932ms
+  baselayer duration  6.64s
 
 Layers
 ------
@@ -127,9 +133,9 @@ Layers
   sublayers                   16
   logos resolved              10
   downloads resolved          0
-  sublayers without download  GereduceerdeKadaster-iiif, PrimitiefKadaster-iiif, GereduceerdeKadaster-toponyms, Ferraris-toponyms, PrimitiefKadaster-toponyms, PrimitiefKadaster-verzamelbladen
+  sublayers without download  PrimitiefKadaster-verzamelbladen
   output                      build/layers.yaml
-  layers duration  59ms
+  layers duration  55ms
 
 About
 -----

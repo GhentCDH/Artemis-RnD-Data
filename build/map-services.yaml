@@ -1,0 +1,27 @@
+basemaps:
+  - id: openstreetmap
+    shortLabel: OSM
+    longLabel: OpenStreetMap
+    url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+    attribution: © OpenStreetMap contributors
+
+overlays:
+  - id: recent-flooded-areas
+    shortLabel: Recente overstromingen
+    longLabel: Recent overstroomde gebieden
+    url: https://geo.api.vlaanderen.be/VMM/wms?layers=RecOvstrGeb
+
+  - id: surface-water-bodies
+    shortLabel: Oppervlaktewater
+    longLabel: Oppervlaktewaterlichamen en hun afstroomgebieden
+    url: https://geo.api.vlaanderen.be/VMM/wms?layers=Owll
+
+  - id: vha-watercourses
+    shortLabel: VHA waterlopen
+    longLabel: Vlaamse Hydrografische Atlas - Waterlopen, toestand
+    url: https://geo.api.vlaanderen.be/VMM/wms?layers=VHAWtlSegm
+
+  - id: municipality-boundaries
+    shortLabel: Gemeentegrenzen
+    longLabel: Voorlopig referentiebestand gemeentegrenzen, toestand
+    url: https://geo.api.vlaanderen.be/administratieve_eenheden/wms?layers=Refgem

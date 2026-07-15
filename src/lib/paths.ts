@@ -29,6 +29,9 @@ export const logosRegistryPath = () => join(sourceAttributionLogosDir(), "logos.
 /** Site-level "about" config (title, blurb, team, project-level logos). */
 export const aboutJsonPath = () => join(sourceDir(), "about.json");
 
+/** Site-wide default background maps and overlays. */
+export const mapServicesYamlPath = () => join(sourceDir(), "map-services.yaml");
+
 /** Site-wide reference layers (not tied to any single historical map layer). */
 export const sourceBaselayerWaterPath = () => join(sourceDir(), "Baselayer_Water.geojson");
 export const sourceBaselayerBorderPath = () => join(sourceDir(), "Baselayer_Border.geojson");
@@ -41,6 +44,9 @@ export const BUILD_LAYERS_YAML_PATH = join(BUILD_DIR, "layers.yaml");
 
 /** Published "about" config, logos resolved the same way as sublayer attribution. */
 export const BUILD_ABOUT_JSON_PATH = join(BUILD_DIR, "about.json");
+
+/** Published site-wide default background maps and overlays. */
+export const BUILD_MAP_SERVICES_YAML_PATH = join(BUILD_DIR, "map-services.yaml");
 
 /** Published logo image assets - deploy-relative paths in resolved logo objects point here. */
 export const BUILD_ATTRIBUTION_LOGOS_DIR = join(BUILD_DIR, "attribution-logos");

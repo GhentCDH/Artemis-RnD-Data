@@ -4,6 +4,7 @@ import YAML from "yaml";
 import {
   aboutJsonPath,
   logosRegistryPath,
+  mapServicesYamlPath,
   sourceBaselayerBorderPath,
   sourceBaselayerWaterPath,
   sourceDir,
@@ -312,6 +313,7 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
   const logoReferences: LogoReference[] = [];
   const requiredFiles = [
     { path: aboutJsonPath(), file: "about.json" },
+    { path: mapServicesYamlPath(), file: "map-services.yaml" },
     { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.geojson" },
     { path: sourceBaselayerBorderPath(), file: "Baselayer_Border.geojson" },
   ];
@@ -337,6 +339,35 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
       }
     } catch (err) {
       issues.push(issue("about.json", "", err instanceof Error ? err.message : "could not parse JSON"));
+    }
+  }
+
+  if (await isFile(mapServicesYamlPath())) {
+    const parsed = await parseYamlFile(mapServicesYamlPath(), "map-services.yaml", issues);
+    if (isRecord(parsed)) {
+      for (const section of ["basemaps", "overlays"] as const) {
+        const entries = parsed[section];
+        if (!Array.isArray(entries)) {
+          issues.push(issue("map-services.yaml", section, "must be an array"));
+          continue;
+        }
+        entries.forEach((entry, index) => {
+          const path = `${section}[${index}]`;
+          if (!isRecord(entry)) {
+            issues.push(issue("map-services.yaml", path, "must be an object"));
+            return;
+          }
+          requireString(entry, "id", "map-services.yaml", `${path}.id`, issues, true);
+          requireString(entry, "shortLabel", "map-services.yaml", `${path}.shortLabel`, issues, true);
+          requireString(entry, "longLabel", "map-services.yaml", `${path}.longLabel`, issues, true);
+          requireString(entry, "url", "map-services.yaml", `${path}.url`, issues, true);
+          if (typeof entry.url === "string" && !/^https?:\/\//i.test(entry.url)) {
+            issues.push(issue("map-services.yaml", `${path}.url`, "must be an HTTP(S) URL"));
+          }
+        });
+      }
+    } else if (parsed !== undefined) {
+      issues.push(issue("map-services.yaml", "", "must contain a YAML object"));
     }
   }
 

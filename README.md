@@ -152,6 +152,7 @@ Expected source shape:
 ```text
 Source/
 ├── about.json
+├── map-services.yaml
 ├── Baselayer_Water.geojson
 ├── Baselayer_Border.geojson
 ├── attribution-logos/

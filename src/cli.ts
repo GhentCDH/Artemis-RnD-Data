@@ -7,6 +7,7 @@ import { buildBaselayer } from "./lib/baselayer/build";
 import { discoverLayers } from "./lib/layers/discovery";
 import { publishLayers, significantIssues, type PublishLayersResult } from "./lib/layers/publish";
 import { publishAbout } from "./lib/about/publish";
+import { publishMapServices } from "./lib/mapServices/publish";
 import { log } from "./lib/log";
 import { cpus } from "node:os";
 import { BuildLog } from "./lib/build/buildLog";
@@ -26,6 +27,7 @@ const COMMANDS = {
   imagecollections: "Build non-georeferenced image collections",
   layers: "Merge Source/layers/* into build/layers.yaml",
   about: "Publish about.json + attribution-logos image assets into build/",
+  mapservices: "Publish map-services.yaml into build/",
   baselayer: "Publish water + border GeoJSON as build/baselayer.pmtiles",
   "source:sync": "Download and extract Source.zip from a Zenodo record into the local source mirror cache",
   "source:validate": "Validate Source/ structure and layer config before building",
@@ -245,6 +247,7 @@ async function main(): Promise<void> {
       );
       await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: buildLayersResult.downloadResolution, downloadRecordId: buildLayersResult.downloadRecordId });
       await buildLog.timed("about", () => publishAbout({ buildLog }));
+      await buildLog.timed("mapservices", () => publishMapServices({ buildLog }));
       await registry.flushAll();
       failOnSignificantIssues(buildLayersResult);
       break;
@@ -304,6 +307,13 @@ async function main(): Promise<void> {
       await buildLog.reset("about", []);
       await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
       await buildLog.timed("about", () => publishAbout({ buildLog }));
+      break;
+    }
+    case "mapservices": {
+      const zenodoSource = await applyZenodoSource(args);
+      await buildLog.reset("mapservices", []);
+      await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
+      await buildLog.timed("mapservices", () => publishMapServices({ buildLog }));
       break;
     }
     case "baselayer": {

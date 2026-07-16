@@ -1,25 +1,6 @@
-import { open, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 
 export type BaselayerGeoJsonIssue = { path: string; message: string };
-
-/** Checks the fixed PMTiles magic bytes without loading the archive into memory. */
-export async function validateBaselayerPmtiles(path: string): Promise<BaselayerGeoJsonIssue[]> {
-  let handle;
-  try {
-    handle = await open(path, "r");
-    const header = Buffer.alloc(8);
-    const { bytesRead } = await handle.read(header, 0, header.length, 0);
-    if (bytesRead < header.length || header.subarray(0, 7).toString("ascii") !== "PMTiles") {
-      return [{ path: "", message: "must be a PMTiles archive" }];
-    }
-    if (header[7] !== 3) return [{ path: "", message: `uses unsupported PMTiles version ${header[7]} (expected 3)` }];
-    return [];
-  } catch (error) {
-    return [{ path: "", message: error instanceof Error ? error.message : "could not read PMTiles header" }];
-  } finally {
-    await handle?.close();
-  }
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

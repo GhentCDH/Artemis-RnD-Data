@@ -71,16 +71,15 @@ bun run src/cli.ts <command> [zenodoRecordId|url] [layerId...] [flags]
 
 | Command | Purpose |
 | --- | --- |
-| `build [layerId...]` | Full build: IIIF, raster/masks, toponyms, parcels, image collections, baselayer, layers registry, attribution assets |
+| `build [layerId...]` | Full build: IIIF, raster/masks, toponyms, parcels, image collections, baselayer, layers registry |
 | `iiif [layerId...]` | Build geomaps, search, sprites, and by default raster PMTiles plus mask GeoJSON |
 | `toponyms [layerId...]` | Build `toponyms.json` search indexes |
 | `parcels [layerId...]` | Build parcel PMTiles |
 | `imagecollections [collectionId...]` | Build non-georeferenced image collection indexes and sprites |
 | `layers` | Publish the full merged `build/layers.yaml` registry |
-| `attribution` | Publish attribution-logo assets |
 | `baselayer` | Convert `Baselayer_Water.geojson` and `Baselayer_Border.geojson` to separate source layers in `build/baselayer.pmtiles` |
 | `source:sync <recordId>` | Download, verify, and extract `Source.zip` into `.build-cache/zenodo-source/` |
-| `source:validate` | Validate source structure, layer YAML, and attribution logo references before building |
+| `source:validate` | Validate source structure and metadata before building |
 | `source:draft-files <draftId>` | List files in an unpublished Zenodo draft; requires `ZENODO_TOKEN` |
 | `help` | Print CLI help, flags, and environment variables |
 
@@ -153,8 +152,6 @@ Source/
 ├── map-services.yaml
 ├── Baselayer_Water.geojson
 ├── Baselayer_Border.geojson
-├── attribution-logos/
-│   └── logos.yaml
 ├── imagecollections/
 │   └── <CollectionId>/
 │       ├── <CollectionId>.yml
@@ -166,15 +163,27 @@ Source/
         └── parcels/*.geojson
 ```
 
-Each layer YAML defines the layer label, timeframe, sublayers, source URLs,
-attribution, citation, and optional `download:` filenames. A sublayer may also
-carry an optional `readingList:` — further-reading links published with the
+Each layer YAML defines the layer label, timeframe, sublayers, build routing,
+and independently cited `sources`. A sublayer may also
+carry an optional `furtherReading:` — further-reading links published with the
 sublayer, written as a map of display label → URL:
 
 ```yaml
-readingList:
+furtherReading:
   "De Ferrariskaart (KBR)": https://www.kbr.be/nl/de-ferrariskaart/
   "Cartesius": https://www.cartesius.be/
+```
+
+Each authored `sources` entry defines its own `citation` and exactly one of
+`url` or `download`. Multiple Zenodo filenames may be comma-separated in a
+download entry. Published output normalizes both forms to `{ citation, url }`:
+
+```yaml
+sources:
+  - citation: "Citation for the remote service"
+    url: https://example.org/iiif/collection
+  - citation: "Citation specifically for these downloadable files"
+    download: masks.zip, tiffs.zip
 ```
 
 Sublayer names and descriptions are localized and published with both languages intact:
@@ -209,8 +218,8 @@ Image collections (non-georeferenced photograph sets shown as located pins) are
 one folder per collection under `imagecollections/`, mirroring `layers/`:
 
 - `<CollectionId>.yml` (or `.yaml`): metadata only — `id` (must match the folder
-  name), localized `label`, required APA `citation`, and optional `provider`,
-  localized `description`, `readingList`, and `attribution`. `readingList` maps
+  name), localized `label`, independently cited `sources`, and optional
+  `provider`, localized `description`, and `furtherReading`. `furtherReading` maps
   display labels to HTTP(S) URLs, like sublayer reading lists. Localized fields
   use the same `{ nl, en }` shape as sublayer metadata.
 - `<CollectionId>Collection.json`: a single JSON object mapping each IIIF
@@ -242,15 +251,19 @@ Example sublayer download:
 
 ```yaml
 - id: PrimitiefKadaster-parcels
-  name: Parcels
+  name:
+    nl: Percelen
+    en: Parcels
   kind: geojson
-  download: Primitief_Kadaster_Parcels.zip
   source:
     type: generated
     rawInput: parcels/*.geojson
+  sources:
+    - citation: "Citation for the vectorised parcel dataset"
+      download: Primitief_Kadaster_Parcels.zip, Primitief_Kadaster_Masks.zip
 ```
 
-For published records, `download:` filenames must match files in the same
+For published records, every comma-separated `sources[].download` filename must match a file in the same
 Zenodo record. Missing files are build issues and block publishing. For drafts,
 public file URLs cannot be verified, so downloads remain unresolved unless
 `--publish-live` is used. With `--publish-live`, the build is published to the
@@ -274,7 +287,6 @@ build/
 ├── ZenodoSource.json
 ├── baselayer.pmtiles
 ├── imagecollection.yaml
-├── attribution-logos/
 ├── Image collections/
 │   └── <CollectionId>/
 │       ├── <collection>_index.json
@@ -310,7 +322,6 @@ Important artifacts:
 - `masks.geojson`: per-canvas geospatial footprints.
 - `parcels.pmtiles`: generated parcel vector tiles.
 - `toponyms.json`: toponym search index.
-- `attribution-logos/`: shared logo assets referenced by layer metadata.
 
 ## Raster And Caching
 
@@ -390,9 +401,7 @@ dependency, or source files change.
 - `src/lib/parcels/build.ts`: parcel filtering, simplification, PMTiles output
 - `src/lib/geojson/**`: shared geometry and simplification helpers
 - `src/lib/imageCollections/**`: non-georeferenced collection indexing/sprites
-- `src/lib/attribution/publish.ts`: attribution logo asset publication
 - `src/lib/baselayer/build.ts`: baselayer PMTiles publication
-- `src/lib/attribution/logos.ts`: shared logo registry and resolver
 - `src/lib/pmtiles/**`: tippecanoe, MBTiles, and PMTiles shell wrappers
 - `src/lib/build/**`: build logs and incremental hash registry
 - `src/lib/paths.ts`: centralized source, cache, and output paths

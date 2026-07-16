@@ -22,16 +22,17 @@ import { ensureDir, fileExists, writeJson } from "../utils/files";
 import { contentHash, stableStringify } from "../utils/hash";
 import { extractManifestMetadata } from "./manifestMetadata";
 
-const IMAGE_COLLECTION_RECIPE = 8;
+const IMAGE_COLLECTION_RECIPE = 10;
+
+type CollectionSource = { citation: string; url: string };
 
 type ImageCollectionConfig = {
   id: string;
   label: LocalizedText;
   provider?: string;
   description?: LocalizedText;
-  citation: string;
-  readingList?: Record<string, string>;
-  attribution?: unknown;
+  sources: CollectionSource[];
+  furtherReading?: Record<string, string>;
 };
 
 /** One line of `<Name>Collection.json`: a IIIF manifest URL, optionally paired with [lon, lat]. */
@@ -71,9 +72,8 @@ export type ImageCollectionBuildResult = {
   label: LocalizedText;
   provider?: string;
   description?: LocalizedText;
-  citation: string;
-  readingList?: Record<string, string>;
-  attribution?: unknown;
+  sources: CollectionSource[];
+  furtherReading?: Record<string, string>;
   totalItems: number;
   coordsAvailable: number;
   /** Manifest URLs grouped by where their coordinates came from (navPlace extension vs paired data in <Name>Collection.json). */
@@ -132,14 +132,16 @@ async function readCollectionConfig(root: string, dirName: string): Promise<Imag
     const parsed = asRecord(YAML.parse(await readFile(path, "utf-8")));
     const id = typeof parsed.id === "string" ? parsed.id : "";
     const label = asRecord(parsed.label);
-    const citation = typeof parsed.citation === "string" ? parsed.citation.trim() : "";
-    const readingList = parsed.readingList === undefined ? undefined : asRecord(parsed.readingList);
+    const sources = Array.isArray(parsed.sources) ? parsed.sources.map(asRecord) : [];
+    const furtherReading = parsed.furtherReading === undefined ? undefined : asRecord(parsed.furtherReading);
     if (!id || typeof label.en !== "string" || !label.en.trim() || typeof label.nl !== "string" || !label.nl.trim()) {
       throw new Error(`${path}: image collection config requires id and label with non-empty en and nl values`);
     }
-    if (!citation) throw new Error(`${path}: image collection config requires an APA citation`);
-    if (readingList && Object.entries(readingList).some(([label, url]) => !label.trim() || typeof url !== "string" || !/^https?:\/\//i.test(url))) {
-      throw new Error(`${path}: readingList must map non-empty labels to HTTP(S) URLs`);
+    if (sources.length === 0 || sources.some((source) => typeof source.citation !== "string" || !source.citation.trim() || typeof source.url !== "string" || !/^https?:\/\//i.test(source.url))) {
+      throw new Error(`${path}: image collection sources must contain non-empty citation and HTTP(S) url values`);
+    }
+    if (furtherReading && Object.entries(furtherReading).some(([label, url]) => !label.trim() || typeof url !== "string" || !/^https?:\/\//i.test(url))) {
+      throw new Error(`${path}: furtherReading must map non-empty labels to HTTP(S) URLs`);
     }
     if (id !== dirName) throw new Error(`${path}: id "${id}" must match containing directory "${dirName}"`);
     return {
@@ -154,9 +156,8 @@ async function readCollectionConfig(root: string, dirName: string): Promise<Imag
         }
         return { en: description.en, nl: description.nl };
       })(),
-      citation,
-      readingList: readingList as Record<string, string> | undefined,
-      attribution: parsed.attribution,
+      sources: sources.map((source) => ({ citation: source.citation as string, url: source.url as string })),
+      furtherReading: furtherReading as Record<string, string> | undefined,
     };
   }
   throw new Error(`imagecollections/${dirName}: missing ${dirName}.yml`);
@@ -403,9 +404,8 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
       label: config.label,
       provider: config.provider,
       description: config.description,
-      citation: config.citation,
-      readingList: config.readingList,
-      attribution: config.attribution,
+      sources: config.sources,
+      furtherReading: config.furtherReading,
       totalItems: items.length,
       coordsAvailable: items.filter((item) => item.lat !== undefined && item.lon !== undefined).length,
       coordinateSources,
@@ -425,9 +425,8 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     label: config.label,
     provider: config.provider,
     description: config.description,
-    citation: config.citation,
-    readingList: config.readingList,
-    attribution: config.attribution,
+    sources: config.sources,
+    furtherReading: config.furtherReading,
     totalItems: items.length,
     coordsAvailable: items.filter((item) => item.lat !== undefined && item.lon !== undefined).length,
     sprites,
@@ -441,9 +440,8 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     label: config.label,
     provider: config.provider,
     description: config.description,
-    citation: config.citation,
-    readingList: config.readingList,
-    attribution: config.attribution,
+    sources: config.sources,
+    furtherReading: config.furtherReading,
     totalItems: items.length,
     coordsAvailable: index.coordsAvailable,
     coordinateSources,
@@ -510,9 +508,8 @@ async function publishImageCollectionYaml(results: ImageCollectionBuildResult[],
     label: result.label,
     provider: result.provider,
     description: result.description,
-    citation: result.citation,
-    readingList: result.readingList,
-    attribution: result.attribution,
+    sources: result.sources,
+    furtherReading: result.furtherReading,
     totalItems: result.totalItems,
     coordsAvailable: result.coordsAvailable,
     artifacts: {

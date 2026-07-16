@@ -22,10 +22,6 @@ export const sourceLayersDir = () => join(sourceDir(), "layers");
 /** Non-georeferenced image collection source configs (one directory per collection, like layers/). */
 export const sourceImageCollectionsDir = () => join(sourceDir(), "imagecollections");
 
-/** Logo image assets + their registry (filename -> click-through URL). */
-export const sourceAttributionLogosDir = () => join(sourceDir(), "attribution-logos");
-export const logosRegistryPath = () => join(sourceAttributionLogosDir(), "logos.yaml");
-
 /** Site-wide default background maps and overlays. */
 export const mapServicesYamlPath = () => join(sourceDir(), "map-services.yaml");
 
@@ -41,9 +37,6 @@ export const BUILD_LAYERS_YAML_PATH = join(BUILD_DIR, "layers.yaml");
 
 /** Published site-wide default background maps and overlays. */
 export const BUILD_MAP_SERVICES_YAML_PATH = join(BUILD_DIR, "map-services.yaml");
-
-/** Published logo image assets - deploy-relative paths in resolved logo objects point here. */
-export const BUILD_ATTRIBUTION_LOGOS_DIR = join(BUILD_DIR, "attribution-logos");
 
 /** Published site-wide reference boundary layer. */
 export const BUILD_BASELAYER_PMTILES_PATH = join(BUILD_DIR, "baselayer.pmtiles");

@@ -3,17 +3,16 @@ import { dirname, join } from "node:path";
 import YAML from "yaml";
 import { discoverLayers, type LayerRef } from "./discovery";
 import { localize, type LocalizedText } from "../localization";
-import { BUILD_LAYERS_DIR, BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir, logosRegistryPath } from "../paths";
+import { BUILD_LAYERS_DIR, BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir } from "../paths";
 import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
 import { log } from "../log";
 import { BUILD_ISSUES_LOG_PATH, BuildLog, DOWNLOAD_REMINDERS_LOG_PATH } from "../build/buildLog";
 import { fetchLatestPublishedVersionId, fetchRecordFileIndex } from "../source/zenodo";
-import { loadLogoRegistry, resolveLogoFile } from "../attribution/logos";
 import { VERZAMELBLAD_SPLITS } from "../iiif/config";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
-const LAYERS_RECIPE = 7;
+const LAYERS_RECIPE = 9;
 
 /**
  * Published per-layer artifact filenames → the registry key the viewer looks up.
@@ -85,8 +84,6 @@ export type SublayerWithoutDownload = { layerId: string; sublayerId: string; kin
 export type PublishLayersResult = {
   layers: number;
   sublayers: number;
-  logosResolved: number;
-  unknownLogos: string[];
   downloadsResolved: number;
   missingDownloads: MissingDownload[];
   emptySublayers: EmptySublayer[];
@@ -117,7 +114,6 @@ export type PublishLayersResult = {
 export function significantIssues(result: PublishLayersResult): string[] {
   return [
     ...result.missingDownloads.map((m) => `missing sublayer download: ${m.sublayerId} → "${m.file}" not found in the Zenodo record`),
-    ...result.unknownLogos.map((file) => `unknown attribution logo: "${file}" not in the logo registry`),
     ...result.emptySublayers.map((s) => {
       const origin = VERZAMELBLAD_SPLIT_IDS.has(s.sublayerId) ? "is a hardcoded verzamelbladen split" : `is defined in layers/${s.layerId}/${s.layerId}.yaml`;
       return `${s.sublayerId} (kind: ${s.kind}) ${origin} but its source data could not be found — nothing will render`;
@@ -130,11 +126,10 @@ type MutableSublayer = {
   name?: LocalizedText;
   kind?: string;
   description?: LocalizedText;
-  citation?: string;
   source?: { rawInput?: string };
-  attribution?: { logos?: unknown };
+  furtherReading?: Record<string, string>;
+  sources?: Array<{ citation: string; url?: string; download?: unknown }>;
   artifacts?: Record<string, string>;
-  download?: unknown;
 };
 
 type MutableLayer = {
@@ -162,7 +157,7 @@ function injectVerzamelbladSplits(layerId: string, config: MutableLayer): void {
     const parent = config.sublayers?.find((sublayer) => sublayer.id === split.parentSublayerId);
     config.sublayers = [
       ...(config.sublayers ?? []),
-      { id: split.id, name: split.name, kind: "iiif", description: split.description, attribution: parent?.attribution, citation: parent?.citation },
+      { id: split.id, name: split.name, kind: "iiif", description: split.description, sources: structuredClone(parent?.sources ?? []) },
     ];
   }
 }
@@ -277,46 +272,55 @@ export async function pruneStaleLayerOutputs(expectedFilesByDir: Map<string, Set
   return { removedDirs, removedFiles };
 }
 
-/** Replaces each sublayer's `logos: [filename]` with `[{ file, href }]` in place. */
-function resolveLogos(layer: MutableLayer, registry: Map<string, string>, unknown: Set<string>): number {
-  let resolved = 0;
-  for (const sublayer of layer.sublayers ?? []) {
-    const logos = sublayer.attribution?.logos;
-    if (!Array.isArray(logos)) continue;
-    sublayer.attribution!.logos = logos.map((file) => {
-      if (typeof file !== "string") return file;
-      const resolvedLogo = resolveLogoFile(file, registry);
-      if (resolvedLogo.href) resolved++;
-      else unknown.add(file);
-      return resolvedLogo;
-    });
-  }
-  return resolved;
-}
-
 /**
- * Replaces each sublayer's `download: <filename>` with `{ file, url }` in
- * place, resolving against a Zenodo record's file index. Filenames not found
- * in the record collapse to `{ file }` (no url) and are recorded in `missing`
+ * Replaces each sublayer's comma-separated `download` filenames with an array
+ * of `{ file, url? }`, resolving against a Zenodo record's file index. Missing
+ * files retain `{ file }` and are recorded in `missing`
  * so the caller can fail the build on them; when `missing` is undefined
  * (draft/unverifiable builds), the same `{ file }` shape is used but nothing
  * is reported, since there was nothing to check against.
  */
+function downloadFiles(value: unknown): string[] {
+  return typeof value === "string" ? value.split(",").map((file) => file.trim()).filter(Boolean) : [];
+}
+
 function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, missing: MissingDownload[] | undefined): number {
   let resolved = 0;
   for (const sublayer of layer.sublayers ?? []) {
-    const file = sublayer.download;
-    if (typeof file !== "string") continue;
-    const url = fileIndex.get(file);
-    if (url) {
-      resolved++;
-      sublayer.download = { file, url };
-    } else {
-      missing?.push({ sublayerId: sublayer.id ?? "(unknown sublayer)", file });
-      sublayer.download = { file };
+    for (const source of sublayer.sources ?? []) {
+      const files = downloadFiles(source.download);
+      if (files.length === 0) continue;
+      source.download = files.map((file) => {
+        const url = fileIndex.get(file);
+        if (url) {
+          resolved++;
+          return { file, url };
+        }
+        missing?.push({ sublayerId: sublayer.id ?? "(unknown sublayer)", file });
+        return { file };
+      });
     }
   }
   return resolved;
+}
+
+/** Normalizes authored URL/download source entries into viewer-facing `{ citation, url }` entries. */
+function publishSources(layer: MutableLayer): void {
+  for (const sublayer of layer.sublayers ?? []) {
+    const sources: Array<{ citation: string; url: string }> = [];
+    for (const source of sublayer.sources ?? []) {
+      if (typeof source.url === "string") sources.push({ citation: source.citation, url: source.url });
+      if (Array.isArray(source.download)) {
+        for (const download of source.download) {
+          if (download && typeof download === "object" && typeof (download as { url?: unknown }).url === "string") {
+            sources.push({ citation: source.citation, url: (download as { url: string }).url });
+          }
+        }
+      }
+    }
+    sublayer.sources = sources;
+    delete sublayer.source;
+  }
 }
 
 /**
@@ -329,13 +333,15 @@ function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, m
 function downloadCell(sublayer: MutableSublayer, missingSublayerIds: Set<string>): string {
   const hasArtifacts = sublayer.artifacts !== undefined && Object.keys(sublayer.artifacts).length > 0;
   const noDownloadMarker = hasArtifacts ? "?" : "—";
-  const download = sublayer.download;
-  if (download === undefined || download === null || typeof download !== "object") return noDownloadMarker;
-  const { file, url } = download as { file?: unknown; url?: unknown };
-  if (typeof file !== "string") return noDownloadMarker;
-  if (typeof url === "string") return `[${file}](${url})`;
-  if (sublayer.id && missingSublayerIds.has(sublayer.id)) return `✗ ${file} — not found`;
-  return `${file} (unverified)`;
+  const downloads = (sublayer.sources ?? []).flatMap((source) => Array.isArray(source.download) ? source.download : []);
+  if (downloads.length === 0) return noDownloadMarker;
+  return downloads.map((download) => {
+    const { file, url } = download as { file?: unknown; url?: unknown };
+    if (typeof file !== "string") return "?";
+    if (typeof url === "string") return `[${file}](${url})`;
+    if (sublayer.id && missingSublayerIds.has(sublayer.id)) return `✗ ${file} — not found`;
+    return `${file} (unverified)`;
+  }).join("<br>");
 }
 
 /**
@@ -364,10 +370,7 @@ function buildSublayersMarkdown(layers: MutableLayer[], missingDownloads: Missin
  */
 export async function publishLayers(options: PublishLayersOptions = {}): Promise<PublishLayersResult> {
   const refs = await discoverLayers();
-  const registry = await loadLogoRegistry();
-  const unknownLogos = new Set<string>();
   let sublayers = 0;
-  let logosResolved = 0;
 
   // Drafts have no public download URL, and without a record id there's
   // nothing to resolve against - in both cases, normalize `download:` to
@@ -394,7 +397,9 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     }
   }
 
-  const wantsDownloads = refs.some((ref) => (ref.config.sublayers ?? []).some((sublayer) => typeof sublayer.download === "string"));
+  const wantsDownloads = refs.some((ref) => (ref.config.sublayers ?? []).some((sublayer) =>
+    (sublayer.sources ?? []).some((source) => downloadFiles(source.download).length > 0),
+  ));
   let downloadIndex = new Map<string, string>();
   if (wantsDownloads && canResolveDownloads && downloadRecordId) {
     try {
@@ -430,7 +435,6 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
       const config = structuredClone(ref.config) as MutableLayer;
       injectVerzamelbladSplits(ref.id, config);
       sublayers += config.sublayers?.length ?? 0;
-      logosResolved += resolveLogos(config, registry, unknownLogos);
       downloadsResolved += resolveDownloads(config, downloadIndex, canResolveDownloads ? missingDownloads : undefined);
 
       // Attach each produced artifact to the sublayer that owns it, so two
@@ -459,7 +463,8 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
         // Built real content but nobody can download it directly - not an
         // error (plenty of sublayers, e.g. toponyms, never need one), just
         // worth flagging so it isn't simply forgotten.
-        if (Object.keys(artifacts).length > 0 && sublayer.download === undefined) {
+        const hasDownload = (sublayer.sources ?? []).some((source) => Array.isArray(source.download) && source.download.length > 0);
+        if (Object.keys(artifacts).length > 0 && !hasDownload) {
           sublayersWithoutDownload.push({ layerId: ref.id, sublayerId: sublayer.id ?? "(unknown sublayer)", kind: sublayer.kind ?? "(unknown kind)" });
         }
       }
@@ -469,6 +474,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
 
   await ensureDir(dirname(BUILD_SUBLAYERS_SUMMARY_PATH));
   await writeFile(BUILD_SUBLAYERS_SUMMARY_PATH, buildSublayersMarkdown(layers, missingDownloads), "utf-8");
+  for (const layer of layers) publishSources(layer);
 
   if (!options.force) {
     try {
@@ -478,8 +484,6 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
         return {
           layers: layers.length,
           sublayers,
-          logosResolved,
-          unknownLogos: [...unknownLogos],
           downloadsResolved,
           missingDownloads,
           emptySublayers,
@@ -508,14 +512,10 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   await writeFile(BUILD_LAYERS_YAML_PATH, `${header}${body}`, "utf-8");
 
   log.ok(`layers: ${layers.length} layers, ${sublayers} sublayers → ${BUILD_LAYERS_YAML_PATH}`);
-  const registryPath = logosRegistryPath();
-  for (const file of unknownLogos) log.warn(`unknown logo '${file}' not in ${registryPath}`);
 
   const result: PublishLayersResult = {
     layers: layers.length,
     sublayers,
-    logosResolved,
-    unknownLogos: [...unknownLogos],
     downloadsResolved,
     missingDownloads,
     emptySublayers,
@@ -542,7 +542,7 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
     await remindersLog.reset("layers", []);
     await remindersLog.section("Sublayers built with no download configured (not an error)");
     for (const s of sublayersWithoutDownload) {
-      await remindersLog.info(`- ${s.sublayerId} (layer ${s.layerId}, kind: ${s.kind}) built successfully but has no \`download:\` configured`);
+      await remindersLog.info(`- ${s.sublayerId} (layer ${s.layerId}, kind: ${s.kind}) built successfully but has no \`sources[].download\` configured`);
     }
   }
 
@@ -550,8 +550,6 @@ export async function publishLayers(options: PublishLayersOptions = {}): Promise
   await options.buildLog?.fields({
     layers: layers.length,
     sublayers,
-    "logos resolved": logosResolved,
-    "unknown logos": unknownLogos.size > 0 ? [...unknownLogos].join(", ") : undefined,
     "downloads resolved": downloadsResolved,
     "missing downloads": missingDownloads.length > 0 ? missingDownloads.map((m) => m.file).join(", ") : undefined,
     "empty sublayers": emptySublayers.length > 0 ? emptySublayers.map((s) => s.sublayerId).join(", ") : undefined,

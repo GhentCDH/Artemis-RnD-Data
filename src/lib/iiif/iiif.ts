@@ -82,8 +82,8 @@ export async function resolveIiifResource(url: string): Promise<ResolvedIiifReso
 
 export function iiifSublayers(layer: LayerRef): IiifSublayer[] {
   return (layer.config.sublayers ?? [])
-    .filter((sublayer) => sublayer.kind === "iiif" && sublayer.source?.type !== "planned" && typeof sublayer.source?.url === "string")
-    .map((sublayer) => ({ id: sublayer.id, url: sublayer.source!.url! }));
+    .filter((sublayer) => sublayer.kind === "iiif" && sublayer.source?.type !== "planned" && sublayer.sources?.some((source) => typeof source.url === "string"))
+    .map((sublayer) => ({ id: sublayer.id, url: sublayer.sources!.find((source) => typeof source.url === "string")!.url! }));
 }
 
 export function manifestCanvases(manifest: Record<string, unknown>): Array<Record<string, unknown>> {

@@ -4,7 +4,6 @@ import YAML from "yaml";
 import { validateBaselayerGeoJson } from "./baselayer/validate";
 import type { LocalizedText } from "./localization";
 import {
-  logosRegistryPath,
   mapServicesYamlPath,
   sourceBaselayerBorderPath,
   sourceBaselayerWaterPath,
@@ -22,19 +21,17 @@ export type LayerConfig = {
     name?: LocalizedText;
     kind?: string;
     description?: LocalizedText;
-    citation?: string;
     /** Further-reading links shown with the sublayer: display label → URL. */
-    readingList?: Record<string, string>;
-    attribution?: {
-      logos?: string[];
-    };
+    furtherReading?: Record<string, string>;
+    sources?: Array<{
+      citation: string;
+      url?: string;
+      download?: string;
+    }>;
     source?: {
       type?: string;
       rawInput?: string;
-      url?: string;
     };
-    /** Filename of a standalone file in the Zenodo record (alongside Source.zip) offered as an end-user download. */
-    download?: string;
   }>;
 };
 
@@ -49,7 +46,6 @@ export type SourceValidationResult = {
   issues: SourceValidationIssue[];
   layers: number;
   imageCollections: number;
-  logoReferences: number;
 };
 
 export class SourceValidationError extends Error {
@@ -57,12 +53,6 @@ export class SourceValidationError extends Error {
     super(formatSourceValidationIssues(result.issues));
   }
 }
-
-type LogoReference = {
-  file: string;
-  path: string;
-  value: string;
-};
 
 function issue(file: string, path: string, message: string): SourceValidationIssue {
   return { file, path, message };
@@ -124,33 +114,42 @@ function validateSourceObject(value: unknown, file: string, basePath: string, is
   }
   requireString(value, "type", file, `${basePath}.type`, issues);
   requireString(value, "rawInput", file, `${basePath}.rawInput`, issues);
-  requireString(value, "url", file, `${basePath}.url`, issues);
 }
 
-function validateAttributionObject(value: unknown, file: string, basePath: string, issues: SourceValidationIssue[], logoReferences: LogoReference[]): void {
-  if (value === undefined) return;
-  if (!isRecord(value)) {
-    issues.push(issue(file, basePath, "must be an object"));
+function validateSources(value: unknown, file: string, basePath: string, issues: SourceValidationIssue[]): void {
+  if (!Array.isArray(value) || value.length === 0) {
+    issues.push(issue(file, basePath, "must contain at least one source entry"));
     return;
   }
-  const logos = value.logos;
-  if (logos === undefined) return;
-  if (!Array.isArray(logos)) {
-    issues.push(issue(file, `${basePath}.logos`, "must be an array of logo filenames"));
-    return;
-  }
-  for (let index = 0; index < logos.length; index++) {
-    const path = `${basePath}.logos[${index}]`;
-    const logo = logos[index];
-    if (typeof logo !== "string" || logo.trim() === "") {
-      issues.push(issue(file, path, "must be a non-empty string"));
-      continue;
+  value.forEach((entry, index) => {
+    const path = `${basePath}[${index}]`;
+    if (!isRecord(entry)) {
+      issues.push(issue(file, path, "must be an object"));
+      return;
     }
-    logoReferences.push({ file, path, value: logo });
-  }
+    requireString(entry, "citation", file, `${path}.citation`, issues, true);
+    const hasUrl = entry.url !== undefined;
+    const hasDownload = entry.download !== undefined;
+    if (hasUrl === hasDownload) {
+      issues.push(issue(file, path, "must define exactly one of url or download"));
+      return;
+    }
+    if (hasUrl) {
+      requireString(entry, "url", file, `${path}.url`, issues, true);
+      if (typeof entry.url === "string" && !/^https?:\/\//i.test(entry.url)) {
+        issues.push(issue(file, `${path}.url`, "must be an HTTP(S) URL"));
+      }
+    }
+    if (hasDownload) {
+      requireString(entry, "download", file, `${path}.download`, issues, true);
+      if (typeof entry.download === "string" && entry.download.split(",").some((name) => name.trim() === "")) {
+        issues.push(issue(file, `${path}.download`, "must be a comma-separated list of non-empty filenames"));
+      }
+    }
+  });
 }
 
-/** Validates a link map (display label → http(s) URL), as used by sublayer readingList. */
+/** Validates a link map (display label → http(s) URL), as used by furtherReading. */
 function validateLinkMap(value: unknown, file: string, basePath: string, issues: SourceValidationIssue[]): void {
   if (value === undefined) return;
   if (!isRecord(value)) {
@@ -166,7 +165,7 @@ function validateLinkMap(value: unknown, file: string, basePath: string, issues:
   }
 }
 
-function validateSublayers(value: unknown, file: string, issues: SourceValidationIssue[], logoReferences: LogoReference[]): void {
+function validateSublayers(value: unknown, file: string, issues: SourceValidationIssue[]): void {
   if (value === undefined) return;
   if (!Array.isArray(value)) {
     issues.push(issue(file, "sublayers", "must be an array"));
@@ -184,11 +183,9 @@ function validateSublayers(value: unknown, file: string, issues: SourceValidatio
     validateLocalizedText(sublayer.name, file, `${path}.name`, issues);
     requireString(sublayer, "kind", file, `${path}.kind`, issues);
     validateLocalizedText(sublayer.description, file, `${path}.description`, issues);
-    requireString(sublayer, "citation", file, `${path}.citation`, issues);
-    requireString(sublayer, "download", file, `${path}.download`, issues);
-    validateLinkMap(sublayer.readingList, file, `${path}.readingList`, issues);
+    validateSources(sublayer.sources, file, `${path}.sources`, issues);
+    validateLinkMap(sublayer.furtherReading, file, `${path}.furtherReading`, issues);
     validateSourceObject(sublayer.source, file, `${path}.source`, issues);
-    validateAttributionObject(sublayer.attribution, file, `${path}.attribution`, issues, logoReferences);
     if (typeof sublayer.id === "string") {
       if (ids.has(sublayer.id)) issues.push(issue(file, `${path}.id`, `duplicate sublayer id "${sublayer.id}"`));
       ids.add(sublayer.id);
@@ -196,7 +193,7 @@ function validateSublayers(value: unknown, file: string, issues: SourceValidatio
   }
 }
 
-export function validateLayerConfig(value: unknown, file: string, expectedId?: string, logoReferences: LogoReference[] = []): SourceValidationIssue[] {
+export function validateLayerConfig(value: unknown, file: string, expectedId?: string): SourceValidationIssue[] {
   const issues: SourceValidationIssue[] = [];
   if (!isRecord(value)) return [issue(file, "", "must be a YAML object")];
   requireString(value, "id", file, "id", issues, true);
@@ -204,13 +201,13 @@ export function validateLayerConfig(value: unknown, file: string, expectedId?: s
   if (expectedId && typeof value.id === "string" && value.id !== expectedId) {
     issues.push(issue(file, "id", `must match containing layer directory "${expectedId}"`));
   }
-  validateSublayers(value.sublayers, file, issues, logoReferences);
+  validateSublayers(value.sublayers, file, issues);
   return issues;
 }
 
 function assertLayerConfig(value: unknown, file: string): asserts value is LayerConfig {
   const issues = validateLayerConfig(value, file);
-  if (issues.length > 0) throw new SourceValidationError({ ok: false, issues, layers: 0, imageCollections: 0, logoReferences: 0 });
+  if (issues.length > 0) throw new SourceValidationError({ ok: false, issues, layers: 0, imageCollections: 0 });
 }
 
 export function parseLayerConfig(value: unknown, file: string): LayerConfig {
@@ -225,26 +222,6 @@ async function parseYamlFile(path: string, file: string, issues: SourceValidatio
     issues.push(issue(file, "", err instanceof Error ? err.message : "could not parse YAML"));
     return undefined;
   }
-}
-
-async function readLogoRegistry(issues: SourceValidationIssue[]): Promise<Set<string>> {
-  const registryPath = logosRegistryPath();
-  if (!(await isFile(registryPath))) return new Set();
-  const parsed = await parseYamlFile(registryPath, "attribution-logos/logos.yaml", issues);
-  if (parsed === undefined) return new Set();
-  if (!isRecord(parsed)) {
-    issues.push(issue("attribution-logos/logos.yaml", "", "must be a YAML object mapping logo filenames to URLs"));
-    return new Set();
-  }
-  const files = new Set<string>();
-  for (const [file, href] of Object.entries(parsed)) {
-    if (typeof href !== "string" || href.trim() === "") {
-      issues.push(issue("attribution-logos/logos.yaml", file, "must map to a non-empty URL string"));
-      continue;
-    }
-    files.add(file);
-  }
-  return files;
 }
 
 function validateCollectionEntries(parsed: unknown, file: string, issues: SourceValidationIssue[]): void {
@@ -267,7 +244,7 @@ function validateCollectionEntries(parsed: unknown, file: string, issues: Source
   }
 }
 
-async function validateImageCollections(issues: SourceValidationIssue[], logoReferences: LogoReference[]): Promise<number> {
+async function validateImageCollections(issues: SourceValidationIssue[]): Promise<number> {
   const root = sourceImageCollectionsDir();
   if (!(await isDirectory(root))) {
     issues.push(issue("imagecollections", "", `required directory is missing from ${sourceDir()}`));
@@ -299,12 +276,18 @@ async function validateImageCollections(issues: SourceValidationIssue[], logoRef
           validateLocalizedText(parsed.label, configFile, "label", issues);
           if (parsed.label === undefined) issues.push(issue(configFile, "label", "required localized text is missing"));
           validateLocalizedText(parsed.description, configFile, "description", issues);
-          requireString(parsed, "citation", configFile, "citation", issues, true);
-          validateLinkMap(parsed.readingList, configFile, "readingList", issues);
+          validateSources(parsed.sources, configFile, "sources", issues);
+          if (Array.isArray(parsed.sources)) {
+            parsed.sources.forEach((source, index) => {
+              if (isRecord(source) && source.download !== undefined) {
+                issues.push(issue(configFile, `sources[${index}].download`, "image collection sources currently require a direct url"));
+              }
+            });
+          }
+          validateLinkMap(parsed.furtherReading, configFile, "furtherReading", issues);
           if (typeof parsed.id === "string" && parsed.id !== name) {
             issues.push(issue(configFile, "id", `must match containing directory "${name}"`));
           }
-          validateAttributionObject(parsed.attribution, configFile, "attribution", issues, logoReferences);
         }
       }
     }
@@ -326,7 +309,6 @@ async function validateImageCollections(issues: SourceValidationIssue[], logoRef
 
 export async function validateSource(options: { layerIds?: string[] } = {}): Promise<SourceValidationResult> {
   const issues: SourceValidationIssue[] = [];
-  const logoReferences: LogoReference[] = [];
   const requiredFiles = [
     { path: mapServicesYamlPath(), file: "map-services.yaml" },
     { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.geojson" },
@@ -403,20 +385,13 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
       }
       layerCount++;
       const parsed = await parseYamlFile(path, file, issues);
-      if (parsed !== undefined) issues.push(...validateLayerConfig(parsed, file, layerId, logoReferences));
+      if (parsed !== undefined) issues.push(...validateLayerConfig(parsed, file, layerId));
     }
   }
 
-  const imageCollectionCount = await validateImageCollections(issues, logoReferences);
+  const imageCollectionCount = await validateImageCollections(issues);
 
-  const logoRegistry = await readLogoRegistry(issues);
-  for (const ref of logoReferences) {
-    if (!logoRegistry.has(ref.value)) {
-      issues.push(issue(ref.file, ref.path, `"${ref.value}" is not listed in attribution-logos/logos.yaml`));
-    }
-  }
-
-  return { ok: issues.length === 0, issues, layers: layerCount, imageCollections: imageCollectionCount, logoReferences: logoReferences.length };
+  return { ok: issues.length === 0, issues, layers: layerCount, imageCollections: imageCollectionCount };
 }
 
 export async function assertValidSource(options: { layerIds?: string[] } = {}): Promise<SourceValidationResult> {

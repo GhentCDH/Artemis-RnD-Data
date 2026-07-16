@@ -6,7 +6,6 @@ import { buildImageCollections } from "./lib/imageCollections/build";
 import { buildBaselayer } from "./lib/baselayer/build";
 import { discoverLayers } from "./lib/layers/discovery";
 import { publishLayers, significantIssues, type PublishLayersResult } from "./lib/layers/publish";
-import { publishAttributionAssets } from "./lib/attribution/publish";
 import { publishMapServices } from "./lib/mapServices/publish";
 import { log } from "./lib/log";
 import { cpus } from "node:os";
@@ -16,6 +15,7 @@ import { BUILD_ZENODO_SOURCE_PATH, setSourceDir, sourceDir } from "./lib/paths";
 import { detectZenodoDraftStatus, listDraftFiles, syncZenodoSource } from "./lib/source/zenodo";
 import { assertValidSource } from "./lib/sourceValidation";
 import { writeJson } from "./lib/utils/files";
+import { pruneRetiredBuildOutputs } from "./lib/pruneRetiredOutputs";
 
 const DEFAULT_ZENODO_RECORD = "21219182";
 
@@ -26,7 +26,6 @@ const COMMANDS = {
   parcels: "Build parcel PMTiles",
   imagecollections: "Build non-georeferenced image collections",
   layers: "Merge Source/layers/* into build/layers.yaml",
-  attribution: "Publish attribution-logo image assets into build/",
   mapservices: "Publish map-services.yaml into build/",
   baselayer: "Publish water + border GeoJSON as build/baselayer.pmtiles",
   "source:sync": "Download and extract Source.zip from a Zenodo record into the local source mirror cache",
@@ -129,7 +128,7 @@ function positionalZenodoRecord(args: string[]): string | undefined {
 }
 
 function isBuildCommand(command: string | undefined): boolean {
-  return ["build", "iiif", "toponyms", "parcels", "imagecollections", "layers", "attribution", "baselayer"].includes(command ?? "");
+  return ["build", "iiif", "toponyms", "parcels", "imagecollections", "layers", "baselayer"].includes(command ?? "");
 }
 
 function layerArgs(args: string[], consumePositionalZenodoRecord = false): string[] {
@@ -228,9 +227,10 @@ async function main(): Promise<void> {
   switch (command) {
     case "build": {
       const zenodoSource = await applyZenodoSource(args);
+      await pruneRetiredBuildOutputs();
       log.step("Validating source");
       const validation = await assertValidSource({ layerIds: selectedLayerIds });
-      log.ok(`source valid (${validation.layers} layer config(s), ${validation.imageCollections} image collection(s), ${validation.logoReferences} logo reference(s))`);
+      log.ok(`source valid (${validation.layers} layer config(s), ${validation.imageCollections} image collection(s))`);
       await buildLog.reset("build", selectedLayerIds);
       const layers = await discoverLayers(selectedLayerIds);
       const workerCount = concurrency();
@@ -246,7 +246,6 @@ async function main(): Promise<void> {
         publishLayers({ buildLog, force, zenodoRecordId: zenodoSource?.recordId, isDraft: zenodoSource?.isDraft, resolveDraftDownloadsFromLatestPublished: zenodoSource?.publishLive }),
       );
       await writeJson(BUILD_ZENODO_SOURCE_PATH, { ...zenodoSource, downloadResolution: buildLayersResult.downloadResolution, downloadRecordId: buildLayersResult.downloadRecordId });
-      await buildLog.timed("attribution", () => publishAttributionAssets({ buildLog }));
       await buildLog.timed("mapservices", () => publishMapServices({ buildLog }));
       await registry.flushAll();
       failOnSignificantIssues(buildLayersResult);
@@ -302,13 +301,6 @@ async function main(): Promise<void> {
       failOnSignificantIssues(layersResult);
       break;
     }
-    case "attribution": {
-      const zenodoSource = await applyZenodoSource(args);
-      await buildLog.reset("attribution", []);
-      await buildLog.fields({ source: sourceDir(), "zenodo record": zenodoSource?.recordId });
-      await buildLog.timed("attribution", () => publishAttributionAssets({ buildLog }));
-      break;
-    }
     case "mapservices": {
       const zenodoSource = await applyZenodoSource(args);
       await buildLog.reset("mapservices", []);
@@ -332,7 +324,7 @@ async function main(): Promise<void> {
       await applyValidationSource(args);
       log.step("Validating source");
       const validation = await assertValidSource({ layerIds: selectedLayerIds });
-      log.ok(`source valid (${validation.layers} layer config(s), ${validation.imageCollections} image collection(s), ${validation.logoReferences} logo reference(s))`);
+      log.ok(`source valid (${validation.layers} layer config(s), ${validation.imageCollections} image collection(s))`);
       break;
     }
     case "source:draft-files": {

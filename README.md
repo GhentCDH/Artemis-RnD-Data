@@ -209,7 +209,9 @@ Image collections (non-georeferenced photograph sets shown as located pins) are
 one folder per collection under `imagecollections/`, mirroring `layers/`:
 
 - `<CollectionId>.yml` (or `.yaml`): metadata only — `id` (must match the folder
-  name), `label`, and optional `provider`, `description`, `attribution`.
+  name), localized `label`, required APA `citation`, and optional `provider`,
+  localized `description`, and `attribution`. Localized fields use the same
+  `{ nl, en }` shape as sublayer metadata.
 - `<CollectionId>Collection.json`: a single JSON object mapping each IIIF
   manifest URL to `null` (the manifest carries the navPlace extension, so
   coordinates are read from it) or an explicit `[lon, lat]` pair for manifests

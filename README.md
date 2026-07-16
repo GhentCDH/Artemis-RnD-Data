@@ -3,8 +3,7 @@
 TypeScript/Bun data pipeline for the Artemis viewer. It reads a versioned
 `Source.zip` from Zenodo, builds viewer-ready map data, and publishes a single
 `build/` tree containing layer metadata, IIIF georeferencing, raster PMTiles,
-mask GeoJSON, parcel PMTiles, toponym search, image collections, the baselayer, and
-the about-page configuration.
+mask GeoJSON, parcel PMTiles, toponym search, image collections, and the baselayer.
 
 The viewer consumes the published output from this repository; the raw authoring
 source is not committed here.
@@ -72,13 +71,13 @@ bun run src/cli.ts <command> [zenodoRecordId|url] [layerId...] [flags]
 
 | Command | Purpose |
 | --- | --- |
-| `build [layerId...]` | Full build: IIIF, raster/masks, toponyms, parcels, image collections, baselayer, layers registry, about config |
+| `build [layerId...]` | Full build: IIIF, raster/masks, toponyms, parcels, image collections, baselayer, layers registry, attribution assets |
 | `iiif [layerId...]` | Build geomaps, search, sprites, and by default raster PMTiles plus mask GeoJSON |
 | `toponyms [layerId...]` | Build `toponyms.json` search indexes |
 | `parcels [layerId...]` | Build parcel PMTiles |
 | `imagecollections [collectionId...]` | Build non-georeferenced image collection indexes and sprites |
 | `layers` | Publish the full merged `build/layers.yaml` registry |
-| `about` | Publish `about.json` and attribution-logo assets |
+| `attribution` | Publish attribution-logo assets |
 | `baselayer` | Convert `Baselayer_Water.geojson` and `Baselayer_Border.geojson` to separate source layers in `build/baselayer.pmtiles` |
 | `source:sync <recordId>` | Download, verify, and extract `Source.zip` into `.build-cache/zenodo-source/` |
 | `source:validate` | Validate source structure, layer YAML, and attribution logo references before building |
@@ -151,7 +150,6 @@ Expected source shape:
 
 ```text
 Source/
-├── about.json
 ├── map-services.yaml
 ├── Baselayer_Water.geojson
 ├── Baselayer_Border.geojson
@@ -178,6 +176,24 @@ readingList:
   "De Ferrariskaart (KBR)": https://www.kbr.be/nl/de-ferrariskaart/
   "Cartesius": https://www.cartesius.be/
 ```
+
+Sublayer names and descriptions are localized and published with both languages intact:
+
+```yaml
+name:
+  nl: Kaart
+  en: Map
+description:
+  nl: Nederlandse beschrijving
+  en: English description
+```
+
+Source validation requires both name values to be non-empty strings. If
+`description` is present, both description values must also be non-empty.
+
+Baselayer GeoJSON must use longitude/latitude coordinates in EPSG:4326/CRS84.
+Source validation rejects projected coordinates or incompatible CRS declarations
+before tippecanoe runs.
 
 Sublayer `kind` controls what builds:
 
@@ -253,7 +269,6 @@ build/
 ├── Sublayers.md
 ├── ImageCollections.md
 ├── ZenodoSource.json
-├── about.json
 ├── baselayer.pmtiles
 ├── imagecollection.yaml
 ├── attribution-logos/
@@ -292,7 +307,7 @@ Important artifacts:
 - `masks.geojson`: per-canvas geospatial footprints.
 - `parcels.pmtiles`: generated parcel vector tiles.
 - `toponyms.json`: toponym search index.
-- `about.json` and `attribution-logos/`: site/about metadata and shared logo assets.
+- `attribution-logos/`: shared logo assets referenced by layer metadata.
 
 ## Raster And Caching
 
@@ -372,7 +387,7 @@ dependency, or source files change.
 - `src/lib/parcels/build.ts`: parcel filtering, simplification, PMTiles output
 - `src/lib/geojson/**`: shared geometry and simplification helpers
 - `src/lib/imageCollections/**`: non-georeferenced collection indexing/sprites
-- `src/lib/about/publish.ts`: about-page JSON and logo asset publication
+- `src/lib/attribution/publish.ts`: attribution logo asset publication
 - `src/lib/baselayer/build.ts`: baselayer PMTiles publication
 - `src/lib/attribution/logos.ts`: shared logo registry and resolver
 - `src/lib/pmtiles/**`: tippecanoe, MBTiles, and PMTiles shell wrappers

@@ -10,6 +10,7 @@ import {
 import { fileExists } from "../utils/files";
 import { log } from "../log";
 import type { BuildLog } from "../build/buildLog";
+import { validateBaselayerGeoJson } from "./validate";
 
 export type BuildBaselayerOptions = {
   buildLog?: BuildLog;
@@ -34,6 +35,15 @@ export async function buildBaselayer(options: BuildBaselayerOptions = {}): Promi
   if (missing.length > 0) {
     log.warn(`missing baselayer input(s): ${missing.join(", ")}; skipping baselayer pmtiles`);
     return { published: false };
+  }
+
+  for (const path of [waterPath, borderPath]) {
+    const issues = await validateBaselayerGeoJson(path);
+    if (issues.length === 0) continue;
+    const details = issues.map((issue) => `${issue.path ? `${issue.path}: ` : ""}${issue.message}`).join("; ");
+    const message = `invalid baselayer input ${path}: ${details}`;
+    log.warn(message);
+    throw new Error(message);
   }
 
   const tmpDir = join(BUILD_TMP_DIR, "baselayer");

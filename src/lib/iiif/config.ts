@@ -1,3 +1,5 @@
+import type { LocalizedText } from "../localization";
+
 export const ANNOTATIONS_API = "https://annotations.allmaps.org";
 export const SPRITESHEET_MAX_WIDTH = 4096;
 export const SKIP_MANIFEST_TERMS = ["verzamelblad", "verzamelplan"];
@@ -9,8 +11,8 @@ export type VerzamelbladSplit = {
   parentSublayerId: string;
   /** Synthetic sublayer id - also used as its own build output dir/hashes.txt namespace. */
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedText;
+  description: LocalizedText;
 };
 
 /**
@@ -27,8 +29,11 @@ export const VERZAMELBLAD_SPLITS: VerzamelbladSplit[] = [
     layerId: "PrimitiefKadaster",
     parentSublayerId: "PrimitiefKadaster-iiif",
     id: "PrimitiefKadaster-verzamelbladen",
-    name: "Verzamelbladen",
-    description: "Verzamelbladen (overzichtskaarten) uit de IIIF-collectie van het primitief kadaster, apart van de individuele kadastrale plannen.",
+    name: { nl: "Verzamelbladen", en: "Index sheets" },
+    description: {
+      nl: "Verzamelbladen (overzichtskaarten) uit de IIIF-collectie van het primitief kadaster, apart van de individuele kadastrale plannen.",
+      en: "Index sheets (overview maps) from the primitive cadastre IIIF collection, separated from the individual cadastral plans.",
+    },
   },
 ];
 

@@ -2,6 +2,7 @@ import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import YAML from "yaml";
 import { discoverLayers, type LayerRef } from "./discovery";
+import { localize, type LocalizedText } from "../localization";
 import { BUILD_LAYERS_DIR, BUILD_LAYERS_YAML_PATH, BUILD_SUBLAYERS_SUMMARY_PATH, layerOutDir, logosRegistryPath } from "../paths";
 import { ensureDir } from "../utils/files";
 import { stableStringify } from "../utils/hash";
@@ -12,7 +13,7 @@ import { loadLogoRegistry, resolveLogoFile } from "../attribution/logos";
 import { VERZAMELBLAD_SPLITS } from "../iiif/config";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
-const LAYERS_RECIPE = 5;
+const LAYERS_RECIPE = 7;
 
 /**
  * Published per-layer artifact filenames → the registry key the viewer looks up.
@@ -126,9 +127,9 @@ export function significantIssues(result: PublishLayersResult): string[] {
 
 type MutableSublayer = {
   id?: string;
-  name?: string;
+  name?: LocalizedText;
   kind?: string;
-  description?: string;
+  description?: LocalizedText;
   citation?: string;
   source?: { rawInput?: string };
   attribution?: { logos?: unknown };
@@ -181,7 +182,7 @@ function ownedArtifactKeys(sublayer: MutableSublayer): string[] {
   const kind = (sublayer.kind ?? "").toLowerCase();
   const rawInput = sublayer.source?.rawInput ?? "";
   const id = (sublayer.id ?? "").toLowerCase();
-  const name = (sublayer.name ?? "").toLowerCase();
+  const name = sublayer.name ? `${sublayer.name.en} ${sublayer.name.nl}`.toLowerCase() : "";
   if (kind === "iiif") return IIIF_ARTIFACT_KEYS;
   if (kind === "searchable" || rawInput.startsWith("toponyms/")) return ["toponyms"];
   if (rawInput.startsWith("parcels/") || id.includes("parcel") || name.includes("parcel")) return ["parcels"];
@@ -348,7 +349,8 @@ function buildSublayersMarkdown(layers: MutableLayer[], missingDownloads: Missin
   const rows = layers.flatMap((layer) =>
     (layer.sublayers ?? []).map((sublayer) => {
       const artifactKeys = sublayer.artifacts ? Object.keys(sublayer.artifacts) : [];
-      return `| ${layer.label ?? layer.id ?? "—"} | ${sublayer.name ?? sublayer.id ?? "—"} | ${sublayer.kind ?? "—"} | ${artifactKeys.length > 0 ? artifactKeys.join(", ") : "—"} | ${downloadCell(sublayer, missingSublayerIds)} |`;
+      const name = sublayer.name ? `${localize(sublayer.name, "nl")} / ${localize(sublayer.name, "en")}` : sublayer.id ?? "—";
+      return `| ${layer.label ?? layer.id ?? "—"} | ${name} | ${sublayer.kind ?? "—"} | ${artifactKeys.length > 0 ? artifactKeys.join(", ") : "—"} | ${downloadCell(sublayer, missingSublayerIds)} |`;
     }),
   );
   if (rows.length === 0) return "_No sublayers found._\n";

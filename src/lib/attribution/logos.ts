@@ -7,8 +7,7 @@ export type ResolvedLogo = { file: string; href?: string; src: string };
 
 /**
  * Logo registry (`attribution-logos/logos.yaml`): flat filename -> click-through
- * URL. The single source of truth for what a logo links to, shared by both a
- * sublayer's `attribution.logos` and `about.json`'s `logos[]`.
+ * URL. The single source of truth for what an attribution logo links to.
  */
 export async function loadLogoRegistry(): Promise<Map<string, string>> {
   const registryPath = logosRegistryPath();
@@ -27,8 +26,8 @@ export async function loadLogoRegistry(): Promise<Map<string, string>> {
 
 /**
  * Resolves a logo filename to its click-through URL and published image path -
- * the one shape every logo reference (sublayer or site-level) resolves to, so
- * callers never need a second lookup to find where the image actually lives.
+ * the shape every sublayer logo reference resolves to, so callers never need a
+ * second lookup to find where the image actually lives.
  */
 export function resolveLogoFile(file: string, registry: Map<string, string>): ResolvedLogo {
   const href = registry.get(file);

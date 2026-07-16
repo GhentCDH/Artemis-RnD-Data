@@ -26,9 +26,6 @@ export const sourceImageCollectionsDir = () => join(sourceDir(), "imagecollectio
 export const sourceAttributionLogosDir = () => join(sourceDir(), "attribution-logos");
 export const logosRegistryPath = () => join(sourceAttributionLogosDir(), "logos.yaml");
 
-/** Site-level "about" config (title, blurb, team, project-level logos). */
-export const aboutJsonPath = () => join(sourceDir(), "about.json");
-
 /** Site-wide default background maps and overlays. */
 export const mapServicesYamlPath = () => join(sourceDir(), "map-services.yaml");
 
@@ -41,9 +38,6 @@ export const BUILD_DIR = "build";
 
 /** Merged, published viewer layer config. */
 export const BUILD_LAYERS_YAML_PATH = join(BUILD_DIR, "layers.yaml");
-
-/** Published "about" config, logos resolved the same way as sublayer attribution. */
-export const BUILD_ABOUT_JSON_PATH = join(BUILD_DIR, "about.json");
 
 /** Published site-wide default background maps and overlays. */
 export const BUILD_MAP_SERVICES_YAML_PATH = join(BUILD_DIR, "map-services.yaml");

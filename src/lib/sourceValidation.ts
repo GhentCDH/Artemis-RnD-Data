@@ -1,8 +1,9 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import YAML from "yaml";
+import { validateBaselayerGeoJson } from "./baselayer/validate";
+import type { LocalizedText } from "./localization";
 import {
-  aboutJsonPath,
   logosRegistryPath,
   mapServicesYamlPath,
   sourceBaselayerBorderPath,
@@ -18,9 +19,9 @@ export type LayerConfig = {
   timeframe?: unknown;
   sublayers?: Array<{
     id: string;
-    name?: string;
+    name?: LocalizedText;
     kind?: string;
-    description?: string;
+    description?: LocalizedText;
     citation?: string;
     /** Further-reading links shown with the sublayer: display label → URL. */
     readingList?: Record<string, string>;
@@ -104,6 +105,17 @@ function requireString(value: Record<string, unknown>, key: string, file: string
   if (typeof value[key] !== "string" || value[key].trim() === "") issues.push(issue(file, path, "must be a non-empty string"));
 }
 
+/** Validates text that must remain available to both supported viewer locales. */
+function validateLocalizedText(value: unknown, file: string, path: string, issues: SourceValidationIssue[]): void {
+  if (value === undefined) return;
+  if (!isRecord(value)) {
+    issues.push(issue(file, path, 'must be an object with non-empty "en" and "nl" strings'));
+    return;
+  }
+  requireString(value, "en", file, `${path}.en`, issues, true);
+  requireString(value, "nl", file, `${path}.nl`, issues, true);
+}
+
 function validateSourceObject(value: unknown, file: string, basePath: string, issues: SourceValidationIssue[]): void {
   if (value === undefined) return;
   if (!isRecord(value)) {
@@ -138,7 +150,7 @@ function validateAttributionObject(value: unknown, file: string, basePath: strin
   }
 }
 
-/** Validates a link map (display label → http(s) URL), as used by sublayer readingList and about.json dataPipeline.links. */
+/** Validates a link map (display label → http(s) URL), as used by sublayer readingList. */
 function validateLinkMap(value: unknown, file: string, basePath: string, issues: SourceValidationIssue[]): void {
   if (value === undefined) return;
   if (!isRecord(value)) {
@@ -169,9 +181,9 @@ function validateSublayers(value: unknown, file: string, issues: SourceValidatio
       continue;
     }
     requireString(sublayer, "id", file, `${path}.id`, issues, true);
-    requireString(sublayer, "name", file, `${path}.name`, issues);
+    validateLocalizedText(sublayer.name, file, `${path}.name`, issues);
     requireString(sublayer, "kind", file, `${path}.kind`, issues);
-    requireString(sublayer, "description", file, `${path}.description`, issues);
+    validateLocalizedText(sublayer.description, file, `${path}.description`, issues);
     requireString(sublayer, "citation", file, `${path}.citation`, issues);
     requireString(sublayer, "download", file, `${path}.download`, issues);
     validateLinkMap(sublayer.readingList, file, `${path}.readingList`, issues);
@@ -312,7 +324,6 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
   const issues: SourceValidationIssue[] = [];
   const logoReferences: LogoReference[] = [];
   const requiredFiles = [
-    { path: aboutJsonPath(), file: "about.json" },
     { path: mapServicesYamlPath(), file: "map-services.yaml" },
     { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.geojson" },
     { path: sourceBaselayerBorderPath(), file: "Baselayer_Border.geojson" },
@@ -321,25 +332,17 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
     if (!(await isFile(required.path))) issues.push(issue(required.file, "", `required file is missing from ${sourceDir()}`));
   }
 
-  if (!(await isDirectory(sourceLayersDir()))) {
-    issues.push(issue("layers", "", `required directory is missing from ${sourceDir()}`));
+  for (const input of [
+    { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.geojson" },
+    { path: sourceBaselayerBorderPath(), file: "Baselayer_Border.geojson" },
+  ]) {
+    if (!(await isFile(input.path))) continue;
+    const geoJsonIssues = await validateBaselayerGeoJson(input.path);
+    issues.push(...geoJsonIssues.map((entry) => issue(input.file, entry.path, entry.message)));
   }
 
-  if (await isFile(aboutJsonPath())) {
-    try {
-      const about = JSON.parse(await readFile(aboutJsonPath(), "utf-8")) as unknown;
-      const dataPipeline = isRecord(about) ? about.dataPipeline : undefined;
-      if (dataPipeline !== undefined) {
-        if (!isRecord(dataPipeline)) {
-          issues.push(issue("about.json", "dataPipeline", "must be an object"));
-        } else {
-          requireString(dataPipeline, "title", "about.json", "dataPipeline.title", issues);
-          validateLinkMap(dataPipeline.links, "about.json", "dataPipeline.links", issues);
-        }
-      }
-    } catch (err) {
-      issues.push(issue("about.json", "", err instanceof Error ? err.message : "could not parse JSON"));
-    }
+  if (!(await isDirectory(sourceLayersDir()))) {
+    issues.push(issue("layers", "", `required directory is missing from ${sourceDir()}`));
   }
 
   if (await isFile(mapServicesYamlPath())) {

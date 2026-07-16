@@ -52,7 +52,7 @@ function parcelSublayer(layer: LayerRef): { id: string; rawInput?: string } | un
   const sublayer = layer.config.sublayers?.find((item) =>
     item.source?.rawInput?.startsWith("parcels/") ||
     item.id.toLowerCase().includes("parcel") ||
-    item.name?.toLowerCase().includes("parcel")
+    (item.name?.en.toLowerCase().includes("parcel") || item.name?.nl.toLowerCase().includes("perceel"))
   );
   return sublayer ? { id: sublayer.id, rawInput: sublayer.source?.rawInput } : undefined;
 }

@@ -16,6 +16,7 @@ import { analyzeAndSanitize, normalizeAnnotationPage, writeAnalysisLog, writeWar
 import { buildCompactGeomaps } from "./geomaps";
 import { buildIiifSearchIndex } from "./search";
 import { VERZAMELBLAD_SPLITS } from "./config";
+import { localize } from "../localization";
 import { revalidatedJson } from "./json";
 import {
   canvasId,
@@ -363,7 +364,7 @@ export async function buildIiif(options: IiifBuildOptions): Promise<IiifBuildRes
           layer: { ...layer, id: split.id },
           sublayer: { id: split.id, url: sublayer.url },
           collectionUrl: sublayer.url,
-          collectionLabel: `${resolved.label || layer.label} — ${split.name}`,
+          collectionLabel: `${resolved.label || layer.label} — ${localize(split.name, "nl")}`,
           refs: resolved.verzamelbladRefs,
         });
       }

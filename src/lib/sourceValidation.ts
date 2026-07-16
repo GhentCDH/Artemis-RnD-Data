@@ -31,6 +31,7 @@ export type LayerConfig = {
     source?: {
       type?: string;
       rawInput?: string;
+      url?: string;
     };
   }>;
 };
@@ -186,6 +187,20 @@ function validateSublayers(value: unknown, file: string, issues: SourceValidatio
     validateSources(sublayer.sources, file, `${path}.sources`, issues);
     validateLinkMap(sublayer.furtherReading, file, `${path}.furtherReading`, issues);
     validateSourceObject(sublayer.source, file, `${path}.source`, issues);
+    const kind = typeof sublayer.kind === "string" ? sublayer.kind.toLowerCase() : "";
+    if (kind === "wmts" || kind === "wms") {
+      if (!isRecord(sublayer.source)) {
+        issues.push(issue(file, `${path}.source`, "remote map layers must define a source object"));
+      } else {
+        if (sublayer.source.type !== "remote") {
+          issues.push(issue(file, `${path}.source.type`, 'remote map layers must use type "remote"'));
+        }
+        requireString(sublayer.source, "url", file, `${path}.source.url`, issues, true);
+        if (typeof sublayer.source.url === "string" && !/^https?:\/\//i.test(sublayer.source.url)) {
+          issues.push(issue(file, `${path}.source.url`, "must be an HTTP(S) URL"));
+        }
+      }
+    }
     if (typeof sublayer.id === "string") {
       if (ids.has(sublayer.id)) issues.push(issue(file, `${path}.id`, `duplicate sublayer id "${sublayer.id}"`));
       ids.add(sublayer.id);

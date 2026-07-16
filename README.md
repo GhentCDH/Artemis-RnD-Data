@@ -77,7 +77,7 @@ bun run src/cli.ts <command> [zenodoRecordId|url] [layerId...] [flags]
 | `parcels [layerId...]` | Build parcel PMTiles |
 | `imagecollections [collectionId...]` | Build non-georeferenced image collection indexes and sprites |
 | `layers` | Publish the full merged `build/layers.yaml` registry |
-| `baselayer` | Copy `Baselayer_Water.pmtiles` and tile `Baselayer_Border.geojson` into two baselayer PMTiles archives |
+| `baselayer` | Convert `Baselayer_Water.geojson` and `Baselayer_Border.geojson` to separate source layers in `build/baselayer.pmtiles` |
 | `source:sync <recordId>` | Download, verify, and extract `Source.zip` into `.build-cache/zenodo-source/` |
 | `source:validate` | Validate source structure and metadata before building |
 | `source:draft-files <draftId>` | List files in an unpublished Zenodo draft; requires `ZENODO_TOKEN` |
@@ -150,7 +150,7 @@ Expected source shape:
 ```text
 Source/
 ├── map-services.yaml
-├── Baselayer_Water.pmtiles
+├── Baselayer_Water.geojson
 ├── Baselayer_Border.geojson
 ├── imagecollections/
 │   └── <CollectionId>/
@@ -200,7 +200,7 @@ description:
 Source validation requires both name values to be non-empty strings. If
 `description` is present, both description values must also be non-empty.
 
-Baselayer border GeoJSON must use longitude/latitude coordinates in EPSG:4326/CRS84.
+Baselayer GeoJSON must use longitude/latitude coordinates in EPSG:4326/CRS84.
 Source validation rejects projected coordinates or incompatible CRS declarations
 before tippecanoe runs.
 
@@ -285,8 +285,7 @@ build/
 ├── Sublayers.md
 ├── ImageCollections.md
 ├── ZenodoSource.json
-├── baselayer-water.pmtiles
-├── baselayer-border.pmtiles
+├── baselayer.pmtiles
 ├── imagecollection.yaml
 ├── Image collections/
 │   └── <CollectionId>/

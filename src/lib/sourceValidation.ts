@@ -1,7 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import YAML from "yaml";
-import { validateBaselayerGeoJson, validateBaselayerPmtiles } from "./baselayer/validate";
+import { validateBaselayerGeoJson } from "./baselayer/validate";
 import type { LocalizedText } from "./localization";
 import {
   mapServicesYamlPath,
@@ -326,22 +326,20 @@ export async function validateSource(options: { layerIds?: string[] } = {}): Pro
   const issues: SourceValidationIssue[] = [];
   const requiredFiles = [
     { path: mapServicesYamlPath(), file: "map-services.yaml" },
-    { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.pmtiles" },
+    { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.geojson" },
     { path: sourceBaselayerBorderPath(), file: "Baselayer_Border.geojson" },
   ];
   for (const required of requiredFiles) {
     if (!(await isFile(required.path))) issues.push(issue(required.file, "", `required file is missing from ${sourceDir()}`));
   }
 
-  for (const input of [{ path: sourceBaselayerBorderPath(), file: "Baselayer_Border.geojson" }]) {
+  for (const input of [
+    { path: sourceBaselayerWaterPath(), file: "Baselayer_Water.geojson" },
+    { path: sourceBaselayerBorderPath(), file: "Baselayer_Border.geojson" },
+  ]) {
     if (!(await isFile(input.path))) continue;
     const geoJsonIssues = await validateBaselayerGeoJson(input.path);
     issues.push(...geoJsonIssues.map((entry) => issue(input.file, entry.path, entry.message)));
-  }
-
-  if (await isFile(sourceBaselayerWaterPath())) {
-    const pmtilesIssues = await validateBaselayerPmtiles(sourceBaselayerWaterPath());
-    issues.push(...pmtilesIssues.map((entry) => issue("Baselayer_Water.pmtiles", entry.path, entry.message)));
   }
 
   if (!(await isDirectory(sourceLayersDir()))) {

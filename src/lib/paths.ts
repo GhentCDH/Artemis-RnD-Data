@@ -26,7 +26,7 @@ export const sourceImageCollectionsDir = () => join(sourceDir(), "imagecollectio
 export const mapServicesYamlPath = () => join(sourceDir(), "map-services.yaml");
 
 /** Site-wide reference layers (not tied to any single historical map layer). */
-export const sourceBaselayerWaterPath = () => join(sourceDir(), "Baselayer_Water.geojson");
+export const sourceBaselayerWaterPath = () => join(sourceDir(), "Baselayer_Water.pmtiles");
 export const sourceBaselayerBorderPath = () => join(sourceDir(), "Baselayer_Border.geojson");
 
 /** Published build root. */
@@ -38,8 +38,11 @@ export const BUILD_LAYERS_YAML_PATH = join(BUILD_DIR, "layers.yaml");
 /** Published site-wide default background maps and overlays. */
 export const BUILD_MAP_SERVICES_YAML_PATH = join(BUILD_DIR, "map-services.yaml");
 
-/** Published site-wide reference boundary layer. */
-export const BUILD_BASELAYER_PMTILES_PATH = join(BUILD_DIR, "baselayer.pmtiles");
+/** Published site-wide baselayer archives. */
+export const BUILD_BASELAYER_WATER_PMTILES_PATH = join(BUILD_DIR, "baselayer-water.pmtiles");
+export const BUILD_BASELAYER_BORDER_PMTILES_PATH = join(BUILD_DIR, "baselayer-border.pmtiles");
+/** Retired combined archive, removed by the baselayer build for clean local builds. */
+export const RETIRED_BUILD_BASELAYER_PMTILES_PATH = join(BUILD_DIR, "baselayer.pmtiles");
 
 /** Human-readable Markdown table of every sublayer + kind, for the CI job summary / release notes. */
 export const BUILD_SUBLAYERS_SUMMARY_PATH = join(BUILD_DIR, "Sublayers.md");

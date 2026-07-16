@@ -12,7 +12,7 @@ import { fetchLatestPublishedVersionId, fetchRecordFileIndex } from "../source/z
 import { VERZAMELBLAD_SPLITS } from "../iiif/config";
 
 /** Bump to invalidate the merged layers.yaml when the merge/resolution changes. */
-const LAYERS_RECIPE = 9;
+const LAYERS_RECIPE = 10;
 
 /**
  * Published per-layer artifact filenames → the registry key the viewer looks up.
@@ -126,7 +126,7 @@ type MutableSublayer = {
   name?: LocalizedText;
   kind?: string;
   description?: LocalizedText;
-  source?: { rawInput?: string };
+  source?: { type?: string; rawInput?: string; url?: string };
   furtherReading?: Record<string, string>;
   sources?: Array<{ citation: string; url?: string; download?: unknown }>;
   artifacts?: Record<string, string>;
@@ -304,7 +304,11 @@ function resolveDownloads(layer: MutableLayer, fileIndex: Map<string, string>, m
   return resolved;
 }
 
-/** Normalizes authored URL/download source entries into viewer-facing `{ citation, url }` entries. */
+/**
+ * Normalizes authored URL/download entries into viewer-facing citation sources.
+ * WMTS/WMS rendering configuration remains under `source`; other `source`
+ * values are build-only metadata and are omitted from the published registry.
+ */
 function publishSources(layer: MutableLayer): void {
   for (const sublayer of layer.sublayers ?? []) {
     const sources: Array<{ citation: string; url: string }> = [];
@@ -319,7 +323,8 @@ function publishSources(layer: MutableLayer): void {
       }
     }
     sublayer.sources = sources;
-    delete sublayer.source;
+    const kind = (sublayer.kind ?? "").toLowerCase();
+    if (!REMOTE_PASSTHROUGH_KINDS.has(kind)) delete sublayer.source;
   }
 }
 

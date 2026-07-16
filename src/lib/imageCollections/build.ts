@@ -22,7 +22,7 @@ import { ensureDir, fileExists, writeJson } from "../utils/files";
 import { contentHash, stableStringify } from "../utils/hash";
 import { extractManifestMetadata } from "./manifestMetadata";
 
-const IMAGE_COLLECTION_RECIPE = 7;
+const IMAGE_COLLECTION_RECIPE = 8;
 
 type ImageCollectionConfig = {
   id: string;
@@ -30,6 +30,7 @@ type ImageCollectionConfig = {
   provider?: string;
   description?: LocalizedText;
   citation: string;
+  readingList?: Record<string, string>;
   attribution?: unknown;
 };
 
@@ -71,6 +72,7 @@ export type ImageCollectionBuildResult = {
   provider?: string;
   description?: LocalizedText;
   citation: string;
+  readingList?: Record<string, string>;
   attribution?: unknown;
   totalItems: number;
   coordsAvailable: number;
@@ -131,10 +133,14 @@ async function readCollectionConfig(root: string, dirName: string): Promise<Imag
     const id = typeof parsed.id === "string" ? parsed.id : "";
     const label = asRecord(parsed.label);
     const citation = typeof parsed.citation === "string" ? parsed.citation.trim() : "";
+    const readingList = parsed.readingList === undefined ? undefined : asRecord(parsed.readingList);
     if (!id || typeof label.en !== "string" || !label.en.trim() || typeof label.nl !== "string" || !label.nl.trim()) {
       throw new Error(`${path}: image collection config requires id and label with non-empty en and nl values`);
     }
     if (!citation) throw new Error(`${path}: image collection config requires an APA citation`);
+    if (readingList && Object.entries(readingList).some(([label, url]) => !label.trim() || typeof url !== "string" || !/^https?:\/\//i.test(url))) {
+      throw new Error(`${path}: readingList must map non-empty labels to HTTP(S) URLs`);
+    }
     if (id !== dirName) throw new Error(`${path}: id "${id}" must match containing directory "${dirName}"`);
     return {
       id,
@@ -149,6 +155,7 @@ async function readCollectionConfig(root: string, dirName: string): Promise<Imag
         return { en: description.en, nl: description.nl };
       })(),
       citation,
+      readingList: readingList as Record<string, string> | undefined,
       attribution: parsed.attribution,
     };
   }
@@ -397,6 +404,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
       provider: config.provider,
       description: config.description,
       citation: config.citation,
+      readingList: config.readingList,
       attribution: config.attribution,
       totalItems: items.length,
       coordsAvailable: items.filter((item) => item.lat !== undefined && item.lon !== undefined).length,
@@ -418,6 +426,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     provider: config.provider,
     description: config.description,
     citation: config.citation,
+    readingList: config.readingList,
     attribution: config.attribution,
     totalItems: items.length,
     coordsAvailable: items.filter((item) => item.lat !== undefined && item.lon !== undefined).length,
@@ -433,6 +442,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     provider: config.provider,
     description: config.description,
     citation: config.citation,
+    readingList: config.readingList,
     attribution: config.attribution,
     totalItems: items.length,
     coordsAvailable: index.coordsAvailable,
@@ -501,6 +511,7 @@ async function publishImageCollectionYaml(results: ImageCollectionBuildResult[],
     provider: result.provider,
     description: result.description,
     citation: result.citation,
+    readingList: result.readingList,
     attribution: result.attribution,
     totalItems: result.totalItems,
     coordsAvailable: result.coordsAvailable,

@@ -210,8 +210,9 @@ one folder per collection under `imagecollections/`, mirroring `layers/`:
 
 - `<CollectionId>.yml` (or `.yaml`): metadata only — `id` (must match the folder
   name), localized `label`, required APA `citation`, and optional `provider`,
-  localized `description`, and `attribution`. Localized fields use the same
-  `{ nl, en }` shape as sublayer metadata.
+  localized `description`, `readingList`, and `attribution`. `readingList` maps
+  display labels to HTTP(S) URLs, like sublayer reading lists. Localized fields
+  use the same `{ nl, en }` shape as sublayer metadata.
 - `<CollectionId>Collection.json`: a single JSON object mapping each IIIF
   manifest URL to `null` (the manifest carries the navPlace extension, so
   coordinates are read from it) or an explicit `[lon, lat]` pair for manifests

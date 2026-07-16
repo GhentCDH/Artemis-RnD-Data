@@ -300,6 +300,7 @@ async function validateImageCollections(issues: SourceValidationIssue[], logoRef
           if (parsed.label === undefined) issues.push(issue(configFile, "label", "required localized text is missing"));
           validateLocalizedText(parsed.description, configFile, "description", issues);
           requireString(parsed, "citation", configFile, "citation", issues, true);
+          validateLinkMap(parsed.readingList, configFile, "readingList", issues);
           if (typeof parsed.id === "string" && parsed.id !== name) {
             issues.push(issue(configFile, "id", `must match containing directory "${name}"`));
           }

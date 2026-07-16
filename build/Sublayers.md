@@ -12,7 +12,7 @@
 | Primitief kadaster | Kaart / Map | iiif | geomaps, search, raster, masks, sprites, spritesIndex | [Primitief_Kadaster_Masks.zip](https://zenodo.org/api/records/21256920/files/Primitief_Kadaster_Masks.zip/content) |
 | Primitief kadaster | Percelen / Parcels | geojson | parcels | [Primitief_Kadaster_Parcels.zip](https://zenodo.org/api/records/21256920/files/Primitief_Kadaster_Parcels.zip/content) |
 | Primitief kadaster | Toponiemen / Toponyms | searchable | toponyms | [Primitief_Kadaster_Toponyms.zip](https://zenodo.org/api/records/21256920/files/Primitief_Kadaster_Toponyms.zip/content) |
-| Primitief kadaster | Verzamelbladen / Index sheets | iiif | geomaps, search, raster, masks, sprites, spritesIndex | ? |
+| Primitief kadaster | Verzamelbladen / Index sheets | iiif | geomaps, search, raster, masks, sprites, spritesIndex | [Primitief_Kadaster_Masks.zip](https://zenodo.org/api/records/21256920/files/Primitief_Kadaster_Masks.zip/content) |
 | Vandermaelen | Kaart / Map | wmts | — | — |
 | Vandermaelen | Landgebruik / Land use | wms | — | — |
 | Villaret | Kaart / Map | wms | — | — |

@@ -1,16 +1,19 @@
-import { rm } from "node:fs/promises";
+import { copyFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { buildVectorPmtiles, vectorTileBuffer } from "../pmtiles/vector";
 import {
-  BUILD_BASELAYER_PMTILES_PATH,
+  BUILD_BASELAYER_BORDER_PMTILES_PATH,
+  BUILD_BASELAYER_WATER_PMTILES_PATH,
+  BUILD_DIR,
   BUILD_TMP_DIR,
+  RETIRED_BUILD_BASELAYER_PMTILES_PATH,
   sourceBaselayerBorderPath,
   sourceBaselayerWaterPath,
 } from "../paths";
-import { fileExists } from "../utils/files";
+import { ensureDir, fileExists } from "../utils/files";
 import { log } from "../log";
 import type { BuildLog } from "../build/buildLog";
-import { validateBaselayerGeoJson } from "./validate";
+import { validateBaselayerGeoJson, validateBaselayerPmtiles } from "./validate";
 
 export type BuildBaselayerOptions = {
   buildLog?: BuildLog;
@@ -18,13 +21,13 @@ export type BuildBaselayerOptions = {
 
 export type BaselayerBuildResult = {
   published: boolean;
-  pmtilesPath?: string;
+  waterPmtilesPath?: string;
+  borderPmtilesPath?: string;
 };
 
 /**
- * Publishes the site-wide water and border polygons as separate vector source
- * layers in one archive. Keeping them separate lets the viewer independently
- * control their color, opacity, and z-order.
+ * Publishes the prebuilt water tiles and tiles the authored border GeoJSON into
+ * separate archives. The viewer can load and style both sources independently.
  */
 export async function buildBaselayer(options: BuildBaselayerOptions = {}): Promise<BaselayerBuildResult> {
   const waterPath = sourceBaselayerWaterPath();
@@ -37,36 +40,50 @@ export async function buildBaselayer(options: BuildBaselayerOptions = {}): Promi
     return { published: false };
   }
 
-  for (const path of [waterPath, borderPath]) {
-    const issues = await validateBaselayerGeoJson(path);
-    if (issues.length === 0) continue;
-    const details = issues.map((issue) => `${issue.path ? `${issue.path}: ` : ""}${issue.message}`).join("; ");
-    const message = `invalid baselayer input ${path}: ${details}`;
+  const waterIssues = await validateBaselayerPmtiles(waterPath);
+  if (waterIssues.length > 0) {
+    const details = waterIssues.map((issue) => issue.message).join("; ");
+    const message = `invalid baselayer input ${waterPath}: ${details}`;
+    log.warn(message);
+    throw new Error(message);
+  }
+
+  const borderIssues = await validateBaselayerGeoJson(borderPath);
+  if (borderIssues.length > 0) {
+    const details = borderIssues.map((issue) => `${issue.path ? `${issue.path}: ` : ""}${issue.message}`).join("; ");
+    const message = `invalid baselayer input ${borderPath}: ${details}`;
     log.warn(message);
     throw new Error(message);
   }
 
   const tmpDir = join(BUILD_TMP_DIR, "baselayer");
   try {
+    await ensureDir(BUILD_DIR);
     await buildVectorPmtiles({
-      inputLayers: [
-        { name: "water", inputGeojson: waterPath },
-        { name: "border", inputGeojson: borderPath },
-      ],
-      outputPmtiles: BUILD_BASELAYER_PMTILES_PATH,
+      inputGeojson: borderPath,
+      outputPmtiles: BUILD_BASELAYER_BORDER_PMTILES_PATH,
       tmpDir,
-      layerName: "baselayer",
+      layerName: "border",
       minZoom: 0,
       maxZoom: 14,
       buffer: vectorTileBuffer(),
     });
+    await copyFile(waterPath, BUILD_BASELAYER_WATER_PMTILES_PATH);
+    await rm(RETIRED_BUILD_BASELAYER_PMTILES_PATH, { force: true });
   } finally {
     await rm(tmpDir, { recursive: true, force: true });
   }
 
-  log.ok(`baselayer: published ${BUILD_BASELAYER_PMTILES_PATH}`);
+  log.ok(`baselayer: published ${BUILD_BASELAYER_WATER_PMTILES_PATH} + ${BUILD_BASELAYER_BORDER_PMTILES_PATH}`);
   await options.buildLog?.section("Baselayer");
-  await options.buildLog?.fields({ water: waterPath, border: borderPath, output: BUILD_BASELAYER_PMTILES_PATH });
+  await options.buildLog?.fields({
+    water: `${waterPath} -> ${BUILD_BASELAYER_WATER_PMTILES_PATH}`,
+    border: `${borderPath} -> ${BUILD_BASELAYER_BORDER_PMTILES_PATH}`,
+  });
 
-  return { published: true, pmtilesPath: BUILD_BASELAYER_PMTILES_PATH };
+  return {
+    published: true,
+    waterPmtilesPath: BUILD_BASELAYER_WATER_PMTILES_PATH,
+    borderPmtilesPath: BUILD_BASELAYER_BORDER_PMTILES_PATH,
+  };
 }

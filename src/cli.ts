@@ -27,7 +27,7 @@ const COMMANDS = {
   imagecollections: "Build non-georeferenced image collections",
   layers: "Merge Source/layers/* into build/layers.yaml",
   mapservices: "Publish map-services.yaml into build/",
-  baselayer: "Publish water + border GeoJSON as build/baselayer.pmtiles",
+  baselayer: "Publish water PMTiles + tiled border GeoJSON as two PMTiles archives",
   "source:sync": "Download and extract Source.zip from a Zenodo record into the local source mirror cache",
   "source:validate": "Validate Source/ structure and layer config before building",
   "source:draft-files": "List the files Zenodo reports for an unpublished draft, given the draft's own record id (requires ZENODO_TOKEN)",

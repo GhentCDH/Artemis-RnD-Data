@@ -10,6 +10,7 @@ import { revalidatedJson, sha1 } from "../iiif/json";
 import { calculateSpriteSize, fetchSprite, packSprites } from "../iiif/sprites";
 import type { SpriteSource } from "../iiif/types";
 import { log } from "../log";
+import { localize, type LocalizedText } from "../localization";
 import {
   BUILD_IMAGE_COLLECTION_YAML_PATH,
   BUILD_IMAGE_COLLECTIONS_SUMMARY_PATH,
@@ -21,13 +22,14 @@ import { ensureDir, fileExists, writeJson } from "../utils/files";
 import { contentHash, stableStringify } from "../utils/hash";
 import { extractManifestMetadata } from "./manifestMetadata";
 
-const IMAGE_COLLECTION_RECIPE = 5;
+const IMAGE_COLLECTION_RECIPE = 7;
 
 type ImageCollectionConfig = {
   id: string;
-  label: string;
+  label: LocalizedText;
   provider?: string;
-  description?: string;
+  description?: LocalizedText;
+  citation: string;
   attribution?: unknown;
 };
 
@@ -65,9 +67,10 @@ type MetadataIssues = {
 
 export type ImageCollectionBuildResult = {
   id: string;
-  label: string;
+  label: LocalizedText;
   provider?: string;
-  description?: string;
+  description?: LocalizedText;
+  citation: string;
   attribution?: unknown;
   totalItems: number;
   coordsAvailable: number;
@@ -126,14 +129,26 @@ async function readCollectionConfig(root: string, dirName: string): Promise<Imag
     if (!await fileExists(path)) continue;
     const parsed = asRecord(YAML.parse(await readFile(path, "utf-8")));
     const id = typeof parsed.id === "string" ? parsed.id : "";
-    const label = typeof parsed.label === "string" ? parsed.label : "";
-    if (!id || !label) throw new Error(`${path}: image collection config requires id and label`);
+    const label = asRecord(parsed.label);
+    const citation = typeof parsed.citation === "string" ? parsed.citation.trim() : "";
+    if (!id || typeof label.en !== "string" || !label.en.trim() || typeof label.nl !== "string" || !label.nl.trim()) {
+      throw new Error(`${path}: image collection config requires id and label with non-empty en and nl values`);
+    }
+    if (!citation) throw new Error(`${path}: image collection config requires an APA citation`);
     if (id !== dirName) throw new Error(`${path}: id "${id}" must match containing directory "${dirName}"`);
     return {
       id,
-      label,
+      label: { en: label.en, nl: label.nl },
       provider: typeof parsed.provider === "string" ? parsed.provider : undefined,
-      description: typeof parsed.description === "string" ? parsed.description : undefined,
+      description: (() => {
+        if (parsed.description === undefined) return undefined;
+        const description = asRecord(parsed.description);
+        if (typeof description.en !== "string" || !description.en.trim() || typeof description.nl !== "string" || !description.nl.trim()) {
+          throw new Error(`${path}: description must contain non-empty en and nl values`);
+        }
+        return { en: description.en, nl: description.nl };
+      })(),
+      citation,
       attribution: parsed.attribution,
     };
   }
@@ -222,7 +237,7 @@ async function fetchCollectionRecords(source: ImageCollectionSource, concurrency
         manifestUrl: entry.manifestUrl,
         recordId: metadata.recordId,
         repId: metadata.repId,
-        searchText: [title, metadata.year, identifier, config.label, config.provider].filter(Boolean).join(" "),
+        searchText: [title, metadata.year, identifier, config.label.en, config.label.nl, config.provider].filter(Boolean).join(" "),
       },
     };
   });
@@ -381,6 +396,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
       label: config.label,
       provider: config.provider,
       description: config.description,
+      citation: config.citation,
       attribution: config.attribution,
       totalItems: items.length,
       coordsAvailable: items.filter((item) => item.lat !== undefined && item.lon !== undefined).length,
@@ -401,6 +417,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     label: config.label,
     provider: config.provider,
     description: config.description,
+    citation: config.citation,
     attribution: config.attribution,
     totalItems: items.length,
     coordsAvailable: items.filter((item) => item.lat !== undefined && item.lon !== undefined).length,
@@ -415,6 +432,7 @@ async function buildCollection(source: ImageCollectionSource, options: BuildImag
     label: config.label,
     provider: config.provider,
     description: config.description,
+    citation: config.citation,
     attribution: config.attribution,
     totalItems: items.length,
     coordsAvailable: index.coordsAvailable,
@@ -438,12 +456,13 @@ function buildImageCollectionsMarkdown(results: ImageCollectionBuildResult[]): s
   ];
   for (const result of results) {
     const identifierIssueCount = result.metadataIssues.missingIdentifiers.length + result.metadataIssues.duplicateIdentifiers.length;
-    lines.push(`| ${result.label} (\`${result.id}\`) | ${result.totalItems} | ${result.totalItems - result.metadataIssues.missingYears.length}/${result.totalItems} | ${result.coordinateSources.navPlace.length} | ${result.coordinateSources.paired.length} | ${identifierIssueCount} |`);
+    const label = `${localize(result.label, "nl")} / ${localize(result.label, "en")}`;
+    lines.push(`| ${label} (\`${result.id}\`) | ${result.totalItems} | ${result.totalItems - result.metadataIssues.missingYears.length}/${result.totalItems} | ${result.coordinateSources.navPlace.length} | ${result.coordinateSources.paired.length} | ${identifierIssueCount} |`);
   }
   lines.push("");
   for (const result of results) {
     const { navPlace, paired } = result.coordinateSources;
-    lines.push(`### ${result.label} (\`${result.id}\`)`);
+    lines.push(`### ${localize(result.label, "nl")} / ${localize(result.label, "en")} (\`${result.id}\`)`);
     lines.push("");
     if (paired.length === 0) lines.push("✓ Every manifest carries the navPlace extension.");
     else if (navPlace.length === 0) lines.push(`No manifest carries the navPlace extension — all ${paired.length} rely on paired coordinates in \`${result.id}Collection.json\`.`);
@@ -481,6 +500,7 @@ async function publishImageCollectionYaml(results: ImageCollectionBuildResult[],
     label: result.label,
     provider: result.provider,
     description: result.description,
+    citation: result.citation,
     attribution: result.attribution,
     totalItems: result.totalItems,
     coordsAvailable: result.coordsAvailable,

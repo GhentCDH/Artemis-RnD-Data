@@ -1,7 +1,7 @@
 Artemis Data Build Log
 ======================
 
-Started  2026-07-17T13:46:00.121Z
+Started  2026-07-17T14:00:08.010Z
 Command  build
   workers        8
   raster         yes
@@ -22,7 +22,7 @@ IIIF: GereduceerdeKadaster
   raster              build/Layers/GereduceerdeKadaster/raster.pmtiles
   masks               222 (build/Layers/GereduceerdeKadaster/masks.geojson)
   geomaps             build/Layers/GereduceerdeKadaster/geomaps.json
-  iiif:GereduceerdeKadaster duration  5m 35.5s
+  iiif:GereduceerdeKadaster duration  5m 56.4s
 
 IIIF: PrimitiefKadaster
 -----------------------
@@ -39,7 +39,7 @@ IIIF: PrimitiefKadaster
   masks               496 (build/Layers/PrimitiefKadaster/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster/geomaps.json
-  iiif:PrimitiefKadaster duration  3m 24.5s
+  iiif:PrimitiefKadaster duration  4m 1.6s
 
 IIIF: PrimitiefKadaster-verzamelbladen
 --------------------------------------
@@ -56,7 +56,7 @@ IIIF: PrimitiefKadaster-verzamelbladen
   masks               37 (build/Layers/PrimitiefKadaster-verzamelbladen/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster-verzamelbladen/geomaps.json
-  iiif:PrimitiefKadaster-verzamelbladen duration  1m 21.3s
+  iiif:PrimitiefKadaster-verzamelbladen duration  1m 21.0s
 
 IIIF Summary
 ------------
@@ -72,14 +72,14 @@ IIIF Summary
   warped canvases     755
   mask features       755
   warning details     build/IIIFWarnings.log
-  iiif duration  10m 23.4s
+  iiif duration  11m 20.6s
 
 Toponyms: Ferraris
 ------------------
   source files  411
   items         21079
   output        build/Layers/Ferraris/toponyms.json
-  toponyms:Ferraris duration  951ms
+  toponyms:Ferraris duration  962ms
   toponyms:Frickx duration  0ms
 
 Toponyms: GereduceerdeKadaster
@@ -87,7 +87,7 @@ Toponyms: GereduceerdeKadaster
   source files  1
   items         3537
   output        build/Layers/GereduceerdeKadaster/toponyms.json
-  toponyms:GereduceerdeKadaster duration  35ms
+  toponyms:GereduceerdeKadaster duration  29ms
   toponyms:NGI1873 duration  0ms
   toponyms:NGI1904 duration  0ms
   toponyms:Popp duration  0ms
@@ -97,9 +97,9 @@ Toponyms: PrimitiefKadaster
   source files  68
   items         2514
   output        build/Layers/PrimitiefKadaster/toponyms.json
-  toponyms:PrimitiefKadaster duration  203ms
-  toponyms:Vandermaelen duration  1ms
-  toponyms:Villaret duration  5ms
+  toponyms:PrimitiefKadaster duration  201ms
+  toponyms:Vandermaelen duration  0ms
+  toponyms:Villaret duration  0ms
 
 Toponyms Summary
 ----------------
@@ -128,7 +128,7 @@ Douglas-Peucker: PrimitiefKadaster-parcels
   features simplified         8529
   pixel reference rings       8538
   coordinate reference rings  0
-  parcels:PrimitiefKadaster-parcels duration  2.79s
+  parcels:PrimitiefKadaster-parcels duration  2.80s
 
 Parcels Summary
 ---------------
@@ -137,8 +137,8 @@ Parcels Summary
   input points    282874
   output points   90998
   removed points  191876
-  parcels duration  2.79s
-  imagecollection:Massart duration  15.64s
+  parcels duration  2.80s
+  imagecollection:Massart duration  12.95s
 
 Image Collection: Massart
 -------------------------
@@ -158,14 +158,14 @@ Image Collections Summary
   items             60
   with coordinates  60
   output            build/imagecollection.yaml
-  imagecollections duration  15.66s
+  imagecollections duration  12.96s
 
 Baselayer
 ---------
   water   .build-cache/zenodo-source/21295519/Source/Baselayer_Water.geojson
   border  .build-cache/zenodo-source/21295519/Source/Baselayer_Border.geojson
   output  build/baselayer.pmtiles
-  baselayer duration  9.32s
+  baselayer duration  9.15s
 
 Layers
 ------
@@ -173,9 +173,9 @@ Layers
   sublayers           16
   downloads resolved  7
   output              build/layers.yaml
-  layers duration  842ms
+  layers duration  664ms
 
 Map services
 ------------
   map-services.yaml published  yes
-  mapservices duration  0ms
+  mapservices duration  1ms

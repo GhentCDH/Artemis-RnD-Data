@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { Image } from "@allmaps/iiif-parser";
 import { iiifCacheDir } from "../paths";
 import { ensureDir } from "../utils/files";
-import { pathExists } from "../iiif/json";
+import { pathExists } from "../iiif/fetchCache";
 
 /*
  * Fetch a capped-resolution IIIF image to warp. This is a larger fetch than the

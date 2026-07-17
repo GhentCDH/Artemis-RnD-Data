@@ -5,7 +5,7 @@ import type { LayerRef } from "../layers/discovery";
 import { allmapsCanvasCacheDir, iiifCacheDir } from "../paths";
 import { ensureDir } from "../utils/files";
 import { ANNOTATIONS_API, SKIP_MANIFEST_TERMS } from "./config";
-import { fetchJson, pathExists, revalidatedJson, sha1 } from "./json";
+import { fetchJson, pathExists, revalidatedJson, sha1 } from "./fetchCache";
 import type { IiifSublayer, ManifestRef } from "./types";
 
 export function textValues(value: unknown): string[] {

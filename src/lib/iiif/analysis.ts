@@ -3,7 +3,7 @@ import type { BuildLog } from "../build/buildLog";
 import { simplifyRing } from "../geojson/simplify";
 import type { Position } from "../geojson/types";
 import { maskSimplifyEpsilon } from "./config";
-import { resourceId } from "./iiif";
+import { resourceId } from "./manifests";
 import type { AnalysisSummary, MapAnalysis } from "./types";
 
 const FIXABLE_ANALYSIS_CODES = new Set([

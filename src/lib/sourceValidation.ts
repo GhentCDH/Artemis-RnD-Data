@@ -273,15 +273,15 @@ async function validateImageCollections(issues: SourceValidationIssue[]): Promis
 
   let count = 0;
   for (const name of dirs) {
-    const ymlFile = `imagecollections/${name}/${name}.yml`;
-    const ymlPath = join(root, name, `${name}.yml`);
+    const yamlFile = `imagecollections/${name}/${name}.yaml`;
     const yamlPath = join(root, name, `${name}.yaml`);
-    const configPath = (await isFile(ymlPath)) ? ymlPath : (await isFile(yamlPath)) ? yamlPath : undefined;
+    const ymlPath = join(root, name, `${name}.yml`);
+    const configPath = (await isFile(yamlPath)) ? yamlPath : (await isFile(ymlPath)) ? ymlPath : undefined;
     if (!configPath) {
-      issues.push(issue(ymlFile, "", "required image collection config file is missing"));
+      issues.push(issue(yamlFile, "", "required image collection config file is missing"));
     } else {
       count++;
-      const configFile = configPath === ymlPath ? ymlFile : `imagecollections/${name}/${name}.yaml`;
+      const configFile = configPath === yamlPath ? yamlFile : `imagecollections/${name}/${name}.yml`;
       const parsed = await parseYamlFile(configPath, configFile, issues);
       if (parsed !== undefined) {
         if (!isRecord(parsed)) {

@@ -17,7 +17,7 @@ import { buildCompactGeomaps } from "./geomaps";
 import { buildIiifSearchIndex } from "./search";
 import { VERZAMELBLAD_SPLITS } from "./config";
 import { localize } from "../localization";
-import { revalidatedJson } from "./json";
+import { revalidatedJson } from "./fetchCache";
 import {
   canvasId,
   canvasImageService,
@@ -32,7 +32,7 @@ import {
   resolveIiifResource,
   shouldSkipManifest,
   textValues,
-} from "./iiif";
+} from "./manifests";
 import { calculateSpriteSize, fetchSprite, spriteCachePath, writeSpriteArtifacts } from "./sprites";
 import type { IiifBuildOptions, IiifBuildResult, ProcessedCanvas, ProcessedManifest, SourceGroup } from "./types";
 

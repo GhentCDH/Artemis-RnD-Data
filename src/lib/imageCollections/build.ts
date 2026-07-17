@@ -5,8 +5,8 @@ import sharp from "sharp";
 import YAML from "yaml";
 import type { BuildLog } from "../build/buildLog";
 import { runPool } from "../concurrency";
-import { canvasImageService, iiifLabel, infoJson, manifestCanvases } from "../iiif/iiif";
-import { revalidatedJson, sha1 } from "../iiif/json";
+import { canvasImageService, iiifLabel, infoJson, manifestCanvases } from "../iiif/manifests";
+import { revalidatedJson, sha1 } from "../iiif/fetchCache";
 import { calculateSpriteSize, fetchSprite, packSprites } from "../iiif/sprites";
 import type { SpriteSource } from "../iiif/types";
 import { log } from "../log";
@@ -126,7 +126,7 @@ function navPlaceCoordinates(manifest: Record<string, unknown>): { lat: number; 
 }
 
 async function readCollectionConfig(root: string, dirName: string): Promise<ImageCollectionConfig> {
-  const candidates = [join(root, dirName, `${dirName}.yml`), join(root, dirName, `${dirName}.yaml`)];
+  const candidates = [join(root, dirName, `${dirName}.yaml`), join(root, dirName, `${dirName}.yml`)];
   for (const path of candidates) {
     if (!await fileExists(path)) continue;
     const parsed = asRecord(YAML.parse(await readFile(path, "utf-8")));
@@ -160,7 +160,7 @@ async function readCollectionConfig(root: string, dirName: string): Promise<Imag
       furtherReading: furtherReading as Record<string, string> | undefined,
     };
   }
-  throw new Error(`imagecollections/${dirName}: missing ${dirName}.yml`);
+  throw new Error(`imagecollections/${dirName}: missing ${dirName}.yaml (legacy .yml also accepted)`);
 }
 
 async function readCollectionEntries(root: string, dirName: string): Promise<ManifestEntry[]> {

@@ -6,7 +6,7 @@ import { runPool } from "../concurrency";
 import { iiifCacheDir } from "../paths";
 import { ensureDir, writeJson } from "../utils/files";
 import { spriteMaxSize, SPRITESHEET_MAX_WIDTH } from "./config";
-import { pathExists } from "./json";
+import { pathExists } from "./fetchCache";
 import type { SpritePlacement, SpriteSource } from "./types";
 
 export function calculateSpriteSize(width: number, height: number): { width: number; height: number } {

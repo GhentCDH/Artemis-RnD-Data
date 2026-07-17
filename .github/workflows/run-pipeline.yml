@@ -1,4 +1,4 @@
-name: Run data pipeline
+name: Manual - Run data pipeline
 run-name: "Zenodo record ${{ inputs.zenodo_record }}${{ inputs.force && ' · force' || '' }}${{ inputs.publish_live && ' · publish live' || '' }}"
 
 on:
@@ -107,20 +107,28 @@ jobs:
           restore-keys: |
             pipeline-${{ runner.os }}-
 
-      - name: Restore build state
+      # `build/` is a publish snapshot, not a cache. Always start it empty so
+      # outputs retired by the current pipeline cannot survive into live/draft;
+      # restore only the small files that drive incremental-build decisions.
+      - name: Initialize clean build output and restore incremental state
         run: |
           set -euo pipefail
 
+          rm -rf build
+
           if git ls-remote --exit-code --heads origin "$BUILD_STATE_BRANCH" >/dev/null 2>&1; then
-            tmpdir="$(mktemp -d)"
             git fetch --depth=1 origin "$BUILD_STATE_BRANCH"
-            git archive "origin/$BUILD_STATE_BRANCH" build 2>/dev/null | tar -x -C "$tmpdir" || true
-            if [ -d "$tmpdir/build" ]; then
-              rm -rf build
-              cp -a "$tmpdir/build" ./build
-              echo "Restored build state from $BUILD_STATE_BRANCH."
+
+            mapfile -t state_paths < <(
+              git ls-tree -r --name-only "origin/$BUILD_STATE_BRANCH" -- build |
+                awk '$0 == "build/ZenodoSource.json" || $0 ~ "^build/Layers/[^/]+/hashes[.]txt$"'
+            )
+
+            if [ "${#state_paths[@]}" -gt 0 ]; then
+              git archive "origin/$BUILD_STATE_BRANCH" -- "${state_paths[@]}" | tar -x
+              echo "Restored ${#state_paths[@]} build-state file(s) from $BUILD_STATE_BRANCH."
             else
-              echo "$BUILD_STATE_BRANCH has no build/ directory yet."
+              echo "$BUILD_STATE_BRANCH has no incremental build-state files yet."
             fi
           else
             echo "No $BUILD_STATE_BRANCH branch yet; starting without restored build state."

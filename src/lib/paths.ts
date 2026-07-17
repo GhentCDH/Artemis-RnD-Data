@@ -11,12 +11,6 @@ export function sourceDir(): string {
   return sourceDirValue;
 }
 
-/** Authoring source root (config in git, raw geojson local). */
-export const SOURCE_DIR = sourceDirValue;
-
-/** Authoring inputs (config in git, raw geojson local). */
-export const SOURCE_LAYERS_DIR = join(SOURCE_DIR, "layers");
-
 export const sourceLayersDir = () => join(sourceDir(), "layers");
 
 /** Non-georeferenced image collection source configs (one directory per collection, like layers/). */

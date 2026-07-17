@@ -1,4 +1,7 @@
-import { stableJson } from "./json";
+// Emits the `IIIF/<mapId>_geomaps.json` bundle (geomapsVersion: 1) consumed by
+// the viewer's Artemis-Viewer/app/src/lib/core/renderers/iiif/geomapsLoader.ts —
+// keep the CompactGeomap shape (./types.ts) in sync with that loader.
+import { stableJson } from "./fetchCache";
 import type { CompactGeomap, ProcessedCanvas, ProcessedManifest } from "./types";
 
 function stripInfoVariableFields(info: Record<string, unknown> | null): Record<string, unknown> {

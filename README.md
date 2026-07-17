@@ -77,6 +77,7 @@ bun run src/cli.ts <command> [zenodoRecordId|url] [layerId...] [flags]
 | `parcels [layerId...]` | Build parcel PMTiles |
 | `imagecollections [collectionId...]` | Build non-georeferenced image collection indexes and sprites |
 | `layers` | Publish the full merged `build/layers.yaml` registry |
+| `mapservices` | Publish `Source/map-services.yaml` to `build/map-services.yaml` |
 | `baselayer` | Convert `Baselayer_Water.geojson` and `Baselayer_Border.geojson` to separate source layers in `build/baselayer.pmtiles` |
 | `source:sync <recordId>` | Download, verify, and extract `Source.zip` into `.build-cache/zenodo-source/` |
 | `source:validate` | Validate source structure and metadata before building |

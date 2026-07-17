@@ -1,19 +1,13 @@
-# Artemis Data
+<h1><img src="favicon.svg" alt="Artemis logo" width="40"> Artemis Data</h1>
 
 Data pipeline for the [Artemis Viewer](https://github.com/GhentCDH/Artemis-Viewer).
 It reads a versioned `Source.zip` from Zenodo and produces the map metadata,
 search indexes, sprites, GeoJSON, and PMTiles consumed by the viewer.
 
-Data editors should follow the [Data Editor Guide](DATA_EDITOR_GUIDE.md) for
-the draft, validation, and release workflow.
-
-Agent-agnostic repository context is available in
-[`.agent-resources/`](https://github.com/GhentCDH/Artemis-Data/tree/main/.agent-resources).
-
 The pipeline is written in TypeScript and runs on Bun. Docker is the supported
 runtime because builds also require GDAL, PROJ, tippecanoe, and PMTiles tooling.
 
-## Normal operation
+## Workflow
 
 Production builds run through the **Manual - Run data pipeline** GitHub Actions
 workflow. Start it with a Zenodo record or draft ID; optional inputs can bypass
@@ -57,8 +51,6 @@ bun run typecheck
 ARTEMIS_SOURCE_DIR=/path/to/Source \
   bun run src/cli.ts source:validate --local-source
 ```
-
-Stop the container with `docker compose down`.
 
 ## CLI
 

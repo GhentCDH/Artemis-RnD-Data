@@ -36,7 +36,6 @@ Use this index to locate the owner of a behavior before searching broadly.
 | `.github/workflows/docker-image.yml` | Pipeline container build and GHCR publication |
 | `Dockerfile` | Reproducible native geospatial build environment |
 | `docker-compose.yml` | Local development container |
-| `INPUT_OUTPUT_MAPPING.md` | Detailed input/output, branch, and parameter reference |
 | `README.md` | Concise operator and contributor guide |
 
 Generated or local-only paths:

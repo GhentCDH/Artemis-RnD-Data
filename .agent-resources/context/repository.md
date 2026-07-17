@@ -23,7 +23,6 @@ belong in Artemis Viewer.
 - `src/lib/build/` owns logs and incremental hash state.
 
 Use `bun run src/cli.ts help` as the authoritative command and option reference.
-Use `INPUT_OUTPUT_MAPPING.md` for the detailed source-to-output mapping.
 
 ## Source and output boundaries
 
@@ -69,5 +68,5 @@ Never edit `live`, `draft`, or `build-cache` manually; they are workflow-owned.
 - Keep generated artifacts out of source-control branches.
 - Treat source validation and publication schemas as contracts with Zenodo and
   Artemis Viewer.
-- Update `INPUT_OUTPUT_MAPPING.md` when an input begins producing a different
-  output or a branch/workflow responsibility changes.
+- Update this context and its file index when input/output or workflow
+  responsibilities change.

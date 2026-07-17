@@ -4,6 +4,9 @@ Data pipeline for the [Artemis Viewer](https://github.com/GhentCDH/Artemis-Viewe
 It reads a versioned `Source.zip` from Zenodo and produces the map metadata,
 search indexes, sprites, GeoJSON, and PMTiles consumed by the viewer.
 
+Agent-agnostic repository context is available in
+[`.agent-resources/`](https://github.com/GhentCDH/Artemis-Data/tree/main/.agent-resources).
+
 The pipeline is written in TypeScript and runs on Bun. Docker is the supported
 runtime because builds also require GDAL, PROJ, tippecanoe, and PMTiles tooling.
 

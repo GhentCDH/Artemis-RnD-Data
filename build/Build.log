@@ -1,7 +1,7 @@
 Artemis Data Build Log
 ======================
 
-Started  2026-07-16T16:32:13.507Z
+Started  2026-07-17T12:19:18.773Z
 Command  build
   workers        8
   raster         yes
@@ -18,11 +18,11 @@ IIIF: GereduceerdeKadaster
   simplified masks    0
   mask points before  0
   mask points after   0
-  warped canvases     0
+  warped canvases     222
   raster              build/Layers/GereduceerdeKadaster/raster.pmtiles
-  masks               0 (build/Layers/GereduceerdeKadaster/masks.geojson)
+  masks               222 (build/Layers/GereduceerdeKadaster/masks.geojson)
   geomaps             build/Layers/GereduceerdeKadaster/geomaps.json
-  iiif:GereduceerdeKadaster duration  1m 3.4s
+  iiif:GereduceerdeKadaster duration  5m 17.8s
 
 IIIF: PrimitiefKadaster
 -----------------------
@@ -34,12 +34,12 @@ IIIF: PrimitiefKadaster
   simplified masks    34
   mask points before  5193
   mask points after   4131
-  warped canvases     0
+  warped canvases     496
   raster              build/Layers/PrimitiefKadaster/raster.pmtiles
-  masks               0 (build/Layers/PrimitiefKadaster/masks.geojson)
+  masks               496 (build/Layers/PrimitiefKadaster/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster/geomaps.json
-  iiif:PrimitiefKadaster duration  1m 22.0s
+  iiif:PrimitiefKadaster duration  3m 4.9s
 
 IIIF: PrimitiefKadaster-verzamelbladen
 --------------------------------------
@@ -51,12 +51,12 @@ IIIF: PrimitiefKadaster-verzamelbladen
   simplified masks    1
   mask points before  448
   mask points after   344
-  warped canvases     0
+  warped canvases     37
   raster              build/Layers/PrimitiefKadaster-verzamelbladen/raster.pmtiles
-  masks               0 (build/Layers/PrimitiefKadaster-verzamelbladen/masks.geojson)
+  masks               37 (build/Layers/PrimitiefKadaster-verzamelbladen/masks.geojson)
   warning details     build/IIIFWarnings.log
   geomaps             build/Layers/PrimitiefKadaster-verzamelbladen/geomaps.json
-  iiif:PrimitiefKadaster-verzamelbladen duration  11.77s
+  iiif:PrimitiefKadaster-verzamelbladen duration  1m 15.9s
 
 IIIF Summary
 ------------
@@ -69,36 +69,76 @@ IIIF Summary
   simplified masks    35
   mask points before  5641
   mask points after   4475
-  warped canvases     0
-  mask features       0
+  warped canvases     755
+  mask features       755
   warning details     build/IIIFWarnings.log
-  iiif duration  2m 39.0s
-  toponyms:Ferraris duration  184ms
+  iiif duration  9m 41.0s
+
+Toponyms: Ferraris
+------------------
+  source files  411
+  items         21079
+  output        build/Layers/Ferraris/toponyms.json
+  toponyms:Ferraris duration  999ms
   toponyms:Frickx duration  0ms
-  toponyms:GereduceerdeKadaster duration  1ms
+
+Toponyms: GereduceerdeKadaster
+------------------------------
+  source files  1
+  items         3537
+  output        build/Layers/GereduceerdeKadaster/toponyms.json
+  toponyms:GereduceerdeKadaster duration  30ms
   toponyms:NGI1873 duration  0ms
   toponyms:NGI1904 duration  0ms
   toponyms:Popp duration  0ms
-  toponyms:PrimitiefKadaster duration  65ms
+
+Toponyms: PrimitiefKadaster
+---------------------------
+  source files  68
+  items         2514
+  output        build/Layers/PrimitiefKadaster/toponyms.json
+  toponyms:PrimitiefKadaster duration  212ms
   toponyms:Vandermaelen duration  0ms
   toponyms:Villaret duration  0ms
 
 Toponyms Summary
 ----------------
   layers  3
-  items   0
-  toponyms duration  252ms
-  parcels:PrimitiefKadaster-parcels duration  272ms
+  items   27130
+  toponyms duration  1.24s
+
+Parcels: PrimitiefKadaster-parcels
+----------------------------------
+  layer         PrimitiefKadaster
+  sublayer      PrimitiefKadaster-parcels
+  source        parcels/*.geojson
+  source files  39
+  polygons      8538
+  output        build/Layers/PrimitiefKadaster/parcels.pmtiles
+
+Douglas-Peucker: PrimitiefKadaster-parcels
+------------------------------------------
+  layer                       PrimitiefKadaster
+  sublayer                    PrimitiefKadaster-parcels
+  epsilon                     5
+  input points                282874
+  output points               90998
+  removed points              191876
+  rings simplified            8529
+  features simplified         8529
+  pixel reference rings       8538
+  coordinate reference rings  0
+  parcels:PrimitiefKadaster-parcels duration  2.88s
 
 Parcels Summary
 ---------------
   layers          1
-  polygons        0
-  input points    0
-  output points   0
-  removed points  0
-  parcels duration  273ms
-  imagecollection:Massart duration  2.72s
+  polygons        8538
+  input points    282874
+  output points   90998
+  removed points  191876
+  parcels duration  2.88s
+  imagecollection:Massart duration  13.56s
 
 Image Collection: Massart
 -------------------------
@@ -118,15 +158,22 @@ Image Collections Summary
   items             60
   with coordinates  60
   output            build/imagecollection.yaml
-  imagecollections duration  2.73s
+  imagecollections duration  13.57s
 
 Baselayer
 ---------
   water   .build-cache/zenodo-source/21295519/Source/Baselayer_Water.geojson
   border  .build-cache/zenodo-source/21295519/Source/Baselayer_Border.geojson
   output  build/baselayer.pmtiles
-  baselayer duration  8.02s
-  layers duration  481ms
+  baselayer duration  8.00s
+
+Layers
+------
+  layers              9
+  sublayers           16
+  downloads resolved  7
+  output              build/layers.yaml
+  layers duration  782ms
 
 Map services
 ------------

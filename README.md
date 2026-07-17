@@ -4,6 +4,9 @@ Data pipeline for the [Artemis Viewer](https://github.com/GhentCDH/Artemis-Viewe
 It reads a versioned `Source.zip` from Zenodo and produces the map metadata,
 search indexes, sprites, GeoJSON, and PMTiles consumed by the viewer.
 
+Data editors should follow the [Data Editor Guide](DATA_EDITOR_GUIDE.md) for
+the draft, validation, and release workflow.
+
 Agent-agnostic repository context is available in
 [`.agent-resources/`](https://github.com/GhentCDH/Artemis-Data/tree/main/.agent-resources).
 

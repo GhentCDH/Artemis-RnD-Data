@@ -1,0 +1,11 @@
+basemaps:
+  - id: example-basemap
+    shortLabel: Example
+    longLabel: Example basemap
+    url: "https://example.org/tiles/{z}/{x}/{y}.png"
+
+overlays:
+  - id: example-overlay
+    shortLabel: Overlay
+    longLabel: Example overlay
+    url: "https://example.org/overlay/{z}/{x}/{y}.png"

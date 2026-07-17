@@ -1,0 +1,73 @@
+# Rename this file and its containing folder to the same layer ID.
+id: LayerId
+label: Layer label
+timeframe:
+  startYear: 1800
+  endYear: 1850
+
+sublayers:
+  # IIIF map. Replace or remove this block if the layer has no IIIF content.
+  - id: LayerId-iiif
+    name:
+      en: Map
+      nl: Kaart
+    kind: iiif
+    description:
+      en: English description of this sublayer.
+      nl: Nederlandse beschrijving van deze sublaag.
+    source:
+      type: remote
+      url: https://example.org/iiif/collection
+    sources:
+      - citation: "Creator. (Year). Title [Map]. Publisher."
+        url: https://example.org/iiif/collection
+    furtherReading:
+      "Collection website": https://example.org/collection
+
+  # Generated parcels. Put matching GeoJSON files in parcels/.
+  - id: LayerId-parcels
+    name:
+      en: Parcels
+      nl: Percelen
+    kind: geojson
+    description:
+      en: English description of the parcel data.
+      nl: Nederlandse beschrijving van de perceeldata.
+    source:
+      type: generated
+      rawInput: parcels/*.geojson
+    sources:
+      - citation: "Creator. (Year). Title [Data set]. Publisher."
+        download: LayerId_Parcels.zip
+
+  # Searchable toponyms. Put matching GeoJSON files in toponyms/.
+  - id: LayerId-toponyms
+    name:
+      en: Toponyms
+      nl: Toponiemen
+    kind: searchable
+    description:
+      en: English description of the toponym data.
+      nl: Nederlandse beschrijving van de toponiemdata.
+    source:
+      type: generated
+      rawInput: toponyms/*.geojson
+    sources:
+      - citation: "Creator. (Year). Title [Data set]. Publisher."
+        download: LayerId_Toponyms.zip
+
+  # WMTS and WMS sublayers are rendered remotely and produce no local artifact.
+  - id: LayerId-wmts
+    name:
+      en: Remote tiles
+      nl: Externe tegels
+    kind: wmts
+    description:
+      en: English description of the remote tile layer.
+      nl: Nederlandse beschrijving van de externe tegellaag.
+    source:
+      type: remote
+      url: "https://example.org/wmts?z={z}&x={x}&y={y}"
+    sources:
+      - citation: "Provider. (Year). Title [Map]."
+        url: https://example.org/dataset-page
